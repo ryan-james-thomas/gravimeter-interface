@@ -5,8 +5,9 @@ classdef AnalogChannel < TimingControllerChannel
     %At the moment, there is nothing to extend...
 
     methods
-        function ch = AnalogChannel(parent)
-            ch = ch@TimingControllerChannel(parent);
+        function ch = AnalogChannel
+            ch = ch@TimingControllerChannel;
+            ch.setBounds([-10,10]);
             ch.IS_ANALOG = true;
         end
     end

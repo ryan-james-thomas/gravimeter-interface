@@ -33,13 +33,14 @@ classdef TimingSequence < handle
             self.numDigitalChannels = numDigitalChannels;
             self.numAnalogChannels = numAnalogChannels;
             self.numChannels = self.numDigitalChannels + self.numAnalogChannels;
-            self.channels(self.numChannels,1) = TimingControllerChannel(self);
+            tmp(self.numChannels) = TimingControllerChannel;
+            self.channels = tmp;
             for nn = 1:self.numDigitalChannels
-                self.channels(nn) = DigitalChannel(self,nn-1);
+                self.channels(nn) = DigitalChannel(nn-1);
             end
 
             for nn = (self.numDigitalChannels+1):self.numChannels
-                self.channels(nn) = AnalogChannel(self);
+                self.channels(nn) = AnalogChannel;
             end
         end
 
@@ -56,13 +57,13 @@ classdef TimingSequence < handle
             %FIND Finds a channel with the same name as NAME
             %
             %   ch = self.find(NAME) finds channel ch with name NAME
+            ch = [];
             for nn = 1:self.numChannels
                 if strcmpi(self.channels(nn).name,name)
                     ch = self.channels(nn);
                     break;
                 end
             end
-            ch = [];
         end
 
         function self = compile(self)
@@ -80,30 +81,43 @@ classdef TimingSequence < handle
                 t = [t;t2];   %#ok
                 vtmp = NaN(numel(v2),self.numChannels);
                 vtmp(:,nn) = v2;
-                v = [v;tmp];
+                v = [v;vtmp];   %#ok
             end
 
             %Now we need to create a smaller list of times and values which correspond
             %to unique updates
             [t,k] = sort(round(t*self.SAMPLE_CLK));
             v = v(k,:);
-            buf = zeros(size(t,1),1+self.numChannels);    %One column for time, one for all other channels
+            buf = NaN(size(t,1),1+self.numChannels);    %One column for time, one for all other channels
             buf(1,:) = [t(1),v(1,:)];
             numBuf = 1;
             for nn = 2:numel(t)
                 if t(nn) ~= t(nn-1)
                     numBuf = numBuf + 1;
+                    buf(numBuf,1) = t(nn);
                 end
                 idx = find(~isnan(v(nn,:)));
                 buf(numBuf,1+idx) = v(nn,idx);
             end
             buf = buf(1:numBuf,:);
-
+            
+            %Replace NaNs with previous values
+            for nn = 2:size(buf,1)
+                tmpOld = buf(nn-1,2:end);
+                tmpCurrent = buf(nn,2:end);
+                tmpCurrent(isnan(tmpCurrent)) = tmpOld(isnan(tmpCurrent));
+                buf(nn,2:end) = tmpCurrent;
+            end
             %One column for time, one for all digital channels, and one for each analog channel
-            data = [buf(:,1),sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^(0:31),size(buf,1),1),buf(:,(self.numDigitalChannels+1):self.numChannels)];
+            bits = zeros(1,self.numDigitalChannels);
+            for nn = 1:numel(bits)
+                bits(nn) = self.channels(nn).bit;
+            end
+            data = [buf(:,1),sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2),buf(:,1+(self.numDigitalChannels+1):self.numChannels)];
             if size(data,1) > self.MAX_INSTRUCTIONS
                 error('Instruction set size of %d is larger than maximum size of %d!',size(data,1),self.MAX_INSTRUCTIONS);
             end
+            data(:,1) = data(:,1)/self.SAMPLE_CLK;
             self.compiledData = data;
         end
 
@@ -119,6 +133,7 @@ classdef TimingSequence < handle
             if nargin < 2
                 offset = 0;
             end
+            str = {};
             for nn = 1:self.numChannels
                 self.channels(nn).plot((jj-1)*offset);
                 hold on;
@@ -126,8 +141,9 @@ classdef TimingSequence < handle
                     if isempty(self.channels(nn).name)
                         str{jj} = sprintf('Ch %d',nn);  %#ok<AGROW>
                     else
-                        str{jj} = sprintf('%s',self.channels(nn).name);
+                        str{jj} = sprintf('%s',self.channels(nn).name); %#ok<AGROW>
                     end
+                    jj = jj+1;
                 end
             end
             hold off;

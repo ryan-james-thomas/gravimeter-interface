@@ -1,4 +1,4 @@
-classdef TimingControllerChannel < matlab.mixin.Heterogeneous
+classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
     %TimingControllerChannel Defines a generic timing
     %controller channel.  This class should be extended
     %before it is used.
@@ -12,59 +12,43 @@ classdef TimingControllerChannel < matlab.mixin.Heterogeneous
         manual      %Manual value
     end
     
-    properties(Access = protected)
-        parent      %Parent timing controller object
+    properties(SetAccess = protected)
         
-        bounds      %Allowed bounds for values
         values      %Array of values in channel sequence.  Only 0 or 1 values are allowed
         times       %Array of times in the channel sequence in seconds
         numValues   %Number of time/value pairs
         
         lastTime    %Last time written - used for before/after functions
-    end
-
-    properties(SetAccess = immutable)
+        
+        bounds      %Allowed bounds for values
         IS_DIGITAL  %Indicates if a channel is a digital channel
         IS_ANALOG   %Indicates if a channel is an analog channel
     end
     
     methods
-        function ch = TimingControllerChannel(parent)
+        function ch = TimingControllerChannel
             %TimingControllerChannel Contructs a channel
-            %   ch = TimingControllerChannel(parent) Contructs a channel
-            %   with the given parent
-            if nargin >= 1
-                if ~isa(parent,'TimingController')
-                    error('Parent must be a TimingController object!');
-                end
-                ch.parent = parent;
-            end
+
             ch.IS_DIGITAL = false;
             ch.IS_ANALOG = false;
             ch.bounds = [0,0];
             ch.default = 0;
             ch.manual = ch.default;
             ch.reset;
+            ch.numValues = 0;
         end
         
-        function ch = setParent(ch,parent)
-            %setParent Sets the parent TimingController
+        function ch = setName(ch,name,description)
+            %SETNAME Sets the name and optionally the description
             %
-            %   ch = ch.setParent(PARENT) sets the parent to PARENT if
-            %   PARENT is a TimingController object.  Returns the channel object
-            %   ch
-            if ~isa(parent,'TimingController')
-                error('Parent must be a TimingController object!');
+            %   ch = setName(ch,NAME) sets the name property to NAME
+            %
+            %   ch = setName(ch,NAME,DESC) sets the name property to NAME
+            %   and the description property to DESC
+            ch.name = name;
+            if nargin == 3
+                ch.description = description;
             end
-            ch.parent = parent;
-        end
-        
-        function p = getParent(ch)
-            %getParent Returns the parent object
-            %
-            %   p = ch.getParent Returns the parent object for
-            %   TimingControllerChannel object ch
-            p = ch.parent;
         end
         
         function [t,v] = getEvents(ch)
@@ -77,7 +61,7 @@ classdef TimingControllerChannel < matlab.mixin.Heterogeneous
             %   value at time 0 is specified, the default value is used
             ch.check;
             ch.sort;
-            if ch.numValues==0
+            if isempty(ch.numValues) || (ch.numValues == 0)
                 t = 0;
                 v = ch.default;
             elseif ch.times(1) == 0
@@ -126,7 +110,7 @@ classdef TimingControllerChannel < matlab.mixin.Heterogeneous
                 %Otherwise add single events
                 ch.checkValue(value);   %Check that value is within bounds
 
-                time = round(time*TimingController.SAMPLE_CLK)/TimingController.SAMPLE_CLK;   %Round time to multiple of sample clock
+                time = round(time*TimingSequence.SAMPLE_CLK)/TimingSequence.SAMPLE_CLK;   %Round time to multiple of sample clock
                 idx = find(ch.times==time,1,'first');   %Try and find first time
                 if isempty(idx)
                     %If this time has not been used previously, add a new value at this time
@@ -176,7 +160,7 @@ classdef TimingControllerChannel < matlab.mixin.Heterogeneous
             %
             %   ch.anchor(TIME) sets the lastTime property to TIME
             
-            ch.lastTime = round(time*TimingController.SAMPLE_CLK)/TimingController.SAMPLE_CLK;
+            ch.lastTime = round(time*TimingSequence.SAMPLE_CLK)/TimingSequence.SAMPLE_CLK;
         end
         
         function [time,value] = last(ch)
@@ -257,9 +241,9 @@ classdef TimingControllerChannel < matlab.mixin.Heterogeneous
             %   offset given by OFFSET.  This is useful if you want to plot
             %   multiple signals on the same plot
             [t,v] = ch.getEvents;
-            tplot = sort([t;t-1/ch.parent.SAMPLE_CLK]);
+            tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
             if numel(v)==1
-                fprintf(1,'No events on this channel (%d). Plot not generated.\n',ch.bit);
+%                 fprintf(1,'No events on this channel (%d). Plot not generated.\n',ch.bit);
                 return
             end
             vplot = interp1(t,v,tplot,'previous');
