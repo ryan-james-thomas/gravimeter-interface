@@ -53,6 +53,30 @@ classdef TimingSequence < handle
             end
         end
 
+        function ch = digital(self,idx)
+            %DIGITAL Returns the digital channel with given index
+            %
+            %   ch = digital(self,IDX) returns digital channel IDX
+            %   This is equivalent to self.channels(IDX);
+            
+            ch = self.channels(idx);
+            if ~ch.IS_DIGITAL
+                error('Specified channel %d is not a digital channel',idx);
+            end
+        end
+
+        function ch = analog(self,idx)
+            %ANALOG Returns the analog channel with given index
+            %
+            %   ch = analog(self,IDX) returns analog channel IDX
+            %   This is equivalent to self.channels(self.numDigitalChannels+IDX);
+            
+            ch = self.channels(self.numDigitalChannels + idx);
+            if ~ch.IS_ANALOG
+                error('Specified channel %d is not a analog channel',idx);
+            end
+        end
+
         function ch = find(self,name)
             %FIND Finds a channel with the same name as NAME
             %
@@ -64,6 +88,20 @@ classdef TimingSequence < handle
                     break;
                 end
             end
+        end
+
+        function time = latest(self)
+            %LATEST Returns the latest update time
+            %
+            %   time = latest(sq) returns the latest update time TIME for
+            %   sequence sq
+            time = 0;
+            for nn = 1:self.numChannels
+                if self.channels(nn).last > time
+                    time = self.channels(nn).last;
+                end
+            end
+            
         end
 
         function self = compile(self)
@@ -151,6 +189,14 @@ classdef TimingSequence < handle
             xlabel('Time [s]');
         end
 
+    end
+
+    methods(Static)
+        function v = minjerk(t,vi,vf)
+            T = max(t)-min(t);
+            t = (t-min(t))./T;
+            v = vi + (vf-vi).*(10*t.^3-15*t.^4+6*t.^5);
+        end
     end
 
 

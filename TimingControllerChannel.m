@@ -7,6 +7,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
     %   of different subclasses of this base class
     properties
         name        %Name of the channel
+        port        %Fixed port of the channel
         description %Description of the channel
         default     %Default value for this channel
         manual      %Manual value
@@ -38,17 +39,28 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.numValues = 0;
         end
         
-        function ch = setName(ch,name,description)
+        function ch = setName(ch,name,port,description)
             %SETNAME Sets the name and optionally the description
             %
-            %   ch = setName(ch,NAME) sets the name property to NAME
+            %   ch = setName(ch,NAME,PORT) sets the name property to NAME and
+            %   port property to PORT
             %
-            %   ch = setName(ch,NAME,DESC) sets the name property to NAME
+            %   ch = setName(ch,NAME,PORT,DESC) sets the name property to NAME
             %   and the description property to DESC
             ch.name = name;
-            if nargin == 3
+            ch.port = port;
+            if nargin == 4
                 ch.description = description;
             end
+        end
+
+        function ch = setDefault(ch,v)
+            %SETDEFAULT Sets the default value
+            %
+            %   ch = setDefault(ch,v) sets the default value of channel ch
+            %   to v
+            ch.checkValue(v);
+            ch.default = v;
         end
         
         function [t,v] = getEvents(ch)
@@ -100,11 +112,26 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   CH = CH.at(TIME,VALUE) if TIME and VALUE are Nx1 arrays adds each element
             %   in VALUE to events at time given by corresponding element in VALUE.
             %   This uses a recursive call to AT, so may run into memory issues
-  
-            if numel(time) == numel(value) && numel(time) > 1
+            %
+            %   CH = CH.at(TIME,VALUEFUNC) if TIME is an Nx1 array and VALUEFUNC is a function
+            %   handle, adds the calculated values VALUEFUNC(TIME) to events.  Uses recursive
+            %   calls, so may run into memory issues
+
+
+            if numel(ch) > 1
+                %If an array of channels is passed, loop through each individually
+                for nn = 1:numel(ch)
+                    ch(nn).at(time,value);
+                end
+            elseif ~isa(value,'function_handle') && (numel(time) == numel(value)) && (numel(time) > 1)
                 %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
                 for nn = 1:numel(time)
                     ch.at(time(nn),value(nn));
+                end
+            elseif isa(value,'function_handle') && (numel(time) > 1)
+                %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
+                for nn = 1:numel(time)
+                    ch.at(time(nn),value(time(nn)));
                 end
             else
                 %Otherwise add single events
@@ -140,8 +167,14 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   DELAY seconds after the property lastTime.  Note that this
             %   is not necessarily the latest time in the sequence.
             
-            time = ch.lastTime+delay;
-            ch.at(time,value);
+            if numel(ch) > 1
+                for nn = 1:numel(ch)
+                    ch(nn).after(delay,value);
+                end
+            else
+                time = ch.lastTime+delay;
+                ch.at(time,value);
+            end
         end
         
         function ch = before(ch,delay,value)
@@ -151,8 +184,14 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   DELAY seconds before the property lastTime.  Note that this
             %   is not necessarily the latest time in the sequence.
             
-            time = ch.lastTime-delay;
-            ch.at(time,value);
+            if numel(ch) > 1
+                for nn = 1:numel(ch)
+                    ch(nn).before(delay,value);
+                end
+            else
+                time = ch.lastTime-delay;
+                ch.at(time,value);
+            end
         end
         
         function ch = anchor(ch,time)
@@ -160,7 +199,13 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %
             %   ch.anchor(TIME) sets the lastTime property to TIME
             
-            ch.lastTime = round(time*TimingSequence.SAMPLE_CLK)/TimingSequence.SAMPLE_CLK;
+            if numel(ch) > 1
+                for nn = 1:numel(ch)
+                    ch(nn).anchor(time);
+                end
+            else
+                ch.lastTime = round(time*TimingSequence.SAMPLE_CLK)/TimingSequence.SAMPLE_CLK;
+            end
         end
         
         function [time,value] = last(ch)
