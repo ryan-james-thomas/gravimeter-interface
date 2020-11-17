@@ -12,6 +12,7 @@ classdef DigitalChannel < TimingControllerChannel
             ch = ch@TimingControllerChannel(parent);
             ch.bit = bit;
             ch.bounds = [0,1];
+            ch.IS_DIGITAL = true;
         end
 
         function ch = checkValue(ch,v)

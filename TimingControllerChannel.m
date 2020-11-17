@@ -1,8 +1,13 @@
-classdef TimingControllerChannel < handle
+classdef TimingControllerChannel < matlab.mixin.Heterogeneous
     %TimingControllerChannel Defines a generic timing
     %controller channel.  This class should be extended
     %before it is used.
+    %
+    %   The matlab.mixin.Heterogeneous is needed to allow for arrays
+    %   of different subclasses of this base class
     properties
+        name        %Name of the channel
+        description %Description of the channel
         default     %Default value for this channel
         manual      %Manual value
     end
@@ -17,6 +22,11 @@ classdef TimingControllerChannel < handle
         
         lastTime    %Last time written - used for before/after functions
     end
+
+    properties(SetAccess = immutable)
+        IS_DIGITAL  %Indicates if a channel is a digital channel
+        IS_ANALOG   %Indicates if a channel is an analog channel
+    end
     
     methods
         function ch = TimingControllerChannel(parent)
@@ -29,7 +39,8 @@ classdef TimingControllerChannel < handle
                 end
                 ch.parent = parent;
             end
-
+            ch.IS_DIGITAL = false;
+            ch.IS_ANALOG = false;
             ch.bounds = [0,0];
             ch.default = 0;
             ch.manual = ch.default;
@@ -115,7 +126,7 @@ classdef TimingControllerChannel < handle
                 %Otherwise add single events
                 ch.checkValue(value);   %Check that value is within bounds
 
-                time = round(time*TimingController.FPGA_SAMPLE_CLK)/TimingController.FPGA_SAMPLE_CLK;   %Round time to multiple of sample clock
+                time = round(time*TimingController.SAMPLE_CLK)/TimingController.SAMPLE_CLK;   %Round time to multiple of sample clock
                 idx = find(ch.times==time,1,'first');   %Try and find first time
                 if isempty(idx)
                     %If this time has not been used previously, add a new value at this time
@@ -165,7 +176,7 @@ classdef TimingControllerChannel < handle
             %
             %   ch.anchor(TIME) sets the lastTime property to TIME
             
-            ch.lastTime = round(time*TimingController.FPGA_SAMPLE_CLK)/TimingController.FPGA_SAMPLE_CLK;
+            ch.lastTime = round(time*TimingController.SAMPLE_CLK)/TimingController.SAMPLE_CLK;
         end
         
         function [time,value] = last(ch)
@@ -246,7 +257,7 @@ classdef TimingControllerChannel < handle
             %   offset given by OFFSET.  This is useful if you want to plot
             %   multiple signals on the same plot
             [t,v] = ch.getEvents;
-            tplot = sort([t;t-1/ch.parent.FPGA_SAMPLE_CLK]);
+            tplot = sort([t;t-1/ch.parent.SAMPLE_CLK]);
             if numel(v)==1
                 fprintf(1,'No events on this channel (%d). Plot not generated.\n',ch.bit);
                 return

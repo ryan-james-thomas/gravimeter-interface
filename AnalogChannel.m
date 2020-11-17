@@ -7,6 +7,7 @@ classdef AnalogChannel < TimingControllerChannel
     methods
         function ch = AnalogChannel(parent)
             ch = ch@TimingControllerChannel(parent);
+            ch.IS_ANALOG = true;
         end
     end
 
