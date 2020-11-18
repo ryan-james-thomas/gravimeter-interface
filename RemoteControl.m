@@ -1,7 +1,7 @@
 classdef RemoteControl < handle
     properties
         %% TCPIP properties
-        server      %TCPIP connection
+        conn        %TCPIP connection
         connected   %Is LabVIEW client connected?
         %% Sequence properties
         status      %Current status of run: RUNNING or STOPPED
@@ -15,8 +15,8 @@ classdef RemoteControl < handle
     end
     
     properties(Constant)
-        remoteAddress = '0.0.0.0';    %Allow connections from anywhere
-        remotePort = 5005;            %Remote port to use
+        remoteAddress = 'localhost';    %Connect to local host
+        remotePort = 6666;            %Remote port to use
         waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
 
     end %end constant properties
@@ -44,17 +44,19 @@ classdef RemoteControl < handle
         
         function open(self)
             %OPEN Opens a tcpip port           
-            %open Creates and opens a TCP server.  Waits for ready word
-            self.server = tcpip(self.remoteAddress,self.remotePort,'networkrole','server');
-            self.server.Terminator = 'CR/LF';
-            self.server.BytesAvailableFcn = @(src,event) self.resp(src,event);
+            %open Creates and opens a TCP conn.  Waits for ready word
+            self.conn = tcpip(self.remoteAddress,self.remotePort,'networkrole','client');
+            self.conn.Terminator = 'CR/LF';
+            self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
             self.connected = false;
-            fprintf(1,'Waiting for connection from ReBeKa...\n');
-            fopen(self.server);
+            fprintf(1,'Attempting connection...\n');
+            fopen(self.conn);
+            fprintf(1,'Connection successful!\n');
+            self.connected = true;
         end %end open
         
         function setFunc(self)
-            self.server.BytesAvailableFcn = @(src,event) self.resp(src,event);
+            self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
         end
         
         function r = findTCPPort(self)
@@ -71,24 +73,24 @@ classdef RemoteControl < handle
         
         function r = read(self)
             %READ Reads available data from TCP connection
-            r = fgetl(self.server);
+            r = fgetl(self.conn);
         end %end read
         
         function r = waitForReady(self)
             %WAITFOREADY Returns true when the readyWord appears
-            while self.server.BytesAvailable <= length(self.readyWord)
+            while self.conn.BytesAvailable <= length(self.readyWord)
                 pause(self.waitTime); 
             end
             r = strcmpi(self.read,self.readyWord);
         end %end waitForReady
         
         function stop(self)
-            %STOP Releases client from remote control and closes TCP server
-            if strcmpi(self.server.Status,'open')
-                fprintf(self.server,'%s\n',self.endWord);
-                fclose(self.server);
+            %STOP Releases client from remote control and closes TCP conn
+            if strcmpi(self.conn.Status,'open')
+                fprintf(self.conn,'%s\n',self.endWord);
+                fclose(self.conn);
             end
-            delete(self.server);
+            delete(self.conn);
             fprintf(1,'Remote control session terminated\n');
             self.connected = false;
             self.status = self.STOPPED;
@@ -96,7 +98,7 @@ classdef RemoteControl < handle
         
         function run(self)
             %RUN Starts a single client run by sending the start word
-            fprintf(self.server,'%s\n',self.startWord);
+            fprintf(self.conn,'%s\n',self.startWord);
         end %end run
         
         function start(self)
@@ -120,7 +122,7 @@ classdef RemoteControl < handle
             %   analyzing the results and stepping forward
             s = self.read;
             if ~self.connected && strcmpi(s,self.readyWord)
-                fprintf(1,'ReBeKa connected!\n');
+                fprintf(1,'Interface connected!\n');
                 self.connected = true;
                 self.status = self.STOPPED;
             elseif strcmpi(s,self.readyWord) && strcmpi(self.status,self.RUNNING)
