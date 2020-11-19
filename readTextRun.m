@@ -10,7 +10,8 @@ dtmp = [];
 while ~feof(fid)
     l = fgetl(fid);
     ch = strrep(l(1:3),' ','');
-    valstr = split(strip(l(4:end)));
+%     valstr = split(strip(l(4:end)));
+    valstr = strsplit(strtrim(l(4:end)));
     switch ch(1)
         case 't'
             nn = size(t,1)+1;

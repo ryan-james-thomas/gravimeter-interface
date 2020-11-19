@@ -13,7 +13,7 @@ classdef TimingSequence < handle
     end
 
     properties(SetAccess = protected)
-        compiledData
+        data
     end
 
     properties(Constant)
@@ -163,18 +163,23 @@ classdef TimingSequence < handle
                 tmpCurrent = buf(nn,2:end);
                 tmpCurrent(isnan(tmpCurrent)) = tmpOld(isnan(tmpCurrent));
                 buf(nn,2:end) = tmpCurrent;
+                
+                %Last two digital channels switch at each update
+                buf(nn,1+self.numDigitalChannels+(-1:0)) = double(~buf(nn-1,1+self.numDigitalChannels+(-1:0)));
             end
             %One column for time, one for all digital channels, and one for each analog channel
             bits = zeros(1,self.numDigitalChannels);
             for nn = 1:numel(bits)
                 bits(nn) = self.channels(nn).bit;
             end
-            data = [buf(:,1),sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2),buf(:,1+(self.numDigitalChannels+1):self.numChannels)];
-            if size(data,1) > self.MAX_INSTRUCTIONS
-                error('Instruction set size of %d is larger than maximum size of %d!',size(data,1),self.MAX_INSTRUCTIONS);
+            
+            if size(buf,1) > self.MAX_INSTRUCTIONS
+                error('Instruction set size of %d is larger than maximum size of %d!',size(buf,1),self.MAX_INSTRUCTIONS);
             end
-            data(:,1) = data(:,1)/self.SAMPLE_CLK;
-            self.compiledData = data;
+            
+            self.data.t = buf(:,1)/self.SAMPLE_CLK;
+            self.data.d = uint32(sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2));
+            self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
         end
 
         function plot(self,offset)

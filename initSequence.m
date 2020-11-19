@@ -25,6 +25,9 @@ function sq = initSequence
     sq.channels(26).setName('F MOD Imaging Trigger','D1').setDefault(0);
     sq.channels(30).setName('Drop 1 Camera Trig','D5').setDefault(0);
     
+    sq.channels(31).setDefault(1);
+    sq.channels(32).setDefault(0);
+    
     %% Name analog channels
     sq.analog(1).setName('2D MOT Freq','AO/0').setDefault(7.65);
     sq.analog(2).setName('3D MOT Freq','AO/1').setDefault(6.85);
@@ -45,7 +48,7 @@ function sq = initSequence
     sq.analog(17).setName('CO/0 - dead','CO/0');
     sq.analog(18).setName('CO/1 - dead','CO/1');
     sq.analog(19).setName('3D Coils','CO/2').setDefault(0.42);
-    sq.analog(20).setName('Bias E/W','CO/3').setDefault(3.9572);
+    sq.analog(20).setName('Bias E/W','CO/3').setDefault(3.957);
     sq.analog(21).setName('Bias N/S','CO/4').setDefault(3.48);
     sq.analog(22).setName('Bias U/D','CO/5').setDefault(0);
     sq.analog(23).setName('Stern-Gerlach Amp','CO/6').setDefault(0);

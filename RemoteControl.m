@@ -23,8 +23,10 @@ classdef RemoteControl < handle
     
     properties(Constant, Hidden=true)
         readyWord = 'ready';          %Word indicating that client is ready
-        startWord = 'start';          %Word telling client to start
-        endWord = 'end';              %Word telling client to stop TCP loop
+        startWord = 'start';          %Word telling host to start
+        endWord = 'end';              %Word telling host to stop TCP loop
+        uploadDWord = 'uploadD';      %Word telling host to upload digital (uint32) data
+        uploadAWord = 'uploadA';      %Word telling host to upload analog (float) data
 
         SET = 'set/check';
         ANALYZE = 'analyze';
@@ -49,6 +51,7 @@ classdef RemoteControl < handle
             self.conn.Terminator = 'CR/LF';
             self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
             self.connected = false;
+            self.conn.OutputBufferSize = 2^24;
             fprintf(1,'Attempting connection...\n');
             fopen(self.conn);
             fprintf(1,'Connection successful!\n');
@@ -87,7 +90,7 @@ classdef RemoteControl < handle
         function stop(self)
             %STOP Releases client from remote control and closes TCP conn
             if strcmpi(self.conn.Status,'open')
-                fprintf(self.conn,'%s\n',self.endWord);
+%                 fprintf(self.conn,'%s',self.endWord);
                 fclose(self.conn);
             end
             delete(self.conn);
@@ -95,6 +98,41 @@ classdef RemoteControl < handle
             self.connected = false;
             self.status = self.STOPPED;
         end %end fclose
+        
+        function upload(self,data)
+            %UPLOAD uploads data to host
+            %
+            %   upload(r,data) with r the RemoteControl object and data a
+            %   2D array with times in the first column, a 32 bit digital
+            %   value in the second column, and 24 analog values in the rest
+            if isnumeric(data)
+                if size(data,2) ~= 26
+                    error('Numeric input array must have 26 columns!');
+                end
+                d = uint32(round(data(:,2)));
+                a = data(:,[1,3:end]);
+            elseif isstruct(data)
+                d = uint32(data.d);
+                a = [data.t,data.a];
+                if size(d,1) ~= size(a,1)
+                    error('Analog and digital columns must have the same size!');
+                elseif size(data.a) ~= 24
+                    error('Data ''a'' field must have 24 columns');
+                end
+            end
+            
+            fprintf(self.conn,'%s\n',self.uploadAWord);
+            s = sprintf(['%.6f',repmat(',%.6f',1,24),'%%'],a');
+            pause(0.1);
+            fprintf(self.conn,s);
+            
+            fprintf(self.conn,'%s\n',self.uploadDWord);
+            s = sprintf('%d,%%',d);
+            s = s(1:end-3);
+            pause(0.1);
+            fprintf(self.conn,s);
+            
+        end
         
         function run(self)
             %RUN Starts a single client run by sending the start word
