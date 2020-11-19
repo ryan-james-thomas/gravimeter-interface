@@ -3,47 +3,50 @@ function sq = makeSequence(varargin)
     sq = initSequence;
 
     %% Set up the MOT loading values
-    sq.find('2D MOT Freq').at(0,4);
-    sq.find('push freq').at(0,3);
-
-    sq.find('3D MOT Freq').at(0,3);
-    sq.find('repump freq').at(0,3);
-    sq.find('3D MOT amp').at(0,3);
-    sq.find('repump amp').at(0,3);
-
-    sq.find('3D coils').at(0,2);
-    sq.find('bias e/w').at(0,0);
-    sq.find('bias N/S').at(0,0);
-    sq.find('bias u/d').at(0,0);
+    Tmot = 6;
+    
+    sq.find('MOT coil TTL').set(1);
+    sq.anchor(sq.latest+Tmot);
 
     %% Compressed MOT stage
-    Tmot = 6;
-    sq.find('2D MOT Amp TTL').after(Tmot,0);
-    sq.find('3D MOT freq').after(Tmot,4);
-    sq.find('repump freq').after(Tmot,4);
-    sq.find('Repump amp').after(Tmot,2);
-    sq.find('3D coils').after(Tmot,1);
+    sq.find('2D MOT Amp TTL').set(0);
+    sq.find('push amp ttl').set(0);
+    
+    sq.find('3D MOT freq').set(5.6);
+    sq.find('repump freq').set(2.5);
+    sq.find('Repump amp').set(2);
+    sq.find('3D coils').set(0.12);
+    sq.find('bias e/w').set(0);
+    sq.find('bias n/s').set(0.5);
+    sq.find('bias u/d').set(0);
+    
+    Tcmot = 16e-3;
+    sq.anchor(sq.latest+Tcmot);
 
     %% PGC stage
-    Tcmot = 20e-3;
     Tpgc = 20e-3;
-    t = Tcmot + linspace(0,Tpgc,50);
+    t = linspace(0,Tpgc,100);
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
-    sq.find('3D MOT amp').after(t,f(3,1));
-    sq.find('3D MOT freq').after(t,f(4,5));
-    sq.find('repump freq').after(t,f(4,5);
-    sq.find('3D coils').after(t,f(1,0));
+    sq.find('3D MOT amp').after(t,f(5,2.95));
+    sq.find('3D MOT freq').after(t,f(5.6,5));
+    
+    sq.find('repump freq').after(t,f(2.5,2.3));
+    sq.find('3D coils').after(t,f(0.12,0.06));
 
-    sq.channels.anchor(sq.latest);
+    sq.anchor(sq.latest);
 
-    sq.find('3D MOT Amp TTL').after(0,0);
+    sq.find('3D MOT Amp TTL').set(0);
+    sq.find('3D mot amp ttl').after(6e-3,0);
+    
+    sq.anchor(sq.latest);
 
     %% Imaging stage
     tof = 20e-3;
     pulseTime = 30e-6;
     cycleTime = 20e-3;
     sq.find('Imaging amp ttl').after(tof,1);
+    sq.find('repump freq').after(tof,2.6);
     sq.find('imaging amp ttl').after(pulseTime,0);
     sq.find('Imaging amp ttl').after(cycleTime,1);
     sq.find('imaging amp ttl').after(pulseTime,0);
