@@ -59,9 +59,13 @@ classdef TimingSequence < handle
             %   ch = digital(self,IDX) returns digital channel IDX
             %   This is equivalent to self.channels(IDX);
             
-            ch = self.channels(idx);
-            if ~ch.IS_DIGITAL
-                error('Specified channel %d is not a digital channel',idx);
+            if nargin < 2
+                ch = self.channels(1:self.numDigitalChannels);
+            else
+                ch = self.channels(idx);
+                if ~ch.IS_DIGITAL
+                    error('Specified channel %d is not a digital channel',idx);
+                end
             end
         end
 
@@ -71,9 +75,13 @@ classdef TimingSequence < handle
             %   ch = analog(self,IDX) returns analog channel IDX
             %   This is equivalent to self.channels(self.numDigitalChannels+IDX);
             
-            ch = self.channels(self.numDigitalChannels + idx);
-            if ~ch.IS_ANALOG
-                error('Specified channel %d is not a analog channel',idx);
+            if nargin < 2
+                ch = self.channels((self.numDigitalChannels+1):self.numChannels);
+            else
+                ch = self.channels(self.numDigitalChannels + idx);
+                if ~ch.IS_ANALOG
+                    error('Specified channel %d is not a analog channel',idx);
+                end
             end
         end
 
@@ -87,6 +95,16 @@ classdef TimingSequence < handle
                     ch = self.channels(nn);
                     break;
                 end
+            end
+        end
+        
+        function self = anchor(self,time)
+            %ANCHOR Sets the latest time for each channel to TIME
+            %
+            %
+            
+            for nn = 1:self.numChannels
+                self.channels(nn).anchor(time);
             end
         end
 
@@ -173,9 +191,9 @@ classdef TimingSequence < handle
             end
             str = {};
             for nn = 1:self.numChannels
-                self.channels(nn).plot((jj-1)*offset);
+                self.channels(nn).plot((jj-1)*offset,self.latest);
                 hold on;
-                if self.channels(nn).getNumValues > 0
+                if self.channels(nn).exists
                     if isempty(self.channels(nn).name)
                         str{jj} = sprintf('Ch %d',nn);  %#ok<AGROW>
                     else
@@ -187,6 +205,30 @@ classdef TimingSequence < handle
             hold off;
             legend(str);
             xlabel('Time [s]');
+        end
+        
+        function disp(self)
+            %DISP Creates a display of hte object
+            fprintf(1,'\tTimingSequence object with properties:\n');
+            fprintf(1,'\t\tNumber of Digital Channels: %d\n',self.numDigitalChannels);
+            fprintf(1,'\t\t Number of Analog Channels: %d\n',self.numAnalogChannels);
+            fprintf(1,'\t\t      Instruction set size: %d\n',size(self.compiledData,1));
+            fprintf(1,'\n');
+            fprintf(1,'\tDigital channels:\n');
+            fprintf(1,'\t%-10s\t\t%-20s\t\t%-s\n','Port','Name','Description');
+            for ch = self.digital()
+                if ~isempty(ch.name)
+                    fprintf(1,'\t%-10s\t\t%-20s\t\t%-s\n',ch.port,ch.name,ch.description);
+                end
+            end
+            fprintf(1,'\n');
+            fprintf(1,'\tAnalog channels:\n');
+            fprintf(1,'\t%-10s\t\t%-20s\t\t%-s\n','Port','Name','Description');
+            for ch = self.analog()
+                if ~isempty(ch.name)
+                    fprintf(1,'\t%-10s\t\t%-20s\t\t%-s\n',ch.port,ch.name,ch.description);
+                end
+            end
         end
 
     end

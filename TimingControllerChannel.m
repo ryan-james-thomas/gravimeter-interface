@@ -9,11 +9,12 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
         name        %Name of the channel
         port        %Fixed port of the channel
         description %Description of the channel
-        default     %Default value for this channel
+        
         manual      %Manual value
     end
     
     properties(SetAccess = protected)
+        default     %Default value for this channel
         
         values      %Array of values in channel sequence.  Only 0 or 1 values are allowed
         times       %Array of times in the channel sequence in seconds
@@ -33,10 +34,11 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.IS_DIGITAL = false;
             ch.IS_ANALOG = false;
             ch.bounds = [0,0];
-            ch.default = 0;
+            ch.setDefault(0);
             ch.manual = ch.default;
             ch.reset;
             ch.numValues = 0;
+            ch.lastTime = 0;
         end
         
         function ch = setName(ch,name,port,description)
@@ -61,6 +63,22 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   to v
             ch.checkValue(v);
             ch.default = v;
+            if numel(ch.times) == 0
+                ch.times = 0;
+                ch.values = ch.default;
+            else
+                idx = find(ch.times == 0);
+                if isempty(idx)
+                    ch.times(end+1) = 0;
+                    ch.values(end+1) = ch.default;
+                    lt = ch.lastTime;
+                    ch.sort;
+                    ch.lastTime = lt;
+                else
+                    ch.values(idx) = ch.default;
+                end
+            end
+            ch.numValues = numel(ch.times);
         end
         
         function [t,v] = getEvents(ch)
@@ -83,14 +101,14 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 t = [0;ch.times];
                 v = [ch.default;ch.values];
             end
+%             ch.numValues = numel(t);
         end
         
-        function N = getNumValues(ch)
-            %getNumValues Returns the number of time/value pairs
-            %
-            %   N = ch.getNumValues returns the number of time/value pairs
-            %   N
-            N = ch.numValues;
+        function r = exists(ch)
+            %EXISTS Indicates if channel sequence is more than just the
+            %default value
+            
+            r = ~(numel(ch.times) == 1 && ch.times(1) == 0);
         end
 
         function ch = setBounds(ch,bounds)
@@ -160,6 +178,20 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.at(varargin{:});
         end
         
+        function ch = set(ch,value)
+            %SET Sets a value at the current lastTime
+            %
+            %   ch = set(ch,value) sets the current value to be value at time
+            %   lastTime
+            if numel(ch) > 1
+                for nn = 1:numel(ch)
+                    ch(nn).at(ch(nn).lastTime,value);
+                end
+            else
+                ch.at(ch.lastTime,value);
+            end
+        end
+        
         function ch = after(ch,delay,value)
             %AFTER Adds a value to the events after the last added event
             %
@@ -212,8 +244,9 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %LAST Returns the last time and last value
             %
             %   [t,v] = ch.last returns the last time t and last value v
-            time = ch.times(end);
-            value = ch.values(end);
+            [t,v] = ch.getEvents;
+            time = t(end);
+            value = v(end);
         end
         
         function ch = reset(ch)
@@ -221,8 +254,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   ch = ch.reset resets the channel
             ch.times = [];
             ch.values = [];
-            ch.numValues = 0;
-            ch.lastTime = [];
+            ch.setDefault(ch.default);
+            ch.sort;
         end
         
         function ch = sort(ch)
@@ -246,9 +279,9 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %
             %   ch = ch.check checks the event times and removes sequence
             %   if nothing happens
-            if numel(unique(ch.values))==1
-                ch.reset;
-            end
+%             if numel(unique(ch.values))==0
+%                 ch.reset;
+%             end
             if any(ch.times<0)
                 error('All times must be greater than 0 (no acausal events)!');
             end
@@ -276,7 +309,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
         end
 
         
-        function ch = plot(ch,offset)
+        function ch = plot(ch,offset,finalTime)
             %PLOT Plots the current sequence as a function of time.
             %
             %   ch.plot plots the current sequence as a function of time.
@@ -285,17 +318,28 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   ch.plot(OFFSET) plots the current sequence with a vertical 
             %   offset given by OFFSET.  This is useful if you want to plot
             %   multiple signals on the same plot
+            %
+            %   ch.plot(OFFSET,FINALTIME) plots the current sequence with
+            %   OFFSET and extends plot to FINALTIME
             [t,v] = ch.getEvents;
-            tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
-            if numel(v)==1
-%                 fprintf(1,'No events on this channel (%d). Plot not generated.\n',ch.bit);
+            if ~ch.exists
                 return
             end
+            
+            if nargin >= 3 && t(end) ~= finalTime
+                t = [t;finalTime];
+                v = [v;v(end)];
+            end
+            tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
             vplot = interp1(t,v,tplot,'previous');
-            if nargin==2
+            if nargin >= 2
                 vplot = vplot+offset;
             end
-            plot(tplot,vplot,'.-','linewidth',1.5);
+            if ~ch.IS_DIGITAL
+                plot(tplot,vplot,'.-','linewidth',1.5);
+            else
+                plot(tplot,vplot,'.--','linewidth',1.5);
+            end
         end
         
     end
