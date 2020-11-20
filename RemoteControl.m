@@ -14,7 +14,7 @@ classdef RemoteControl < handle
         callback    %Callback function, takes argument of Rebeka selfect
     end
     
-    properties(Constant)
+    properties(SetAccess = protected)
         remoteAddress = 'localhost';    %Connect to local host
         remotePort = 6666;            %Remote port to use
         waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
@@ -47,15 +47,20 @@ classdef RemoteControl < handle
         function open(self)
             %OPEN Opens a tcpip port           
             %open Creates and opens a TCP conn.  Waits for ready word
-            self.conn = tcpip(self.remoteAddress,self.remotePort,'networkrole','client');
-            self.conn.Terminator = 'CR/LF';
-            self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
-            self.connected = false;
-            self.conn.OutputBufferSize = 2^24;
-            fprintf(1,'Attempting connection...\n');
-            fopen(self.conn);
-            fprintf(1,'Connection successful!\n');
-            self.connected = true;
+            if isempty(self.conn) || ~isvalid(self.conn)
+                self.conn = tcpip(self.remoteAddress,self.remotePort,'networkrole','client');
+                self.conn.Terminator = 'CR/LF';
+                self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
+                self.connected = false;
+                self.conn.OutputBufferSize = 2^24;
+            end
+            
+            if strcmpi(self.conn.Status,'closed')
+                fprintf(1,'Attempting connection...\n');
+                fopen(self.conn);
+                fprintf(1,'Connection successful!\n');
+                self.connected = true;
+            end
         end %end open
         
         function setFunc(self)
@@ -121,6 +126,8 @@ classdef RemoteControl < handle
                 end
             end
             
+            self.open;
+            
             fprintf(self.conn,'%s\n',self.uploadAWord);
             s = sprintf(['%.6f',repmat(',%.6f',1,24),'%%'],a');
             pause(0.1);
@@ -136,6 +143,7 @@ classdef RemoteControl < handle
         
         function run(self)
             %RUN Starts a single client run by sending the start word
+            self.open;
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
         

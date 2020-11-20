@@ -107,6 +107,15 @@ classdef TimingSequence < handle
                 self.channels(nn).anchor(time);
             end
         end
+        
+        function self = delay(self,time)
+            %DELAY sets latest time for each channel to the latest time in
+            %the sequence + TIME
+            lastTime = self.latest;
+            for nn = 1:self.numChannels
+                self.channels(nn).anchor(lastTime + time);
+            end
+        end
 
         function time = latest(self)
             %LATEST Returns the latest update time
@@ -217,7 +226,7 @@ classdef TimingSequence < handle
             fprintf(1,'\tTimingSequence object with properties:\n');
             fprintf(1,'\t\tNumber of Digital Channels: %d\n',self.numDigitalChannels);
             fprintf(1,'\t\t Number of Analog Channels: %d\n',self.numAnalogChannels);
-            fprintf(1,'\t\t      Instruction set size: %d\n',size(self.compiledData,1));
+            fprintf(1,'\t\t      Instruction set size: %d\n',size(self.data,1));
             fprintf(1,'\n');
             fprintf(1,'\tDigital channels:\n');
             fprintf(1,'\t%-10s\t\t%-20s\t\t%-s\n','Port','Name','Description');
