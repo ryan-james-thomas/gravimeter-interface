@@ -269,6 +269,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 ch.values = ch.values(K);
                 ch.lastTime = ch.times(end);
             end
+            ch.numValues = numel(ch.times);
         end
         
         function ch = checkTimes(ch)
@@ -306,6 +307,23 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             for nn = 1:numel(ch.values)
                 ch.checkValue(ch.values(nn));
             end
+        end
+
+        function ch = reduce(ch)
+            %REDUCE Reduces channel events to only those which change the value
+
+            ch.sort;
+            [t,v] = ch.getEvents;
+            ch.times = t(1);ch.values = v(1);
+            idx = 2;
+            for nn = 2:numel(v)
+                if v(nn) ~= v(nn-1)
+                    ch.times(idx,1) = t(nn);
+                    ch.values(idx,1) = v(nn);
+                    idx = idx + 1;
+                end
+            end
+            ch.sort;
         end
 
         

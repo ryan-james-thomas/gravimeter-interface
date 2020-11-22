@@ -13,7 +13,7 @@ classdef TimingSequence < handle
     end
 
     properties(SetAccess = protected)
-        data
+        data            %Compiled data as a structure with field t (times), d (32-bit unsigned integer array), and a (double-precision 2D array)
     end
 
     properties(Constant)
@@ -33,7 +33,7 @@ classdef TimingSequence < handle
             self.numDigitalChannels = numDigitalChannels;
             self.numAnalogChannels = numAnalogChannels;
             self.numChannels = self.numDigitalChannels + self.numAnalogChannels;
-            tmp(self.numChannels) = TimingControllerChannel;
+            tmp(self.numChannels) = TimingControllerChannel;    %Need to create a temporary variable because self.channels cannot be directly assigned as an array of TimingControllerChannels
             self.channels = tmp;
             for nn = 1:self.numDigitalChannels
                 self.channels(nn) = DigitalChannel(nn-1);
@@ -56,6 +56,9 @@ classdef TimingSequence < handle
         function ch = digital(self,idx)
             %DIGITAL Returns the digital channel with given index
             %
+            %   ch = digital(self) returns an array of all digital
+            %   channels
+            %   
             %   ch = digital(self,IDX) returns digital channel IDX
             %   This is equivalent to self.channels(IDX);
             
@@ -71,6 +74,8 @@ classdef TimingSequence < handle
 
         function ch = analog(self,idx)
             %ANALOG Returns the analog channel with given index
+            %
+            %   ch = analog(self) returns an array of all analog channels
             %
             %   ch = analog(self,IDX) returns analog channel IDX
             %   This is equivalent to self.channels(self.numDigitalChannels+IDX);
@@ -101,7 +106,8 @@ classdef TimingSequence < handle
         function self = anchor(self,time)
             %ANCHOR Sets the latest time for each channel to TIME
             %
-            %
+            %   sq = anchor(sq,TIME) sets the lastTime property for each channel
+            %   to TIME
             
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(time);
@@ -110,7 +116,10 @@ classdef TimingSequence < handle
         
         function self = delay(self,time)
             %DELAY sets latest time for each channel to the latest time in
-            %the sequence + TIME
+            %the sequence plus a delay
+            %
+            %   sq = delay(sq,TIME) sets the lastTime property for each channel
+            %   to the current latest time plus TIME
             lastTime = self.latest;
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(lastTime + time);
@@ -120,7 +129,7 @@ classdef TimingSequence < handle
         function time = latest(self)
             %LATEST Returns the latest update time
             %
-            %   time = latest(sq) returns the latest update time TIME for
+            %   TIME = latest(sq) returns the latest update time TIME for
             %   sequence sq
             time = 0;
             for nn = 1:self.numChannels
@@ -131,11 +140,15 @@ classdef TimingSequence < handle
             
         end
 
-        function self = compile(self)
+        function r = compile(self)
             %COMPILE Compiles the channel sequences
             %
-            %   self = self.compile creates a set of values for each 
-            %   unique time
+            %   r = compile(sq) creates a structure that represents the channel data
+            %   as seen by the gravimeter control program.  r is equivalent to the internal
+            %   property sq.data and has three fields: t, d, and a.  t is an Nx1 array of times
+            %   at which updates occur.  d is an Nx1 array of 32-bit unsigned integers that
+            %   represents the 32 digital channels.  a is an NxM array of doubles with M the number
+            %   of analog channels
 
             %Forms two arrays - one is Nx1 of times, and one is NxNUM_CHANNELS and is values
             t = [];
@@ -189,6 +202,36 @@ classdef TimingSequence < handle
             self.data.t = buf(:,1)/self.SAMPLE_CLK;
             self.data.d = uint32(sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2));
             self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
+
+            r = self.data;
+        end
+
+        function reduce(sq)
+            %REDUCE reduces updates to only those which change channel values
+
+            for ch = self.channels
+                ch.reduce;
+            end
+        end
+
+        function sq = loadCompiledData(sq,data)
+            %LOADCOMPILEDDATA Loads compiled data into channel values
+            %
+            %   sq = loadCompiledData(sq,DATA) loads compiled data DATA
+            %   into the sequence structure.  DATA should have fields t, d,
+            %   and a.  t should be Nx1 double, d should be Nx1 uint32, and 
+            %   a should be NxM double with M the number of analog channels
+
+            sq.reset;
+            for nn = 1:numel(data.t)
+                for ch = self.digital()
+                    ch.at(data.t(nn),bitget(data.d(nn),ch.bit));
+                end
+
+                for mm = 1:sq.numAnalogChannels
+                    sq.analog(mm).at(data.t(nn),data.a(nn,mm));
+                end
+            end
         end
 
         function plot(self,offset)
@@ -222,7 +265,7 @@ classdef TimingSequence < handle
         end
         
         function disp(self)
-            %DISP Creates a display of hte object
+            %DISP Creates a display of the object
             fprintf(1,'\tTimingSequence object with properties:\n');
             fprintf(1,'\t\tNumber of Digital Channels: %d\n',self.numDigitalChannels);
             fprintf(1,'\t\t Number of Analog Channels: %d\n',self.numAnalogChannels);
@@ -252,6 +295,11 @@ classdef TimingSequence < handle
             T = max(t)-min(t);
             t = (t-min(t))./T;
             v = vi + (vf-vi).*(10*t.^3-15*t.^4+6*t.^5);
+        end
+
+        function sq = buildFromCompiledData(data)
+            sq = TimingSequence(32,size(data.a,2));
+            sq.loadCompiledData(data);
         end
     end
 
