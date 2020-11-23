@@ -2,10 +2,10 @@ function sq = initSequence
     sq = TimingSequence(32,24);
     
     %% Name digital channels
-    sq.channels(1).setName('50W TTL','A0').setDefault(1);
+    sq.channels(1).setName('50W TTL','A0').setDefault(0);
     sq.channels(2).setName('DDS Trig','A1').setDefault(0);
     sq.channels(3).setName('50W Pilot','A2').setDefault(0);
-    sq.channels(4).setName('25W TTL','A3').setDefault(1);
+    sq.channels(4).setName('25W TTL','A3').setDefault(0);
     sq.channels(5).setName('25W Active','A4').setDefault(1);
     sq.channels(6).setName('A5 - N/C','A5').setDefault(0);
     sq.channels(7).setName('Bragg/Raman switch','A6','Set to 1 for Bragg, 0 for Raman').setDefault(0);
@@ -48,8 +48,8 @@ function sq = initSequence
     sq.analog(17).setName('CO/0 - dead','CO/0');
     sq.analog(18).setName('CO/1 - dead','CO/1');
     sq.analog(19).setName('3D Coils','CO/2').setDefault(0.42);
-    sq.analog(20).setName('Bias E/W','CO/3').setDefault(3.957);
-    sq.analog(21).setName('Bias N/S','CO/4').setDefault(3.48);
+    sq.analog(20).setName('Bias E/W','CO/3').setDefault(0);
+    sq.analog(21).setName('Bias N/S','CO/4').setDefault(0);
     sq.analog(22).setName('Bias U/D','CO/5').setDefault(0);
     sq.analog(23).setName('Stern-Gerlach Amp','CO/6').setDefault(0);
     sq.analog(24).setName('3D Coils Loop','CO/7').setDefault(0);

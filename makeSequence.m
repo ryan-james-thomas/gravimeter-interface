@@ -4,10 +4,10 @@ function sq = makeSequence(varargin)
 
     %% Set up the MOT loading values                
     sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
-    sq.find('3d coils').set(0.42);
-    sq.find('bias u/d').set(0);
-    sq.find('bias e/w').set(0);
-    sq.find('bias n/s').set(0);
+%     sq.find('3d coils').set(0.42);
+%     sq.find('bias u/d').set(0);
+%     sq.find('bias e/w').set(0);
+%     sq.find('bias n/s').set(0);
     
     Tmot = 6;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
@@ -15,15 +15,20 @@ function sq = makeSequence(varargin)
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
     sq.find('2D MOT Amp TTL').before(10e-3,0);
     sq.find('push amp ttl').before(10e-3,0);
+    t = linspace(0,10e-3,100);
+    f = @(vi,vf) sq.minjerk(t,vi,vf);
+    sq.find('bias e/w').after(t-10e-3,f(0,4));
+    sq.find('bias n/s').after(t-10e-3,f(0,5.55));
+    sq.find('bias u/d').after(t-10e-3,f(0,1));
     
     %Increase the cooling and repump detunings to reduce re-radiation
     %pressure, and weaken the trap
     sq.find('3D MOT freq').set(5.6);
     sq.find('repump freq').set(2.5);
-    sq.find('3D coils').set(0.12);
-    sq.find('bias e/w').set(varargin{1});
-    sq.find('bias n/s').set(0);
-    sq.find('bias u/d').set(0);
+    sq.find('3D coils').set(varargin{1});
+%     sq.find('bias e/w').set(6.7);
+%     sq.find('bias n/s').set(8.1);
+%     sq.find('bias u/d').set(0.97);
     
     Tcmot = 16e-3;                      %16 ms CMOT stage
     sq.delay(Tcmot);                    %Wait for time Tcmot
@@ -34,23 +39,26 @@ function sq = makeSequence(varargin)
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
     %Smooth ramps for these parameters
-    sq.find('3D MOT amp').after(t,f(5,2.75));
-    sq.find('3D MOT freq').after(t,f(5.6,5-0.4));
-    sq.find('3D coils').after(t,f(0.12,0.04));
+    sq.find('3D MOT Amp').after(t,f(5,2.93));
+    sq.find('3D MOT Freq').after(t,f(5.6,5));
+    sq.find('3D coils').after(t,f(varargin{1},0));
     %Linear ramp for these
     sq.find('repump freq').after(t,2.5+(2.3-2.5)*t/Tpgc);
 
     %Wait 5 ms and then turn off the repump light
-    sq.delay(5e-3);
-    sq.find('repump amp ttl').set(0);
-    sq.find('liquid crystal repump').set(7);
+    sq.delay(0);
     
+    sq.find('repump amp ttl').set(0);
+    sq.find('MOT coil ttl').set(0);
+    sq.find('liquid crystal repump').set(7);
+%     sq.delay(Tpgc);
+
     %Wait 1 ms and then turn off the MOT light - optical pumping?
-    sq.delay(1e-3);
+    sq.delay(5e-3);
     sq.find('3D mot amp ttl').set(0);
     sq.find('50W TTL').set(0);
     sq.find('25W TTL').set(0);
-    sq.find('MOT coil ttl').set(0);
+    
     sq.find('liquid crystal bragg').set(-3.64);
     
     %This command sets the internal sequence pointer for the last time to
@@ -85,6 +93,8 @@ function sq = makeSequence(varargin)
     sq.find('cam trig').after(cycleTime,1);
     sq.find('imaging amp ttl').after(pulseTime,0);
     sq.find('cam trig').after(pulseTime,0);
+%     sq.find('repump amp ttl').after(t,1);
+%     sq.find('repump amp ttl').after(pulseTime,0);
 
 
 
