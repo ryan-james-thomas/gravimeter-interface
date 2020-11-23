@@ -206,7 +206,7 @@ classdef TimingSequence < handle
             r = self.data;
         end
 
-        function reduce(sq)
+        function self = reduce(self)
             %REDUCE reduces updates to only those which change channel values
 
             for ch = self.channels
