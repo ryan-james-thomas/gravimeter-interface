@@ -214,7 +214,7 @@ classdef TimingSequence < handle
             end
         end
 
-        function sq = loadCompiledData(sq,data)
+        function self = loadCompiledData(self,data)
             %LOADCOMPILEDDATA Loads compiled data into channel values
             %
             %   sq = loadCompiledData(sq,DATA) loads compiled data DATA
@@ -222,14 +222,14 @@ classdef TimingSequence < handle
             %   and a.  t should be Nx1 double, d should be Nx1 uint32, and 
             %   a should be NxM double with M the number of analog channels
 
-            sq.reset;
+            self.reset;
             for nn = 1:numel(data.t)
                 for ch = self.digital()
-                    ch.at(data.t(nn),bitget(data.d(nn),ch.bit));
+                    ch.at(data.t(nn),bitget(data.d(nn),ch.bit+1));
                 end
 
-                for mm = 1:sq.numAnalogChannels
-                    sq.analog(mm).at(data.t(nn),data.a(nn,mm));
+                for mm = 1:self.numAnalogChannels
+                    self.analog(mm).at(data.t(nn),data.a(nn,mm));
                 end
             end
         end
@@ -300,7 +300,7 @@ classdef TimingSequence < handle
         function sq = buildFromCompiledData(data)
             sq = TimingSequence(32,size(data.a,2));
             sq.loadCompiledData(data);
-        end
+            end
     end
 
 

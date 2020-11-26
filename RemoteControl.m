@@ -144,6 +144,7 @@ classdef RemoteControl < handle
         function run(self)
             %RUN Starts a single client run by sending the start word
             self.open;
+            self.setFunc;
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
         
