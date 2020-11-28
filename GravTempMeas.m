@@ -24,11 +24,15 @@ elseif r.isSet()
         r.data.idx(2) = r.data.idx(2) + 1;
     end
     %Build/upload/run sequence
-    sq = makeSequence(r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2)));
+    % sq = makeSequence(r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2)));
 %     figure(1);clf;sq.plot;
-    sq.compile;
-    r.data.sq(r.currentRun,1) = sq.data;
-    r.upload(sq.data);
+    % sq.compile;
+    % r.data.sq(r.currentRun,1) = sq.data;
+    % r.upload(sq.data);
+
+    r.make(r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2)));
+    r.upload;
+    r.data.sq(r.currentRun,1) = r.sq.data;
     %Print information about current run
     fprintf(1,'Run %d/%d, Parameter: %.3f V, TOF: %.1f ms\n',r.currentRun,r.numRuns,...
         r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2))*1e3);
@@ -95,7 +99,7 @@ elseif r.isAnalyze()
 %         errorbar(r.data.param(1:r.data.idx(1)),r.data.Tx*1e6,r.data.dTx*1e6,'sq');
 %         errorbar(r.data.param(1:r.data.idx(1)),sqrt(r.data.Tx.*r.data.Ty)*1e6,r.data.dTx*1e6,'d');
 %         plotxx(r.data.param(1:r.data.idx(1)),r.data.N(Ntof:Ntof:end)/1e9,r.data.param(1:r.data.idx(1)),r.data.N(Ntof:Ntof:end)/1e9)
-        ylabel('Temperature [µK]');
+        ylabel('Temperature [ï¿½K]');
 
 %         errorbar(1:r.data.idx(1),r.data.Ty*1e6,r.data.dTy*1e6,'o-');
 %         hold on;
@@ -122,11 +126,11 @@ elseif r.isAnalyze()
         hold on;
         plot(r.data.param(1:r.data.idx(1))*12.9967-108.227, 1e6*r.data.yw(Ntof:Ntof:end),'sq');
         xlabel(commonxlabel)
-        ylabel('Width (µm)');
+        ylabel('Width (ï¿½m)');
         legend('x','y')
         grid on
       
-        fprintf(1,'Ty = %.3f µK, Tx = %.3f µK\n',r.data.Ty(end)*1e6,r.data.Tx(end)*1e6);
+        fprintf(1,'Ty = %.3f ï¿½K, Tx = %.3f ï¿½K\n',r.data.Ty(end)*1e6,r.data.Tx(end)*1e6);
     end
 
 
