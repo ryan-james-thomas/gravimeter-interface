@@ -1,21 +1,23 @@
 classdef RemoteControl < handle
     properties
         %% TCPIP properties
-        conn        %TCPIP connection
-        connected   %Is LabVIEW client connected?
+        conn            %TCPIP connection
+        connected       %Is LabVIEW client connected?
         %% Sequence properties
-        status      %Current status of run: RUNNING or STOPPED
-        currentRun  %Current run number
-        numRuns     %Total number of runs
+        status          %Current status of run: RUNNING or STOPPED
+        currentRun      %Current run number
+        numRuns         %Total number of runs
+        sq              %Sequence object representing current sequence
+        makerCallback   %Callback function for creating a TimingSequence object
         %% Data properties
-        mode        %Mode of callback function: SET, ANALYZE, or INIT
-        devices     %Structure listing MATLAB devices used in callback
-        data        %Data structure to use in callback function
-        callback    %Callback function, takes argument of Rebeka selfect
+        mode            %Mode of callback function: SET, ANALYZE, or INIT
+        devices         %Structure listing MATLAB devices used in callback
+        data            %Data structure to use in callback function
+        callback        %Callback function, takes argument of Rebeka object
     end
     
     properties(SetAccess = protected)
-        remoteAddress = 'localhost';    %Connect to local host
+        remoteAddress = 'localhost';  %Connect to local host
         remotePort = 6666;            %Remote port to use
         waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
 
@@ -103,13 +105,31 @@ classdef RemoteControl < handle
             self.connected = false;
             self.status = self.STOPPED;
         end %end fclose
+
+        function self = make(self,varargin)
+            %MAKE Makes the sequence to be uploaded
+            %
+            %   r = make(r,varargin) runs r.sq = r.makerCallback(varargin{:})
+            %   If r.makerCallback is empty, then uses default makeSequence() function
+            if isempty(self.makerCallback) || ~isa(self.makerCallback,'function_handle')
+                self.makerCallback = @makeSequence;
+            end
+            r.sq = self.makerCallback(varargin{:});
+        end
         
-        function upload(self,data)
+        function self = upload(self,data)
             %UPLOAD uploads data to host
             %
-            %   upload(r,data) with r the RemoteControl object and data a
+            %   r = upload(r) uploads data to control interface using the 
+            %   current sequence stored in the r.sq field
+            %
+            %   r = upload(r,data) with r the RemoteControl object and data a
             %   2D array with times in the first column, a 32 bit digital
             %   value in the second column, and 24 analog values in the rest
+            if nargin < 2
+                data = r.sq.compile;
+            end
+
             if isnumeric(data)
                 if size(data,2) ~= 26
                     error('Numeric input array must have 26 columns!');

@@ -23,11 +23,15 @@ elseif r.isSet()
         r.data.idx(2) = r.data.idx(2) + 1;
     end
     %Build/upload/run sequence
-    sq = makeSequence(r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2)));
+    % sq = makeSequence(r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2)));
 %     figure(1);clf;sq.plot;
-    sq.compile;
-    r.data.sq(r.currentRun,1) = sq.data;
-    r.upload(sq.data);
+    % sq.compile;
+    % r.data.sq(r.currentRun,1) = sq.data;
+    % r.upload(sq.data);
+
+    r.make(r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2)));
+    r.upload;
+    r.data.sq(r.currentRun,1) = r.sq.data;
     %Print information about current run
     fprintf(1,'Run %d/%d, Parameter: %.3f V, TOF: %.1f ms\n',r.currentRun,r.numRuns,...
         r.data.param(r.data.idx(1)),r.data.tof(r.data.idx(2))*1e3);
@@ -127,7 +131,7 @@ elseif r.isAnalyze()
         hold on;
         plot(r.data.param(1:r.data.idx(1)), 1e6*r.data.yw(Ntof:Ntof:end),'sq');
         xlabel(commonxlabel)
-        ylabel('Width (µm)');
+        ylabel('Width (ï¿½m)');
         legend('x','y')
         grid on
         

@@ -1,4 +1,4 @@
-function sq = makeSequence(varargin)
+function varargout = makeSequence(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
 
@@ -98,7 +98,10 @@ function sq = makeSequence(varargin)
 %     sq.find('repump amp ttl').after(pulseTime,0);
 
 
-
-
+    if nargout == 0
+        r = RemoteControl;
+        r.upload(sq.compile);
+        r.run;
+    end
 
 end
