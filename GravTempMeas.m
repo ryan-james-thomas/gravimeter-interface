@@ -3,7 +3,7 @@ function GravTempMeas(r)
 if r.isInit()
     %Initialize run
     r.data.tof = 14e-3:3e-3:29e-3; 
-%     r.data.param = 0;
+%     r.data.param = [0,1];
     r.data.param = const.randomize(8:-0.5:0);
     
     r.data.idx = [0,0];
@@ -42,13 +42,13 @@ elseif r.isAnalyze()
     
     %Analyze image data from last image
     c = Abs_Analysis('last');
-    r.data.files{nn,1} = c.filenames{1};r.data.files{nn,2} = c.filenames{2};
-    r.data.N(nn,1) = c.numAtoms;
-    r.data.Nadj(nn,1) = converter(c.numAtoms);
-    r.data.xw(nn,1) = c.zWidth;
-    r.data.x0(nn,1) = c.zPos;
-    r.data.yw(nn,1) = c.yWidth;
-    r.data.y0(nn,1) = c.yPos;
+    r.data.files{nn,1} = c.raw.files(1).name;r.data.files{nn,2} = c.raw.files(2).name;
+    r.data.N(nn,1) = c.N;
+    r.data.Nadj(nn,1) = converter(c.N);
+    r.data.xw(nn,1) = c.gaussWidth(1);
+    r.data.x0(nn,1) = c.pos(1);
+    r.data.yw(nn,1) = c.gaussWidth(2);
+    r.data.y0(nn,1) = c.pos(2);
     r.data.OD(nn,1) = c.peakOD;
     
     
@@ -94,11 +94,11 @@ elseif r.isAnalyze()
         t=datetime('now');
         today=char(t);
         %adding values of Bias fields to suptitle
-         sq = initSequence;
-        sq.loadCompiledData(r.data.sq(nn));
+%          sq = initSequence;
+%         sq.loadCompiledData(r.data.sq(nn));
         s = sprintf('E/W bias: %.3f V, N/S bias: %.3f V, U/D bias: %.3f V',...
-            sq.find('bias e/w').values(end),sq.find('bias n/s').values(end),...
-            sq.find('bias u/d').values(end));
+            r.sq.find('bias e/w').values(end),r.sq.find('bias n/s').values(end),...
+            r.sq.find('bias u/d').values(end));
 
        
         subplot(2,2,1)
@@ -131,7 +131,7 @@ elseif r.isAnalyze()
         hold on;
         plot(r.data.param(1:r.data.idx(1)), 1e6*r.data.yw(Ntof:Ntof:end),'sq');
         xlabel(commonxlabel)
-        ylabel('Width (ï¿½m)');
+        ylabel('Width (µm)');
         legend('x','y')
         grid on
         

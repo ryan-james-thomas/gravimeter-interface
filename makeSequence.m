@@ -102,6 +102,8 @@ function varargout = makeSequence(varargin)
         r = RemoteControl;
         r.upload(sq.compile);
         r.run;
+    else
+        varargout{1} = sq;
     end
 
 end

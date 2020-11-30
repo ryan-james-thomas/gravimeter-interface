@@ -49,6 +49,8 @@ classdef RemoteControl < handle
         function open(self)
             %OPEN Opens a tcpip port           
             %open Creates and opens a TCP conn.  Waits for ready word
+            self.conn = instrfindall('type','tcpip','RemotePort',self.remotePort,'RemoteHost',self.remoteAddress,...
+                'Terminator','CR/LF');
             if isempty(self.conn) || ~isvalid(self.conn)
                 self.conn = tcpip(self.remoteAddress,self.remotePort,'networkrole','client');
                 self.conn.Terminator = 'CR/LF';
@@ -69,16 +71,16 @@ classdef RemoteControl < handle
             self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
         end
         
-        function r = findTCPPort(self)
+        function instr = findTCPPort(self)
             %FINDTCPPORT Finds all existing TCP ports
-            instr = instrfindall;
-            for nn = 1:numel(instr)
-                if isa(instr(nn),'tcpip') && strcmpi(instr(nn).RemotePort,self.remotePort) && strcmpi(instr(nn).RemoteHost,self.remoteAddress)
-                    r = instr(nn);
-                    return;
-                end
-            end
-            r = false;       
+            instr = instrfindall('type','tcpip','RemotePort',self.remotePort,'RemoteHost',self.remoteAddress);
+%             for nn = 1:numel(instr)
+%                 if isa(instr(nn),'tcpip') && strcmpi(instr(nn).RemotePort,self.remotePort) && strcmpi(instr(nn).RemoteHost,self.remoteAddress)
+%                     r = instr(nn);
+%                     return;
+%                 end
+%             end
+%             r = false;       
         end
         
         function r = read(self)
@@ -114,7 +116,7 @@ classdef RemoteControl < handle
             if isempty(self.makerCallback) || ~isa(self.makerCallback,'function_handle')
                 self.makerCallback = @makeSequence;
             end
-            r.sq = self.makerCallback(varargin{:});
+            self.sq = self.makerCallback(varargin{:});
         end
         
         function self = upload(self,data)
@@ -127,7 +129,7 @@ classdef RemoteControl < handle
             %   2D array with times in the first column, a 32 bit digital
             %   value in the second column, and 24 analog values in the rest
             if nargin < 2
-                data = r.sq.compile;
+                data = self.sq.compile;
             end
 
             if isnumeric(data)
