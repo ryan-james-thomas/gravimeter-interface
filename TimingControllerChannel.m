@@ -39,6 +39,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.reset;
             ch.numValues = 0;
             ch.lastTime = 0;
+            self.port = '';
+            self.description = '';
         end
         
         function ch = setName(ch,name,port,description)
@@ -50,7 +52,9 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   ch = setName(ch,NAME,PORT,DESC) sets the name property to NAME
             %   and the description property to DESC
             ch.name = name;
-            ch.port = port;
+            if nargin == 3
+                ch.port = port;
+            end
             if nargin == 4
                 ch.description = description;
             end
