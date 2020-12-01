@@ -23,12 +23,12 @@ function varargout = makeSequence(varargin)
     
     %Increase the cooling and repump detunings to reduce re-radiation
     %pressure, and weaken the trap
-    sq.find('3D MOT freq').set(5.6);
+    sq.find('3D MOT freq').set(6);
     sq.find('repump freq').set(2.4);
     sq.find('3D coils').set(0.15);
-    sq.find('bias e/w').set(6);
+    sq.find('bias e/w').set(4);
     sq.find('bias n/s').set(6);
-    sq.find('bias u/d').set(2.5);
+    sq.find('bias u/d').set(2);
     
     Tcmot = 16e-3;                      %16 ms CMOT stage
     sq.delay(Tcmot);                    %Wait for time Tcmot
@@ -39,8 +39,8 @@ function varargout = makeSequence(varargin)
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
     %Smooth ramps for these parameters
-    sq.find('3D MOT Amp').after(t,f(5,2.8));
-    sq.find('3D MOT Freq').after(t,f(5.6,varargin{1}));
+    sq.find('3D MOT Amp').after(t,f(5,2.88));
+    sq.find('3D MOT Freq').after(t,f(6,2.9));
     sq.find('3D coils').after(t,f(0.15,0));
     %Linear ramp for these
 %     sq.find('repump freq').after(t,2.5+(2.3-2.5)*t/Tpgc);
@@ -49,7 +49,7 @@ function varargout = makeSequence(varargin)
     sq.delay(0);
     sq.find('MOT coil ttl').set(0);
     
-    sq.delay(4e-3);
+    sq.delay(varargin{1}/1000);
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
 %     sq.delay(Tpgc);
@@ -102,6 +102,8 @@ function varargout = makeSequence(varargin)
         r = RemoteControl;
         r.upload(sq.compile);
         r.run;
+    else
+        varargout{1} = sq;
     end
 
 end
