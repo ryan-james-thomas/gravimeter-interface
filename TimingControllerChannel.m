@@ -329,6 +329,15 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             end
             ch.sort;
         end
+        
+        function print(ch,idx)
+            if nargin < 2
+                idx = 1:numel(ch.times);
+            end
+            for nn = idx
+                fprintf(1,'Time: % 12.6f, Value: % 6.3f\n',ch.times(nn),ch.values(nn));
+            end 
+        end
 
         
         function ch = plot(ch,offset,finalTime)
