@@ -296,6 +296,15 @@ classdef TimingSequence < handle
             t = (t-min(t))./T;
             v = vi + (vf-vi).*(10*t.^3-15*t.^4+6*t.^5);
         end
+        
+        function v = linramp(t,vi,vf)
+            v = vi+(vf-vi)/(t(end)-t(1))*(t-t(1));
+        end
+        
+        function v = expramp(t,vi,vf,T)
+            e = exp(-(t-t(1))/T);
+            v = vi*e+(vf-vi*e(end))./(1-e(end)).*(1-e);
+        end
 
         function sq = buildFromCompiledData(data)
             sq = TimingSequence(32,size(data.a,2));

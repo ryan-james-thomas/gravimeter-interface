@@ -4,7 +4,7 @@ function sq = initSequence
     %% Name digital channels
     sq.channels(1).setName('50W TTL','A0').setDefault(0);
     sq.channels(2).setName('DDS Trig','A1').setDefault(0);
-    sq.channels(3).setName('50W Pilot','A2').setDefault(0);
+    sq.channels(3).setName('50W Pilot','A2').setDefault(1);
     sq.channels(4).setName('25W TTL','A3').setDefault(0);
     sq.channels(5).setName('25W Active','A4').setDefault(1);
     sq.channels(6).setName('A5 - N/C','A5').setDefault(0);
