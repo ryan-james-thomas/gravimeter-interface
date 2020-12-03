@@ -114,7 +114,7 @@ sq.delay(30e-6);
 sq.find('imaging aom ttl').set(0);
 sq.find('cam trig').set(0);
 ```
-In this set of commands, I have started with the `TimingSequence.anchor(time)` command which sets the `lastTime` property for *every* channel to `time`.  Similarly, the method `TimingSequence.delay(time)` first finds the latest update time (when sorted chronologically) using `TimingSequence.latest()`, and then advances every channels' `lastTime` property by `time` (which can also be negative).
+In this set of commands, I have started with the `TimingSequence.anchor(time)` command which sets the `lastTime` property for *every* channel to `time`.  Similarly, the method `TimingSequence.delay(delayTime)` (or `TimingSequence.wait(delayTime)`) advances the internal `TimingSequence.time` property by `delayTime` and sets the `lastTime` property of *every* channel to `TimingSequence.time`.  
 
 One can also mix-and-match the two paradigms (parallel and sequential) to harness the power of both.  One could write the above sequence as
 ```
@@ -127,6 +127,22 @@ sq.find('imaging aom ttl').set(0);
 sq.find('imaging shutter ttl').set(0);
 sq.find('cam trig').set(0);
 ```
+
+A slightly different function called `TimingSequence.waitFromLatest(delayTime)` first finds the latest update (chronogically speaking) and then sets that `TimingSequence.time` to that value plus `delayTime`; all channels' `lastTime` properties are set to the same value.  This is equivalent to `sq.anchor(sq.latest).wait(delayTime)`.  The difference between `wait` and `waitFromLatest` is important and best illustrated by an example with ramps. Consider the analog channel 'amp' and the sequence
+```
+sq.anchor(0);
+sq.find('amp').at(0:10,@(x) x);
+sq.wait(10);
+sq.find('amp').set(0);
+```
+This sequence ramps 'amp' from 0 to 10 in 10 s with an update every second.  At the end of the ramp (10 s from its start), the value of 'amp' is set to 0.  Now consider the same sequence but using `waitFromLatest` (and assuming only 'amp' exists).
+```
+sq.anchor(0);
+sq.find('amp').at(0:10,@(x) x);
+sq.waitFromLatest(10);
+sq.find('amp').set(0);
+```
+Since the `lastTime` value for 'amp' when the ramp is set is 10 s, the third command waits *another* 10 s after the end of the ramp before setting 'amp' to 0.  So this sequence takes a total of 20 s where the value of 'amp' for the last 10 s is 10.
 
 # Compiling data
 

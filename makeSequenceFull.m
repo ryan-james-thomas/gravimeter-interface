@@ -42,7 +42,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('3D MOT Amp').after(t,f(5,2.88));
     sq.find('3D MOT Freq').after(t,f(6,3.2));
     sq.find('3D coils').after(t,f(0.15,0.02));
-    sq.delay(0);
+    sq.delay(Tpgc);
     
     %Turn off the repump field for optical pumping - 2 ms
     sq.find('repump amp ttl').set(0);
@@ -60,7 +60,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('bias e/w').after(t,sq.linramp(t,sq.find('bias e/w').values(end),0));
     sq.find('bias n/s').after(t,sq.linramp(t,sq.find('bias n/s').values(end),6.5));
     sq.find('bias u/d').after(t,sq.linramp(t,sq.find('bias u/d').values(end),1));
-    sq.delay(0);
+    sq.delay(T);
     sq.find('mw amp ttl').set(1);   %Turn on MW once bias fields have reached their final values
     
     
@@ -69,16 +69,15 @@ function varargout = makeSequenceFull(varargin)
     Tevap = 3.25;
     t = linspace(0,Tevap,200);
     sq.find('mw freq').after(t,sq.linramp(t,6.8,7.8));
-    
+    sq.delay(Tevap);
     
     %% Weaken trap while MW frequency fixed
-    sq.delay(0);
     Trampcoils = 180e-3;
     t = linspace(0,Trampcoils,100);
     sq.find('3d coils').after(t,sq.minjerk(t,sq.find('3d coils').values(end),0.708));
+    sq.delay(Trampcoils);
     
     %% Optical evaporation
-    sq.anchor(sq.latest);
     %Ramp down magnetic trap in 1.01 s
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);

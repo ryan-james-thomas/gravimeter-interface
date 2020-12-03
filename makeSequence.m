@@ -46,7 +46,7 @@ function varargout = makeSequence(varargin)
 %     sq.find('repump freq').after(t,2.5+(2.3-2.5)*t/Tpgc);
 
     %Wait 5 ms and then turn off the repump light
-    sq.delay(0);
+    sq.delay(Tpgc);
     sq.find('MOT coil ttl').set(0);
     
     sq.delay(varargin{1}/1000);
