@@ -14,6 +14,7 @@ classdef TimingSequence < handle
 
     properties(SetAccess = protected)
         data            %Compiled data as a structure with field t (times), d (32-bit unsigned integer array), and a (double-precision 2D array)
+        time            %Current time in the object's internal accounting
     end
 
     properties(Constant)
@@ -26,7 +27,7 @@ classdef TimingSequence < handle
         function self = TimingSequence(numDigitalChannels,numAnalogChannels)
             %TimingSequence Constructs a TimingSequence object
             %
-            %   seq = TimingSequence(numDigitalChannels,numAnalogChannels)
+            %   sq = TimingSequence(numDigitalChannels,numAnalogChannels)
             %   constructs a TimingSequence object with numDigitalChannels 
             %   digital channels and numAnalogChannels analog channels
 
@@ -42,12 +43,13 @@ classdef TimingSequence < handle
             for nn = (self.numDigitalChannels+1):self.numChannels
                 self.channels(nn) = AnalogChannel;
             end
+            self.time = 0;
         end
 
 
         function self = reset(self)
             %RESET Resets the TimingSequence channels to their default state
-            
+            self.time = 0;
             for nn = 1:self.numChannels
                 self.channels(nn).reset;
             end
@@ -101,6 +103,9 @@ classdef TimingSequence < handle
                     break;
                 end
             end
+            if isempty(ch)
+                error('Channel %s not found.  Check spelling?',name);
+            end
         end
         
         function self = anchor(self,time)
@@ -109,20 +114,39 @@ classdef TimingSequence < handle
             %   sq = anchor(sq,TIME) sets the lastTime property for each channel
             %   to TIME
             
+            self.time = time;
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(time);
             end
         end
-        
+
         function self = delay(self,time)
-            %DELAY sets latest time for each channel to the latest time in
-            %the sequence plus a delay
+            %DELAY Alias for wait
+            self.wait(time);
+        end
+        
+        function self = wait(self,waitTime)
+            %WAIT sets latest time for each channel to the current sequence time
+            %plus a delay
             %
-            %   sq = delay(sq,TIME) sets the lastTime property for each channel
-            %   to the current latest time plus TIME
-            lastTime = self.latest;
+            %   sq = wait(sq,WAITTIME) sets the lastTime property for each channel
+            %   to the current value sq.time + WAITTIME
+            self.time = self.time + waitTime;
             for nn = 1:self.numChannels
-                self.channels(nn).anchor(lastTime + time);
+                self.channels(nn).anchor(self.time);
+            end
+        end
+
+        function self = waitFromLatest(self,waitTime)
+            %WAITFROMLATEST sets the lastTime property for each channel to the last
+            %chronological time among all channels plus a delay
+            %
+            %   sq = waitFromLatest(sq,WAITTIME) sets the lastTime property for each
+            %   channel to the latest time in the sequence among all channels plus
+            %   WAITTIME.
+            self.time = self.latest + waitTime;
+            for nn = 1:self.numChannels
+                self.channels(nn).anchor(self.time);
             end
         end
 
