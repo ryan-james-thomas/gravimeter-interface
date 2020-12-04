@@ -10,7 +10,7 @@ if r.isInit()
     r.data.matlabfiles.analysis = fileread('Abs_Analysis.m');
 elseif r.isSet()
     %Build/upload/run sequence
-    r.make(r.data.param(r.currentRun),r.data.param(r.currentRun));
+    r.make(r.data.param(r.currentRun),35e-3);
     r.upload;
     r.data.sq(r.currentRun,1) = r.sq.data;
     %Print information about current run

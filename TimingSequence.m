@@ -269,7 +269,7 @@ classdef TimingSequence < handle
             fprintf(1,'\tTimingSequence object with properties:\n');
             fprintf(1,'\t\tNumber of Digital Channels: %d\n',self.numDigitalChannels);
             fprintf(1,'\t\t Number of Analog Channels: %d\n',self.numAnalogChannels);
-            fprintf(1,'\t\t      Instruction set size: %d\n',size(self.data,1));
+            fprintf(1,'\t\t      Instruction set size: %d\n',size(self.data.t,1));
             fprintf(1,'\n');
             fprintf(1,'\tDigital channels:\n');
             fprintf(1,'\t%-10s\t\t%-20s\t\t%-s\n','Port','Name','Description');

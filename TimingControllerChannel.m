@@ -152,9 +152,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 end
             elseif isa(value,'function_handle') && (numel(time) > 1)
                 %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
-                for nn = 1:numel(time)
-                    ch.at(time(nn),value(time(nn)));
-                end
+                v = value(time);
+                ch.at(time,v);
             else
                 %Otherwise add single events
                 ch.checkValue(value);   %Check that value is within bounds
