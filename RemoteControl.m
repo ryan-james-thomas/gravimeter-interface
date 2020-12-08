@@ -68,6 +68,7 @@ classdef RemoteControl < handle
         end %end open
         
         function setFunc(self)
+            self.open;
             self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
         end
         
@@ -166,7 +167,7 @@ classdef RemoteControl < handle
         function run(self)
             %RUN Starts a single client run by sending the start word
             self.open;
-            self.setFunc;
+%             self.setFunc;
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
         
@@ -214,6 +215,7 @@ classdef RemoteControl < handle
         function self = init(self)
             %SET Sets the mode to INIT and calls the callback function if
             %currentRun is 1
+            self.setFunc;
             if self.currentRun==1
                 self.mode = self.INIT;
                 self.callback(self);

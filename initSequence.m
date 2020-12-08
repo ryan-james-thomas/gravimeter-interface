@@ -43,7 +43,7 @@ function sq = initSequence
     sq.analog(12).setName('MW Amp','BO/3').setDefault(0);
     sq.analog(13).setName('Repump Amp','BO/4').setDefault(9);
     sq.analog(14).setName('Liquid Crystal Repump','BO/5').setDefault(-2.22);
-    sq.analog(15).setName('Drop Repump Freq','BO/6').setDefault(0);
+    sq.analog(15).setName('Drop Repump Freq','BO/6').setDefault(4.3);
     sq.analog(16).setName('RF Frequency','BO/7').setDefault(0);
     sq.analog(17).setName('CO/0 - dead','CO/0');
     sq.analog(18).setName('CO/1 - dead','CO/1');

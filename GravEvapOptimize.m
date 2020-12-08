@@ -2,7 +2,7 @@ function GravEvapOptimize(r)
 
 if r.isInit()
     %Initialize run
-    r.data.param = const.randomize(5e-3:2.5e-3:35e-3);
+    r.data.param = const.randomize(7.5:.02:8);
     r.numRuns = numel(r.data.param);
     r.data.matlabfiles.callback = fileread('GravEvapOptimize.m');
     r.data.matlabfiles.init = fileread('gravimeter-interface/initSequence.m');
@@ -19,11 +19,14 @@ elseif r.isSet()
     
 elseif r.isAnalyze()
     nn = r.currentRun;
-    pause(2.0); %Wait for other image analysis program to finish with files
+    pause(1.0); %Wait for other image analysis program to finish with files
     
     %Analyze image data from last image
     c = Abs_Analysis('last');
     r.data.files{nn,1} = c.raw.files(1).name;r.data.files{nn,2} = c.raw.files(2).name;
+%     if c.N > 100e6
+%         c.N = 0;
+%     end
     r.data.N(nn,1) = c.N;
     r.data.Nth(nn,1) = c.N.*(1-c.becFrac);
     r.data.Nbec(nn,1) = c.N.*c.becFrac;
@@ -38,12 +41,12 @@ elseif r.isAnalyze()
     
     figure(10);clf;
     subplot(1,2,1);
-    errorbar(r.data.param(1:nn),r.data.Nth/1e6,0.05*r.data.Nth/1e6,'o');
-    hold on;
-    errorbar(r.data.param(1:nn),r.data.Nbec/1e6,0.05*r.data.Nbec/1e6,'sq');
-    errorbar(r.data.param(1:nn),r.data.N/1e6,0.05*r.data.N/1e6,'d');
+%     errorbar(r.data.param(1:nn),r.data.Nth/1e6,0.05*r.data.Nth/1e6,'o');
+%     hold on;
+%     errorbar(r.data.param(1:nn),r.data.Nbec/1e6,0.05*r.data.Nbec/1e6,'sq');
+    errorbar(r.data.param(1:nn),r.data.N/1e6,0.05*r.data.N/1e6,'o');
     plot_format('Parameter','Number of atoms \times 10^6','',12);
-    ylim([0,Inf]);
+    ylim([0,50]);
     grid on;
     subplot(1,2,2);
     plot(r.data.param(1:nn),[r.data.T,sqrt(prod(r.data.T,2))]*1e6,'o');
