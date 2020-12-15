@@ -82,6 +82,7 @@ function varargout = makeSequenceFull(varargin)
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);
     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
+    sq.find('mw freq').after(t/2,sq.linramp(t/2,sq.find('mw freq').values(end),6.8));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
     
@@ -89,13 +90,13 @@ function varargout = makeSequenceFull(varargin)
     Tevap = 1.99;
     t = 30e-3 + linspace(0,Tevap,200);
     sq.find('50W amp').after(t,sq.expramp(t,5,0.9275,0.5));
-    sq.find('25W amp').after(t,sq.expramp(t,5,1.7,0.5));
-%     sq.find('25W amp').after(linspace(0,250e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.75));
+    sq.find('25W amp').after(t,sq.expramp(t,5,2.5,0.5));
+%     sq.find('25W amp').after(linspace(0,50e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.8));
     sq.anchor(sq.latest);
     
     %% Drop atoms
     sq.anchor(sq.latest);
-%     sq.delay(0.5);
+    sq.delay(varargin{2});
     sq.find('mot coil ttl').set(0);
     sq.find('mw freq').set(0);
     sq.find('50w ttl').set(0);
@@ -110,8 +111,8 @@ function varargout = makeSequenceFull(varargin)
 
     %% Imaging stage
     makeImagingSequence(sq,'type','in trap','tof',varargin{end},...
-        'repumpTime',100e-6,'pulseTime',30e-6,'pulseDelay',30e-6,...
-        'imaging freq',varargin{1},'repumpdelay',20e-3);
+        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',30e-6,...
+        'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3);
 
     %% Automatic start
     %If no output argument is requested, then compile and run the above
@@ -131,6 +132,7 @@ function makeImagingSequence(sq,varargin)
     pulseTime = 30e-6;
     repumpTime = 100e-6;
     repumpDelay = 00e-6;
+    fibreSwitchDelay = 20e-3;
     camTime = 100e-6;
     pulseDelay = 0;
     cycleTime = 100e-3;
@@ -147,22 +149,24 @@ function makeImagingSequence(sq,varargin)
                     tof = v;
                 case 'type'
                     imgType = v;
-                case 'pulsetime'
+                case 'pulse time'
                     pulseTime = v;
-                case 'repumptime'
+                case 'repump time'
                     repumpTime = v;
-                case 'repumpdelay'
+                case 'repump delay'
                     repumpDelay = v;
-                case 'pulsedelay'
+                case 'pulse delay'
                     pulseDelay = v;
-                case 'cycletime'
+                case 'cycle time'
                     cycleTime = v;
-                case 'camtime'
+                case 'cam time'
                     camTime = v;
                 case 'repump freq'
                     repumpFreq = v;
                 case 'imaging freq'
                     imgFreq = v;
+                case 'fibre switch delay'
+                    fibreSwitchDelay = v;
                 otherwise
                     error('Unsupported option %s',p);
             end
@@ -195,8 +199,8 @@ function makeImagingSequence(sq,varargin)
         sq.find('liquid crystal repump').set(7);
         sq.find('drop repump').after(tof-repumpTime-repumpDelay,1);
         sq.find('drop repump').after(repumpTime,0);
-        sq.find('fiber switch repump').after(tof-repumpTime-repumpDelay,1);
-        sq.find('fiber switch repump').after(repumpTime,0);     
+        sq.find('fiber switch repump').after(tof-fibreSwitchDelay,1);
+%         sq.find('fiber switch repump').after(repumpTime,0);     
         if ~isempty(repumpFreq)
             sq.find('drop repump freq').after(tof-repumpTime-repumpDelay,4.3);
         end
@@ -215,5 +219,7 @@ function makeImagingSequence(sq,varargin)
     sq.find(camChannel).set(1);
     sq.find('imaging amp ttl').after(pulseTime,0);
     sq.find(camChannel).after(camTime,0);
+    sq.anchor(sq.latest);
+    sq.find('fiber switch repump').set(0);
     
 end
