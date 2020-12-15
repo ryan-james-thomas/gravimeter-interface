@@ -14,7 +14,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(0);
     
-    Tmot = 1.75;                           %6 s MOT loading time
+    Tmot = 6;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
     %% Compressed MOT stage
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
@@ -68,7 +68,7 @@ function varargout = makeSequenceFull(varargin)
     sq.delay(20e-3);
     Tevap = 3.25;
     t = linspace(0,Tevap,200);
-    sq.find('mw freq').after(t,sq.linramp(t,6.8,7.8));
+    sq.find('mw freq').after(t,sq.linramp(t,6.8,7.85));
     sq.delay(Tevap);
     
     %% Weaken trap while MW frequency fixed
@@ -82,54 +82,37 @@ function varargout = makeSequenceFull(varargin)
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);
     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
+    sq.find('mw freq').after(t/2,sq.linramp(t/2,sq.find('mw freq').values(end),6.8));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
     
-%     %At the same time, start optical evaporation
-%     Tevap = 1.99;
-%     t = 30e-3 + linspace(0,Tevap,200);
-%     sq.find('50W amp').after(t,sq.expramp(t,5,0.9275,0.5));
-%     sq.find('25W amp').after(t,sq.expramp(t,5,2,0.5));
-% %     sq.find('25W amp').after(linspace(0,250e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.9));
-%     sq.anchor(sq.latest);
+    %At the same time, start optical evaporation
+    Tevap = 1.99;
+    t = 30e-3 + linspace(0,Tevap,200);
+    sq.find('50W amp').after(t,sq.expramp(t,5,0.9275,0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,5,2.5,0.5));
+%     sq.find('25W amp').after(linspace(0,50e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.8));
+    sq.anchor(sq.latest);
     
     %% Drop atoms
     sq.anchor(sq.latest);
-    sq.delay(0.1);
+    sq.delay(varargin{2});
     sq.find('mot coil ttl').set(0);
     sq.find('mw freq').set(0);
     sq.find('50w ttl').set(0);
     sq.find('25w ttl').set(0);
-    sq.find('liquid crystal repump').set(-2.22);
-    sq.find('imaging freq').set(varargin{1});
+%     sq.find('liquid crystal repump').set(-2.22);
+%     sq.find('imaging freq').set(varargin{1});
+%     sq.find('repump amp').set(5);
+%     sq.find('repump freq').set(8.3);
+%     sq.find('repump amp ttl').after(15e-3,1);
+%     sq.find('repump amp ttl').after(100e-6,0);
+%     sq.find('liquid crystal repump').at(sq.find('repump amp ttl').last,7);
 
     %% Imaging stage
-    sq.anchor(sq.latest);
-    tof = varargin{end};    %Time-of-flight is always the last input argument
-    pulseTime = 30e-6;
-    camTime = 100e-6;
-    repumpTime = 100e-6;
-    cycleTime = 100e-3;
-    %Repump settings - repump occurs just before imaging
-    sq.find('repump freq').after(tof-repumpTime,4.3);
-    sq.find('repump amp ttl').after(tof-repumpTime,1);
-    sq.find('repump amp ttl').after(repumpTime,0);
-     
-    %Imaging beam and camera trigger for image with atoms
-    sq.find('Imaging amp ttl').after(tof,1);
-    sq.find('cam trig').after(tof,1);
-    sq.find('imaging amp ttl').after(pulseTime,0);
-    sq.find('cam trig').after(camTime,0);
-    sq.anchor(sq.latest);
-    sq.delay(cycleTime);
-    
-    %Take image without atoms
-    sq.find('Imaging amp ttl').set(1);
-    sq.find('cam trig').set(1);
-    sq.find('imaging amp ttl').after(pulseTime,0);
-    sq.find('cam trig').after(camTime,0);
-%     sq.find('repump amp ttl').after(t,1);
-%     sq.find('repump amp ttl').after(pulseTime,0);
+    makeImagingSequence(sq,'type','in trap','tof',varargin{end},...
+        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',30e-6,...
+        'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3);
 
     %% Automatic start
     %If no output argument is requested, then compile and run the above
@@ -142,4 +125,101 @@ function varargout = makeSequenceFull(varargin)
         varargout{1} = sq;
     end
 
+end
+
+function makeImagingSequence(sq,varargin)
+    imgType = 'in-trap';
+    pulseTime = 30e-6;
+    repumpTime = 100e-6;
+    repumpDelay = 00e-6;
+    fibreSwitchDelay = 20e-3;
+    camTime = 100e-6;
+    pulseDelay = 0;
+    cycleTime = 100e-3;
+    repumpFreq = 4.3;
+    imgFreq = 8.5;
+    if mod(numel(varargin),2) ~= 0
+        error('Input arguments must be in name/value pairs');
+    else
+        for nn = 1:2:numel(varargin)
+            p = lower(varargin{nn});
+            v = varargin{nn+1};
+            switch p
+                case 'tof'
+                    tof = v;
+                case 'type'
+                    imgType = v;
+                case 'pulse time'
+                    pulseTime = v;
+                case 'repump time'
+                    repumpTime = v;
+                case 'repump delay'
+                    repumpDelay = v;
+                case 'pulse delay'
+                    pulseDelay = v;
+                case 'cycle time'
+                    cycleTime = v;
+                case 'cam time'
+                    camTime = v;
+                case 'repump freq'
+                    repumpFreq = v;
+                case 'imaging freq'
+                    imgFreq = v;
+                case 'fibre switch delay'
+                    fibreSwitchDelay = v;
+                otherwise
+                    error('Unsupported option %s',p);
+            end
+        end
+    end
+    
+    switch lower(imgType)
+        case {'in trap','in-trap','trap'}
+            camChannel = 'cam trig';
+            imgType = 0;
+        case {'drop 1'}
+            camChannel = 'drop 1 camera trig';
+            imgType = 1;
+        otherwise
+            error('Unsupported imaging type %s',imgType);
+    end
+    
+    %Preamble
+    sq.find('imaging freq').set(imgFreq);
+
+    %Repump settings - repump occurs just before imaging
+    if imgType == 0
+        sq.find('liquid crystal repump').set(-2.22);
+        sq.find('repump amp ttl').after(tof-repumpTime-repumpDelay,1);
+        sq.find('repump amp ttl').after(repumpTime,0);
+        if ~isempty(repumpFreq)
+            sq.find('repump freq').after(tof-repumpTime-repumpDelay,repumpFreq);
+        end
+    elseif imgType == 1
+        sq.find('liquid crystal repump').set(7);
+        sq.find('drop repump').after(tof-repumpTime-repumpDelay,1);
+        sq.find('drop repump').after(repumpTime,0);
+        sq.find('fiber switch repump').after(tof-fibreSwitchDelay,1);
+%         sq.find('fiber switch repump').after(repumpTime,0);     
+        if ~isempty(repumpFreq)
+            sq.find('drop repump freq').after(tof-repumpTime-repumpDelay,4.3);
+        end
+    end
+     
+    %Imaging beam and camera trigger for image with atoms
+    sq.find('Imaging amp ttl').after(tof+pulseDelay,1);
+    sq.find(camChannel).after(tof,1);
+    sq.find('imaging amp ttl').after(pulseTime,0);
+    sq.find(camChannel).after(camTime,0);
+    sq.anchor(sq.latest);
+    sq.delay(cycleTime);
+    
+    %Take image without atoms
+    sq.find('Imaging amp ttl').after(pulseDelay,1);
+    sq.find(camChannel).set(1);
+    sq.find('imaging amp ttl').after(pulseTime,0);
+    sq.find(camChannel).after(camTime,0);
+    sq.anchor(sq.latest);
+    sq.find('fiber switch repump').set(0);
+    
 end

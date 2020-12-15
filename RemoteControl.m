@@ -68,6 +68,7 @@ classdef RemoteControl < handle
         end %end open
         
         function setFunc(self)
+            self.open;
             self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
         end
         
