@@ -47,28 +47,25 @@ function varargout = makeSequenceFull(varargin)
     %Turn off the repump field for optical pumping - 2 ms
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
-    sq.delay(2e-3);
+    T = 2e-3;
+    sq.find('bias u/d').set(1.25);
+    sq.find('bias e/w').set(0);
+    sq.find('bias n/s').set(7.5);
+    sq.delay(T);
     
     %% Load into magnetic trap
     sq.find('liquid crystal bragg').set(-3.64);
     sq.find('3D mot amp ttl').set(0);
     sq.find('MOT coil ttl').set(1);
     sq.find('3D coils').set(2);
-    %Ramp the bias fields to improve loading
-    T = 1e-3;
-    t = linspace(0,T,10);
-    sq.find('bias e/w').after(t,sq.linramp(t,sq.find('bias e/w').values(end),0));
-    sq.find('bias n/s').after(t,sq.linramp(t,sq.find('bias n/s').values(end),6.5));
-    sq.find('bias u/d').after(t,sq.linramp(t,sq.find('bias u/d').values(end),1));
-    sq.delay(T);
     sq.find('mw amp ttl').set(1);   %Turn on MW once bias fields have reached their final values
     
     
     %% Microwave evaporation
     sq.delay(20e-3);
-    Tevap = 3.25;
+    Tevap = 2.5;
     t = linspace(0,Tevap,200);
-    sq.find('mw freq').after(t,sq.linramp(t,6.8,7.85));
+    sq.find('mw freq').after(t,sq.linramp(t,7.1,7.8));
     sq.delay(Tevap);
     
     %% Weaken trap while MW frequency fixed
@@ -82,36 +79,34 @@ function varargout = makeSequenceFull(varargin)
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);
     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
-    sq.find('mw freq').after(t/2,sq.linramp(t/2,sq.find('mw freq').values(end),6.8));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
+%     sq.find('bias u/d').after(t,sq.linramp(t,sq.find('bias u/d').values(end),3));
+%     sq.find('bias e/w').after(t,sq.linramp(t,sq.find('bias e/w').values(end),0));
+%     sq.find('bias n/s').after(t,sq.linramp(t,sq.find('bias n/s').values(end),0));
     
     %At the same time, start optical evaporation
     Tevap = 1.99;
-    t = 30e-3 + linspace(0,Tevap,200);
-    sq.find('50W amp').after(t,sq.expramp(t,5,0.9275,0.5));
-    sq.find('25W amp').after(t,sq.expramp(t,5,2.5,0.5));
-%     sq.find('25W amp').after(linspace(0,50e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.8));
+    t = 30e-3 + linspace(0,Tevap,300);
+    P = 4.49;
+    sq.find('50W amp').after(t,sq.expramp(t,5,P/50*10,0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,5,P/25*10,0.5));
+%     sq.find('25W amp').after(linspace(0,150e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.8));
     sq.anchor(sq.latest);
     
     %% Drop atoms
     sq.anchor(sq.latest);
-    sq.delay(varargin{2});
+%     sq.delay(0);
     sq.find('mot coil ttl').set(0);
     sq.find('mw freq').set(0);
+    sq.find('mw amp ttl').set(0);
+%     sq.delay(30e-3);
     sq.find('50w ttl').set(0);
     sq.find('25w ttl').set(0);
-%     sq.find('liquid crystal repump').set(-2.22);
-%     sq.find('imaging freq').set(varargin{1});
-%     sq.find('repump amp').set(5);
-%     sq.find('repump freq').set(8.3);
-%     sq.find('repump amp ttl').after(15e-3,1);
-%     sq.find('repump amp ttl').after(100e-6,0);
-%     sq.find('liquid crystal repump').at(sq.find('repump amp ttl').last,7);
 
     %% Imaging stage
-    makeImagingSequence(sq,'type','in trap','tof',varargin{end},...
-        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',30e-6,...
+    makeImagingSequence(sq,'type','drop 2','tof',varargin{end},...
+        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3);
 
     %% Automatic start
@@ -174,10 +169,10 @@ function makeImagingSequence(sq,varargin)
     end
     
     switch lower(imgType)
-        case {'in trap','in-trap','trap'}
+        case {'in trap','in-trap','trap','drop 1'}
             camChannel = 'cam trig';
             imgType = 0;
-        case {'drop 1'}
+        case {'drop 2'}
             camChannel = 'drop 1 camera trig';
             imgType = 1;
         otherwise
