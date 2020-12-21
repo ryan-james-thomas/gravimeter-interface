@@ -2,11 +2,13 @@ function varargout = makeSequenceFull(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
     %Enable optical dipole traps
+    P25 = @(x) (x+2.5896)/2.8594;   %Gives voltage for powers in W
+    P50 = @(x) (x+4.3628)/5.7754;
+    
     sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
-    sq.find('50w amp').set(5);
-    sq.find('25w amp').set(5);
-    
+    sq.find('50w amp').set(P50(19));
+    sq.find('25w amp').set(P25(19));    
     %% Set up the MOT loading values                
     sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
     sq.find('3d coils').set(0.42);
@@ -14,7 +16,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(0);
     
-    Tmot = 5.5;                           %6 s MOT loading time
+    Tmot = 6;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
     %% Compressed MOT stage
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
@@ -42,7 +44,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('3D MOT Amp').after(t,f(5,2.88));
 %     old value
 % sq.find('3D MOT Amp').after(t,f(5,3.5));
-  sq.find('3D MOT Freq').after(t,f(6,3.2)); 
+    sq.find('3D MOT Freq').after(t,f(6,3.2)); 
 %   old value
 % sq.find('3D MOT Freq').after(t,f(6,4));
     sq.find('3D coils').after(t,f(0.15,0.02));
@@ -100,20 +102,17 @@ function varargout = makeSequenceFull(varargin)
     
     %At the same time, start optical evaporation
     Tevap = 1.97;
-%     Tevap = 1.99 old value
     t = 30e-3 + linspace(0,Tevap,300);
-%     P = 4.49; 
-% old value
-P25=4.55;
-P50=4.62;
-    sq.find('50W amp').after(t,sq.expramp(t,5,P50/50*10,0.5));
-    sq.find('25W amp').after(t,sq.expramp(t,varargin{3},P25/25*10,0.5));
+%     sq.find('50W amp').after(t,sq.expramp(t,5,P50(0.95),0.5));  %0.9275 V
+%     sq.find('25W amp').after(t,sq.expramp(t,5,P25(2.25),0.5));  %1.7 V
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
 %     sq.find('25W amp').after(linspace(0,150e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.8));
     sq.anchor(sq.latest);
     
     %% Drop atoms
     sq.anchor(sq.latest);
-%     sq.delay(0);
+%     sq.delay(1);
     sq.find('mot coil ttl').set(0);
     sq.find('mw freq').set(0);
     sq.find('mw amp ttl').set(0);
@@ -123,7 +122,7 @@ P50=4.62;
 
     %% Imaging stage
     makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
+        'repump Time',500e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3);
 
     %% Automatic start
