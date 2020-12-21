@@ -2,7 +2,7 @@ function GravEvapOptimize(r)
 
 if r.isInit()
     %Initialize run
-    r.data.param = const.randomize(0.1:0.1:1);
+    r.data.param = const.randomize(5.3:-0.01:4.8);
     r.numRuns = numel(r.data.param);
     r.makerCallback = @makeSequenceFull;
     r.data.matlabfiles.callback = fileread('GravEvapOptimize.m');
@@ -11,7 +11,7 @@ if r.isInit()
     r.data.matlabfiles.analysis = fileread('Abs_Analysis.m');
 elseif r.isSet()
     %Build/upload/run sequence
-    r.make(8.45,r.data.param(r.currentRun),217e-3);
+    r.make(8.5,216.7e-3,r.data.param(r.currentRun));
     r.upload;
     r.data.sq(r.currentRun,1) = r.sq.data;
     %Print information about current run
@@ -41,17 +41,17 @@ elseif r.isAnalyze()
     r.data.becWidth(nn,:) = c.becWidth;
     
     figure(10);clf;
-%     subplot(1,2,1);
+    subplot(1,1,1);
 %     errorbar(r.data.param(1:nn),r.data.Nth/1e6,0.05*r.data.Nth/1e6,'o');
 %     hold on;
 %     errorbar(r.data.param(1:nn),r.data.Nbec/1e6,0.05*r.data.Nbec/1e6,'sq');
     errorbar(r.data.param(1:nn),r.data.N/1e6,0.05*r.data.N/1e6,'o');
-    plot_format('Parameter','Number of atoms \times 10^6','',12);
+    plot_format('3D coils (V)','Number of atoms \times 10^6','',12);
 %     ylim([0,50]);
     grid on;
 %     subplot(1,2,2);
 %     plot(r.data.param(1:nn),[r.data.T,sqrt(prod(r.data.T,2))]*1e6,'o');
 %     plot_format('Parameter','Temperature [uK]','',12);
-%     ylim([0,Inf]);
+% %     ylim([0,Inf]);
 %     grid on;
 end

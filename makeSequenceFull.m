@@ -14,7 +14,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(0);
     
-    Tmot = 6;                           %6 s MOT loading time
+    Tmot = 5.5;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
     %% Compressed MOT stage
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
@@ -40,15 +40,24 @@ function varargout = makeSequenceFull(varargin)
 
     %Smooth ramps for these parameters
     sq.find('3D MOT Amp').after(t,f(5,2.88));
-    sq.find('3D MOT Freq').after(t,f(6,3.2));
+%     old value
+% sq.find('3D MOT Amp').after(t,f(5,3.5));
+  sq.find('3D MOT Freq').after(t,f(6,3.2)); 
+%   old value
+% sq.find('3D MOT Freq').after(t,f(6,4));
     sq.find('3D coils').after(t,f(0.15,0.02));
+%     old value
+%     sq.find('3D coils').after(t,f(0.15,0));
+
     sq.delay(Tpgc);
     
     %Turn off the repump field for optical pumping - 2 ms
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
     T = 2e-3;
-    sq.find('bias u/d').set(1.25);
+%     sq.find('bias u/d').set(1.25);
+    sq.find('bias u/d').set(.9);
+
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(7.5);
     sq.delay(T);
@@ -59,13 +68,17 @@ function varargout = makeSequenceFull(varargin)
     sq.find('MOT coil ttl').set(1);
     sq.find('3D coils').set(2);
     sq.find('mw amp ttl').set(1);   %Turn on MW once bias fields have reached their final values
-    
+%         sq.find('50w ttl').set(1);
+%     sq.find('25w ttl').set(1);
+%     sq.find('50w amp').set(5);
+%     sq.find('25w amp').set(5);
+
     
     %% Microwave evaporation
     sq.delay(20e-3);
-    Tevap = 2.5;
+    Tevap = 3.2;
     t = linspace(0,Tevap,200);
-    sq.find('mw freq').after(t,sq.linramp(t,7.1,7.8));
+    sq.find('mw freq').after(t,sq.linramp(t,7.05,7.85));
     sq.delay(Tevap);
     
     %% Weaken trap while MW frequency fixed
@@ -86,11 +99,15 @@ function varargout = makeSequenceFull(varargin)
 %     sq.find('bias n/s').after(t,sq.linramp(t,sq.find('bias n/s').values(end),0));
     
     %At the same time, start optical evaporation
-    Tevap = 1.99;
+    Tevap = 1.97;
+%     Tevap = 1.99 old value
     t = 30e-3 + linspace(0,Tevap,300);
-    P = 4.49;
-    sq.find('50W amp').after(t,sq.expramp(t,5,P/50*10,0.5));
-    sq.find('25W amp').after(t,sq.expramp(t,5,P/25*10,0.5));
+%     P = 4.49; 
+% old value
+P25=4.55;
+P50=4.62;
+    sq.find('50W amp').after(t,sq.expramp(t,5,P50/50*10,0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,varargin{3},P25/25*10,0.5));
 %     sq.find('25W amp').after(linspace(0,150e-3,100),@(t) sq.minjerk(t,sq.find('25w amp').values(end),1.8));
     sq.anchor(sq.latest);
     
@@ -105,7 +122,7 @@ function varargout = makeSequenceFull(varargin)
     sq.find('25w ttl').set(0);
 
     %% Imaging stage
-    makeImagingSequence(sq,'type','drop 2','tof',varargin{end},...
+    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
         'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3);
 
