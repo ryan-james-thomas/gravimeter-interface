@@ -17,7 +17,7 @@ classdef RemoteControl < handle
     end
     
     properties(SetAccess = protected)
-        remoteAddress = 'localhost';  %Connect to local host
+        remoteAddress = '192.168.1.30';  %Connect to local host
         remotePort = 6666;            %Remote port to use
         waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
 
@@ -167,7 +167,6 @@ classdef RemoteControl < handle
         function run(self)
             %RUN Starts a single client run by sending the start word
             self.open;
-%             self.setFunc;
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
         
