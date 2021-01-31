@@ -17,7 +17,7 @@ classdef RemoteControl < handle
     end
     
     properties(SetAccess = protected)
-        remoteAddress = '192.168.1.30';  %Connect to local host
+        remoteAddress = '192.168.1.2';  %Connect to local host
         remotePort = 6666;            %Remote port to use
         waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
 
@@ -43,6 +43,7 @@ classdef RemoteControl < handle
             self.connected = false;
             self.mode = self.INIT;
             self.status = self.STOPPED;
+            self.makerCallback = @makeSequenceFull;
             self.reset;
         end %end constructor
         
