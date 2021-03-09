@@ -5,7 +5,7 @@ function varargout = makeSequenceFull(varargin)
     P25 = @(x) (x+2.5896)/2.8594;   %Gives voltage for powers in W
     P50 = @(x) (x+4.3628)/5.7754;
     
-    sq.find('50w ttl').set(0);
+    sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
     sq.find('50w amp').set(P50(19));
     sq.find('25w amp').set(P25(19));    
@@ -82,25 +82,29 @@ function varargout = makeSequenceFull(varargin)
     
     %% Optical evaporation
     %Ramp down magnetic trap in 1.01 s
-%     Trampcoils = 1.01;
-%     Trampcoils = 100e-3;
-%     t = linspace(0,Trampcoils,100);
-%     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
-%     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
+    Trampcoils = 1.01;
+    t = linspace(0,Trampcoils,100);
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
+    sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
 %     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
 %     
 %     %At the same time, start optical evaporation
-%     sq.delay(30e-3);
-%     Tevap = 1.97;
-%     t = linspace(0,Tevap,300);
-%     sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
-%     sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
-%     sq.delay(Tevap);
+    sq.delay(30e-3);
+    Tevap = 1.97;
+    t = linspace(0,Tevap,300);
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
+    sq.delay(Tevap);
+%     T = 100e-3;
+%     t = linspace(0,T,1e2);
+%     sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50w amp').values(end),P50(varargin{3}+0.2)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25w amp').values(end),P25(varargin{3}+0.2)));
+%     sq.delay(T);
     
     %% Drop atoms
     sq.anchor(sq.latest);
-    sq.delay(20e-3);
+%     sq.delay(50e-3);
     sq.find('mw freq').set(0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
