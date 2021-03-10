@@ -164,8 +164,10 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             elseif ~isa(value,'function_handle') && (numel(time) > 1) && (numel(varargin) ~= 0)
                 %If TIME is Nx1 and VALUE and VARARGIN{...} are each
                 %Nx1, recursively add events
+                value = value(:);
                 for nn = 1:numel(varargin)
-                    value(:,nn+1) = varargin{nn};
+                    tmp = varargin{nn};
+                    value(:,nn+1) = tmp(:);
                 end
                 for nn = 1:numel(time)
                     ch.at(time(nn),value(nn,:));

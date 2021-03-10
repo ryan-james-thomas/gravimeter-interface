@@ -31,6 +31,7 @@ function varargout = makeSequence(varargin)
     sq.find('87 repump amp eom').set(4);
     t = linspace(0,0.5,100);
     sq.find('87 cooling amp eom').after(t,sq.linramp(t,sq.find('87 cooling amp eom').values(end),0));
+    sq.dds(1).after(t,110-2*t,45*ones(size(t)),zeros(size(t)));
 
     %% Automatic start
     %If no output argument is requested, then compile and run the above
