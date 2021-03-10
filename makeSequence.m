@@ -1,10 +1,17 @@
-function varargout = makeSequence(varargin)
+function varargout = makeSequenceFull(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
-
+    %Enable optical dipole traps
+    P25 = @(x) (x+2.5896)/2.8594;   %Gives voltage for powers in W
+    P50 = @(x) (x+4.3628)/5.7754;
+    
+    sq.find('50w ttl').set(1);
+    sq.find('25w ttl').set(1);
+    sq.find('50w amp').set(P50(19));
+    sq.find('25w amp').set(P25(19));    
     %% Set up the MOT loading values                
     sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
-%     sq.find('3d coils').set(0.42);
+    sq.find('3d coils').set(0.42);
     sq.find('bias u/d').set(0);
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(0);
@@ -15,11 +22,6 @@ function varargout = makeSequence(varargin)
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
     sq.find('2D MOT Amp TTL').before(10e-3,0);
     sq.find('push amp ttl').before(10e-3,0);
-    t = linspace(-10e-3,0,100);
-    f = @(vi,vf) sq.minjerk(t,vi,vf);
-%     sq.find('bias e/w').after(t,f(0,4));
-%     sq.find('bias n/s').after(t,f(0,5));
-%     sq.find('bias u/d').after(t,f(0,varargin{1}));
     
     %Increase the cooling and repump detunings to reduce re-radiation
     %pressure, and weaken the trap
@@ -39,65 +41,85 @@ function varargout = makeSequence(varargin)
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
     %Smooth ramps for these parameters
-    sq.find('3D MOT Amp').after(t,f(5,2.88));
-    sq.find('3D MOT Freq').after(t,f(6,2.9));
-    sq.find('3D coils').after(t,f(0.15,0));
-    %Linear ramp for these
-%     sq.find('repump freq').after(t,2.5+(2.3-2.5)*t/Tpgc);
+    sq.find('3D MOT Amp').after(t,f(5,3.75));
+    sq.find('3D MOT Freq').after(t,f(6,3.2)); 
+    sq.find('3D coils').after(t,f(0.15,0.02));
 
-    %Wait 5 ms and then turn off the repump light
     sq.delay(Tpgc);
-    sq.find('MOT coil ttl').set(0);
-    
-    sq.delay(varargin{1}/1000);
+    %Turn off the repump field for optical pumping - 2 ms
+    T = 2e-3;
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
-%     sq.delay(Tpgc);
-
-    %Wait 1 ms and then turn off the MOT light - optical pumping?
-    sq.delay(2e-3);
-    sq.find('3D mot amp ttl').set(0);
-    sq.find('50W TTL').set(0);
-    sq.find('25W TTL').set(0);
+    sq.find('bias u/d').set(.9);
+    sq.find('bias e/w').set(0);
+    sq.find('bias n/s').set(7.5);
+    sq.delay(T);
     
+    %% Load into magnetic trap
     sq.find('liquid crystal bragg').set(-3.64);
-    
-    %This command sets the internal sequence pointer for the last time to
-    %the time of the last update
-    sq.anchor(sq.latest);
+    sq.find('3D mot amp ttl').set(0);
+    sq.find('MOT coil ttl').set(1);
+    sq.find('3D coils').set(2);
+    sq.find('mw amp ttl').set(1);   %Turn on MW once bias fields have reached their final values
 
-    %I've added these commands because they seemed to be in the original
-    %runs at 6.05 s for some reason
-    sq.find('50W Amp').at(6.05,0.92);
-    sq.find('25W Amp').at(6.05,1.974);
-    sq.find('MW Freq').at(6.05,0);
-    sq.find('liquid crystal repump').at(6.05,-2.22);
+    %% Microwave evaporation
+    sq.delay(20e-3);
+    evapRate = 0.3;
+    evapStart = 7.2;
+    evapEnd = 7.9;
+    Tevap = (evapEnd-evapStart)/evapRate;
+%     Tevap = 3.2;
+    t = linspace(0,Tevap,100);
+%     sq.find('mw freq').after(t,sq.linramp(t,7.05,7.85));
+    sq.find('mw freq').after(t,sq.linramp(t,evapStart,evapEnd));
+    sq.delay(Tevap);
+    
+    %% Weaken trap while MW frequency fixed
+    Trampcoils = 180e-3;
+    t = linspace(0,Trampcoils,100);
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0.508));
+    sq.delay(Trampcoils);
+    
+    %% Optical evaporation
+    %Ramp down magnetic trap in 1.01 s
+    Trampcoils = 1.01;
+    t = linspace(0,Trampcoils,100);
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
+    sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
+    sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
+%     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
+%     
+%     %At the same time, start optical evaporation
+    sq.delay(30e-3);
+    Tevap = 1.97;
+    t = linspace(0,Tevap,300);
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
+    sq.delay(Tevap);
+%     T = 100e-3;
+%     t = linspace(0,T,1e2);
+%     sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50w amp').values(end),P50(varargin{3}+0.2)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25w amp').values(end),P25(varargin{3}+0.2)));
+%     sq.delay(T);
+    
+    %% Drop atoms
+    sq.anchor(sq.latest);
+%     sq.delay(50e-3);
+    sq.find('mw freq').set(0);
+    sq.find('mw amp ttl').set(0);
+    sq.find('mot coil ttl').set(0);
+    sq.find('50w ttl').set(0);
+    sq.find('25w ttl').set(0);
 
     %% Imaging stage
-%     tof = 25e-3;
-    tof = varargin{2};
-    pulseTime = 100e-6;
-    cycleTime = 100e-3;
-    %Repump settings - repump occurs just before imaging
-    sq.find('repump freq').after(tof-pulseTime,4.3);
-    sq.find('repump amp ttl').after(tof-pulseTime,1);
-    sq.find('repump amp ttl').after(pulseTime,0);
-%     
-    %Imaging beam and camera trigger for image with atoms
-    sq.find('Imaging amp ttl').after(tof,1);
-    sq.find('cam trig').after(tof,1);
-    sq.find('imaging amp ttl').after(pulseTime,0);
-    sq.find('cam trig').after(pulseTime,0);
-    
-    %Take image without atoms
-    sq.find('Imaging amp ttl').after(cycleTime,1);
-    sq.find('cam trig').after(cycleTime,1);
-    sq.find('imaging amp ttl').after(pulseTime,0);
-    sq.find('cam trig').after(pulseTime,0);
-%     sq.find('repump amp ttl').after(t,1);
-%     sq.find('repump amp ttl').after(pulseTime,0);
+    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
+        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
+        'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
+        'manifold',1);
 
-
+    %% Automatic start
+    %If no output argument is requested, then compile and run the above
+    %sequence
     if nargout == 0
         r = RemoteControl;
         r.upload(sq.compile);
@@ -106,4 +128,105 @@ function varargout = makeSequence(varargin)
         varargout{1} = sq;
     end
 
+end
+
+function makeImagingSequence(sq,varargin)
+    imgType = 'in-trap';
+    pulseTime = 30e-6;
+    repumpTime = 100e-6;
+    repumpDelay = 00e-6;
+    fibreSwitchDelay = 20e-3;
+    camTime = 100e-6;
+    pulseDelay = 0;
+    cycleTime = 100e-3;
+    repumpFreq = 4.3;
+    imgFreq = 8.5;
+    manifold = 1;
+    if mod(numel(varargin),2) ~= 0
+        error('Input arguments must be in name/value pairs');
+    else
+        for nn = 1:2:numel(varargin)
+            p = lower(varargin{nn});
+            v = varargin{nn+1};
+            switch p
+                case 'tof'
+                    tof = v;
+                case 'type'
+                    imgType = v;
+                case 'pulse time'
+                    pulseTime = v;
+                case 'repump time'
+                    repumpTime = v;
+                case 'repump delay'
+                    repumpDelay = v;
+                case 'pulse delay'
+                    pulseDelay = v;
+                case 'cycle time'
+                    cycleTime = v;
+                case 'cam time'
+                    camTime = v;
+                case 'repump freq'
+                    repumpFreq = v;
+                case 'imaging freq'
+                    imgFreq = v;
+                case 'fibre switch delay'
+                    fibreSwitchDelay = v;
+                case 'manifold'
+                    manifold = v;
+                otherwise
+                    error('Unsupported option %s',p);
+            end
+        end
+    end
+    
+    switch lower(imgType)
+        case {'in trap','in-trap','trap','drop 1'}
+            camChannel = 'cam trig';
+            imgType = 0;
+        case {'drop 2'}
+            camChannel = 'drop 1 camera trig';
+            imgType = 1;
+        otherwise
+            error('Unsupported imaging type %s',imgType);
+    end
+    
+    %Preamble
+    sq.find('imaging freq').set(imgFreq);
+
+    %Repump settings - repump occurs just before imaging
+    %If manifold is set to image F = 1 state, enable repump. Otherwise,
+    %disable repumping
+    if imgType == 0 && manifold == 1
+        sq.find('liquid crystal repump').set(-2.22);
+        sq.find('repump amp ttl').after(tof-repumpTime-repumpDelay,1);
+        sq.find('repump amp ttl').after(repumpTime,0);
+        if ~isempty(repumpFreq)
+            sq.find('repump freq').after(tof-repumpTime-repumpDelay,repumpFreq);
+        end
+    elseif imgType == 1 && manifold == 1
+        sq.find('liquid crystal repump').set(7);
+        sq.find('drop repump').after(tof-repumpTime-repumpDelay,1);
+        sq.find('drop repump').after(repumpTime,0);
+        sq.find('fiber switch repump').after(tof-fibreSwitchDelay,1);   
+        if ~isempty(repumpFreq)
+            sq.find('drop repump freq').after(tof-repumpTime-repumpDelay,4.3);
+        end
+    end
+     
+    %Imaging beam and camera trigger for image with atoms
+    sq.find('Imaging amp ttl').after(tof+pulseDelay,1);
+    sq.find(camChannel).after(tof,1);
+    sq.find('imaging amp ttl').after(pulseTime,0);
+    sq.find(camChannel).after(camTime,0);
+    sq.anchor(sq.latest);
+    sq.delay(cycleTime);
+    
+    %Take image without atoms
+    sq.find('Imaging amp ttl').after(pulseDelay,1);
+    sq.find(camChannel).set(1);
+    sq.find('imaging amp ttl').after(pulseTime,0);
+    sq.find(camChannel).after(camTime,0);
+    sq.anchor(sq.latest);
+    sq.find('fiber switch repump').set(0);
+    
 end
