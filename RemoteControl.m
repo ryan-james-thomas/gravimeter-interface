@@ -17,7 +17,7 @@ classdef RemoteControl < handle
     end
     
     properties(SetAccess = protected)
-        remoteAddress = '192.168.1.2';  %Connect to local host
+        remoteAddress = 'localhost';  %Connect to local host
         remotePort = 6666;            %Remote port to use
         waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
 
@@ -161,7 +161,7 @@ classdef RemoteControl < handle
             %% Upload digital data
             fprintf(self.conn,'%s\n',self.uploadDWord);
             s = sprintf('%d,%%',d);
-            s = s(1:end-3);
+            s = s(1:end-2);
             pause(0.1);
             fprintf(self.conn,s);
             
@@ -172,13 +172,17 @@ classdef RemoteControl < handle
         end
         
         function uploadDDSData(self,channel,dds)
+%             if isnan(dds)
+%                 return
+%             end
             fprintf(self.conn,'%s\n',channel);
-            v = zeros(numel(dds),4);
-            for nn = 1:size(v,1)
-                v(nn,:) = [dds(nn).dt,dds(nn).freq,dds(nn).amp,dds(nn).phase];
-            end
-            s = sprintf('%.6f,%.6f,%d,%.6f%%',v');
-            s = s(1:end-3);
+%             v = zeros(numel(dds),4);
+%             for nn = 1:size(v,1)
+%                 v(nn,:) = [dds(nn).dt,dds(nn).freq,dds(nn).amp,dds(nn).phase];
+%             end
+            v = [dds.dt,dds.freq,dds.amp,dds.phase];
+            s = sprintf('%d,%.6f,%d,%.6f%%',v');
+            s = s(1:end-1);
             pause(0.1);
             fprintf(self.conn,s);
         end

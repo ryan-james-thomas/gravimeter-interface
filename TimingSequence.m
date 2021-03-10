@@ -47,8 +47,9 @@ classdef TimingSequence < handle
             end
             
             self.ddsTrigDelay = 0;
-            tmp(2) = DDSChannel;
-            self.dds = tmp;
+%             tmp2(2) = DDSChannel;
+            self.dds = DDSChannel;
+            self.dds(2) = DDSChannel;
             for nn = 1:numel(self.dds)
                 self.dds(nn).channel = nn;
             end
@@ -128,6 +129,9 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(time);
             end
+            for nn = 1:numel(self.dds)
+                self.dds(nn).anchor(time);
+            end
         end
 
         function self = delay(self,time)
@@ -145,6 +149,9 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(self.time);
             end
+            for nn = 1:numel(self.dds)
+                self.dds(nn).anchor(self.time);
+            end
         end
 
         function self = waitFromLatest(self,waitTime)
@@ -158,6 +165,9 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(self.time);
             end
+            for nn = 1:numel(self.dds)
+                self.dds(nn).anchor(self.time);
+            end
         end
 
         function time = latest(self)
@@ -169,6 +179,11 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 if self.channels(nn).last > time
                     time = self.channels(nn).last;
+                end
+            end
+            for nn = 1:numel(self.dds)
+                if self.dds(nn).last > time
+                    time = self.dds(nn).last;
                 end
             end
             
@@ -236,6 +251,7 @@ classdef TimingSequence < handle
             self.data.t = buf(:,1)/self.SAMPLE_CLK;
             self.data.d = uint32(sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2));
             self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
+            
             self.data.dds(1) = self.dds(1).compile(self.ddsTrigDelay);
             self.data.dds(2) = self.dds(2).compile(self.ddsTrigDelay);
             

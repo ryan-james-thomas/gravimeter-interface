@@ -42,26 +42,38 @@ classdef DDSChannel < TimingControllerChannel
         end
         
         function data = compile(ch,delay)
+            if ch.numValues == 0
+                data.dt = 1;
+                data.freq = ch.default(1);
+                data.amp = ch.default(2);
+                data.phase = ch.default(3);
+                return
+            end
             t = ch.times - delay;
             idx = (t >= 0);
-            t = [0;t(idx)];
-            v = [ch.values(1,:);ch.values(idx,:)];
+            t = t(idx);
+            v = ch.values(idx,:);
             if any(t < 0)
                 error('Trigger delay cannot be later than first DDS time!');
             end
-            dt = [0;round(diff(t)*ch.CLK)];
+            dt = [round(diff(t)*ch.CLK);10];
 %             dt(end+1) = 10;
             N = numel(dt);
             if N > 8191
                 error('Maximum number of table entries is 8191');
             end
             
-            for nn = 1:N
-                data(nn).dt = dt(nn); %#ok<*AGROW>
-                data(nn).freq = v(nn,1);
-                data(nn).amp = v(nn,2);
-                data(nn).phase = v(nn,3);
-            end
+            data.dt = dt;
+            data.freq = v(:,1);
+            data.amp = v(:,2);
+            data.phase = v(:,3);
+            
+%             for nn = 1:N
+%                 data(nn).dt = dt(nn); %#ok<*AGROW>
+%                 data(nn).freq = v(nn,1);
+%                 data(nn).amp = v(nn,2);
+%                 data(nn).phase = v(nn,3);
+%             end
         end
         
         
