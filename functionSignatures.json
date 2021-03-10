@@ -1,0 +1,8 @@
+{
+    "TimingSequence.find" : {
+        "inputs" : [
+            {"name":"self", "kind":"required", "type":"TimingSequence"},
+            {"name":"name", "kind":"required", "type":["char","choices={'87 Repump TTL EOM','85 Repump TTL EOM','Imaging AOM TTL','Camera Trigger','FMI Trigger','3D Coils Top TTL','2D Coils TTL','3D Coils Bottom TTL','B0 - N/C','Repump/Microwave Switch','Bragg SSM Switch','B3 - N/C','B4 - N/C','B5 - DEAD','2D Bias','B7 - N/C','C0 - N/C','C1 - N/C','C2 - N/C','C3 - N/C','2DMOT AOM TTL','3DMOT AOM TTL','C6 - DEAD','C7 - N/C','H Dipole TTL','WG 1 TTL','WG 2 TTL','WG 3 TTL','DDS Channel 1 TTL','ADC Trigger','','','87 Cooling Freq EOM','87 Cooling Amp EOM','87 Repump Freq EOM','87 Repump Amp EOM','3D Coils Top','E/W Bias','85 Repump Freq EOM','N/S Bias','2D MOT Amp AOM','3DHMOT Amp AOM','Vertical Bias','2D MOT Freq AOM','3DHMOT Freq AOM','2D Coils','BO/6 - DEAD','3D Coils Bottom','3DVMOT Amp AOM','3DVMOT Freq AOM','CO/2 - DEAD','Imaging AOM Amp','H Dipole AMP','WG AMP 1','WG AMP 2','WG AMP 3'}"]}
+        ]
+    }       
+}
