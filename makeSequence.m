@@ -17,13 +17,12 @@ function varargout = makeSequence(varargin)
     sq.find('2D coils ttl').set(1);
     sq.find('2d bias').set(1);
     sq.dds(1).set(110,2293,0);
-    
     Tmot = 6;
     sq.delay(Tmot);
     %% Ramp coils
-    t = linspace(0,100e-3,100);
-    sq.find('3d coils top').after(t,sq.linramp(t,sq.find('3d coils top').values(end),0));
-    sq.find('3d coils bottom').after(t,sq.linramp(t,sq.find('3d coils bottom').values(end),0));
+    %t = linspace(0,100e-3,100);
+    %sq.find('3d coils top').after(t,sq.linramp(t,sq.find('3d coils top').values(end),0));
+    %sq.find('3d coils bottom').after(t,sq.linramp(t,sq.find('3d coils bottom').values(end),0));
     
     %% Finish
     sq.dds(1).set(110,2293,0);
@@ -31,8 +30,8 @@ function varargout = makeSequence(varargin)
     sq.find('87 repump amp eom').set(4);
     t = linspace(0,0.5,100);
     sq.find('87 cooling amp eom').after(t,sq.linramp(t,sq.find('87 cooling amp eom').values(end),0));
-    sq.dds(1).after(t,110-2*t,45*ones(size(t)),zeros(size(t)));
-
+%     sq.dds(1).after(t,110-2*t,45*ones(size(t)),zeros(size(t)));
+    
     %% Automatic start
     %If no output argument is requested, then compile and run the above
     %sequence
