@@ -1,4 +1,4 @@
-function varargout = makeSequenceFull(varargin)
+function varargout = makeSequence(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
     %Enable optical dipole traps

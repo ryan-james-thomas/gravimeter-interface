@@ -4,6 +4,8 @@ classdef TimingSequence < handle
 
     properties
         channels        %Array of TimingControllerChannel objects
+        dds             %Array of DDS objects
+        ddsTrigDelay    %Offset time between start of sequence and start of DDS
     end
 
     properties(SetAccess = immutable)
@@ -43,6 +45,14 @@ classdef TimingSequence < handle
             for nn = (self.numDigitalChannels+1):self.numChannels
                 self.channels(nn) = AnalogChannel;
             end
+            
+            self.ddsTrigDelay = 0;
+            tmp(2) = DDSChannel;
+            self.dds = tmp;
+            for nn = 1:numel(self.dds)
+                self.dds(nn).channel = nn;
+            end
+            
             self.time = 0;
         end
 
@@ -226,7 +236,9 @@ classdef TimingSequence < handle
             self.data.t = buf(:,1)/self.SAMPLE_CLK;
             self.data.d = uint32(sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2));
             self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
-
+            self.data.dds(1) = self.dds(1).compile(self.ddsTrigDelay);
+            self.data.dds(2) = self.dds(2).compile(self.ddsTrigDelay);
+            
             r = self.data;
         end
 
@@ -333,7 +345,7 @@ classdef TimingSequence < handle
         function sq = buildFromCompiledData(data)
             sq = TimingSequence(32,size(data.a,2));
             sq.loadCompiledData(data);
-            end
+        end
     end
 
 

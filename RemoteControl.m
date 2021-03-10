@@ -43,7 +43,7 @@ classdef RemoteControl < handle
             self.connected = false;
             self.mode = self.INIT;
             self.status = self.STOPPED;
-            self.makerCallback = @makeSequenceFull;
+            self.makerCallback = @makeSequence;
             self.reset;
         end %end constructor
         
@@ -152,17 +152,35 @@ classdef RemoteControl < handle
             
             self.open;
             
+            %% Upload analog data
             fprintf(self.conn,'%s\n',self.uploadAWord);
             s = sprintf(['%.6f',repmat(',%.6f',1,24),'%%'],a');
             pause(0.1);
             fprintf(self.conn,s);
             
+            %% Upload digital data
             fprintf(self.conn,'%s\n',self.uploadDWord);
             s = sprintf('%d,%%',d);
             s = s(1:end-3);
             pause(0.1);
             fprintf(self.conn,s);
             
+            %% Upload DDS data
+            self.uploadDDSData('ch1',data.dds(1));
+            self.uploadDDSData('ch2',data.dds(2));
+
+        end
+        
+        function uploadDDSData(self,channel,dds)
+            fprintf(self.conn,'%s\n',channel);
+            v = zeros(numel(dds),4);
+            for nn = 1:size(v,1)
+                v(nn,:) = [dds(nn).dt,dds(nn).freq,dds(nn).amp,dds(nn).phase];
+            end
+            s = sprintf('%.6f,%.6f,%d,%.6f%%',v');
+            s = s(1:end-3);
+            pause(0.1);
+            fprintf(self.conn,s);
         end
         
         function run(self)
