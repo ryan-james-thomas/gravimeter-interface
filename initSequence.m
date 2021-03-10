@@ -31,7 +31,7 @@ function sq = initSequence
     %% Name analog channels
     sq.analog(1).setName('2D MOT Freq','AO/0').setDefault(7.65);
     sq.analog(2).setName('3D MOT Freq','AO/1').setDefault(6.85);
-    sq.analog(3).setName('Imaging Freq','AO/2').setDefault(7.5);
+    sq.analog(3).setName('Imaging Freq','AO/2').setDefault(8.5);
     sq.analog(4).setName('Push Freq','AO/3').setDefault(9.5);
     sq.analog(5).setName('Repump Freq','AO/4').setDefault(4.3);
     sq.analog(6).setName('50W Amp','AO/5').setDefault(5);
