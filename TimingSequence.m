@@ -68,6 +68,9 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 self.channels(nn).reset;
             end
+            for nn=1:numel(self.dds)
+                self.dds(nn).reset;
+            end
         end
 
         function ch = digital(self,idx)
