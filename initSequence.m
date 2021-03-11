@@ -7,9 +7,9 @@ function sq = initSequence
     sq.digital(3).setName('Imaging AOM TTL','A2').setDefault(0);
     sq.digital(4).setName('Camera Trigger','A3').setDefault(0);
     sq.digital(5).setName('FMI Trigger','A4').setDefault(0);
-    sq.digital(6).setName('3D Coils Top TTL','A5').setDefault(1);
+    sq.digital(6).setName('3D Coils Top TTL','A5').setDefault(0);
     sq.digital(7).setName('2D Coils TTL','A6').setDefault(0);
-    sq.digital(8).setName('3D Coils Bottom TTL','A7').setDefault(1);
+    sq.digital(8).setName('3D Coils Bottom TTL','A7').setDefault(0);
     sq.digital(9).setName('B0 - N/C','B0').setDefault(0);
     sq.digital(10).setName('Repump/Microwave Switch','B1').setDefault(0);
     sq.digital(11).setName('Bragg SSM Switch','B2').setDefault(0);
@@ -22,13 +22,13 @@ function sq = initSequence
     sq.digital(18).setName('C1 - N/C','C1').setDefault(0);
     sq.digital(19).setName('C2 - N/C','C2').setDefault(0);
     sq.digital(20).setName('C3 - N/C','C3').setDefault(0);
-    sq.digital(21).setName('2DMOT AOM TTL','C4','0 = ON').setDefault(0);
-    sq.digital(22).setName('3DMOT AOM TTL','C5','0 = ON').setDefault(0);
+    sq.digital(21).setName('2DMOT AOM TTL','C4','0 = ON').setDefault(1);
+    sq.digital(22).setName('3DMOT AOM TTL','C5','0 = ON').setDefault(1);
     sq.digital(23).setName('C6 - DEAD','C6','DEAD').setDefault(0);
     sq.digital(24).setName('C7 - N/C','C7').setDefault(0);
     sq.digital(25).setName('H Dipole TTL','D0','Raycus 1').setDefault(0);
     sq.digital(26).setName('WG 1 TTL','D1','Raycus 2').setDefault(0);
-    sq.digital(27).setName('WG 2 TTL','D2','Raycus 3').setDefault(1);
+    sq.digital(27).setName('WG 2 TTL','D2','Raycus 3').setDefault(0);
     sq.digital(28).setName('WG 3 TTL','D3','Raycus 3').setDefault(0);
     sq.digital(29).setName('DDS Channel 1 TTL','D4').setDefault(0);
     sq.digital(30).setName('ADC Trigger','D5').setDefault(1);

@@ -41,6 +41,17 @@ classdef DDSChannel < TimingControllerChannel
             end
         end
         
+        function ch = expand(ch,tin)
+            ch.sort;
+            tin = tin(:);
+            fnew = interp1(ch.times,ch.values(:,1),tin,'previous','extrap');
+            ampnew = interp1(ch.times,ch.values(:,2),tin,'previous','extrap');
+            phnew = interp1(ch.times,ch.values(:,3),tin,'previous','extrap');
+            ch.times = tin;
+            ch.values = [fnew,ampnew,phnew];
+            ch.numValues = numel(ch.times);
+        end
+        
         function data = compile(ch,delay)
             if ch.numValues == 0
                 data.dt = 1;
@@ -57,7 +68,12 @@ classdef DDSChannel < TimingControllerChannel
                 error('Trigger delay cannot be later than first DDS time!');
             end
             dt = [round(diff(t)*ch.CLK);10];
-%             dt(end+1) = 10;
+%             delay = round(delay*ch.CLK);
+%             if dt(1) < delay
+%                 error('Instructions for the DDS cannot change before the DDS trigger!');
+%             end
+%             dt(1) = dt(1) - delay;
+%             v = ch.values;
             N = numel(dt);
             if N > 8191
                 error('Maximum number of table entries is 8191');
@@ -65,7 +81,7 @@ classdef DDSChannel < TimingControllerChannel
             
             data.dt = dt;
             data.freq = v(:,1);
-            data.amp = v(:,2);
+            data.amp = max(round(v(:,2)),0);
             data.phase = v(:,3);
             
 %             for nn = 1:N
