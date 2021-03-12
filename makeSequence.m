@@ -2,25 +2,28 @@ function varargout = makeSequence(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
     sq.ddsTrigDelay = 1e-3;
-    sq.find('ADC trigger').at(sq.ddsTrigDelay+0*15e-6,0);
-    sq.dds(1).at(sq.ddsTrigDelay,110,0,0);
+    sq.find('ADC trigger').at(sq.ddsTrigDelay+0*15e-6,0); %when we thought there was a difference in clock rates
+    sq.dds(1).at(sq.ddsTrigDelay,110,0,0); 
     sq.dds(2).at(sq.ddsTrigDelay,110,0,0);
     
-    sq.find('3d coils top ttl').set(1);
+    sq.find('3d coils top ttl').set(1);  %don't trust the initSequence
     sq.find('3d coils bottom ttl').set(1);
     
     sidebandDelay = 3;
     sq.delay(sidebandDelay);
     %% MOT values
-    sq.find('87 cooling freq eom').set(varargin{1});
+    sq.find('87 cooling freq eom').set(5.5);
     sq.find('87 cooling amp eom').set(2.6);
     sq.find('87 repump amp eom').set(1.6);
+    sq.find('87 repump freq eom').set(2.175);
+    sq.find('3D Coils Top').set(0.16);
+    sq.find('3D Coils Bottom').set(0.15);
     sq.find('3DMOT AOM TTL').set(0);
     sq.find('2DMOT AOM TTL').set(0);
     sq.find('2D coils ttl').set(1);
     sq.find('2d bias').set(1);
-    sq.dds(1).set(110,2293,0);
-    Tmot = 6;
+    sq.dds(1).set(110,3200,0);
+    Tmot = 5;
     sq.delay(Tmot);
     
     %Turn Off 2D MOT
@@ -29,34 +32,39 @@ function varargout = makeSequence(varargin)
     sq.find('2D Bias').before(0.1,0);
     
     %Shift Bias (align MOT with mag trap centre) and CMOT
-    t = linspace(50e-3,0,50);
-    sq.find('Vertical Bias').before(t,sq.minjerk(t,sq.find('Vertical Bias').values(end),5));
-    sq.find('N/S Bias').before(t,sq.minjerk(t,sq.find('N/S Bias').values(end),5.4));
-    sq.find('E/W Bias').before(50e-3,0.8);
-    sq.find('87 Cooling Freq EOM').before(t,sq.minjerk(t,sq.find('87 Cooling Freq EOM').values(end),3));
-    sq.find('3D Coils Bottom').before(t,sq.minjerk(t,sq.find('3D Coils Bottom').values(end),0.13));
-    sq.find('3D Coils Top').before(t,sq.minjerk(t,sq.find('3D Coils Top').values(end),0.14));
+    TpushDelay= 50e-3;
+    
+    tPush = linspace(0,TpushDelay,50);
+    sq.find('Vertical Bias').after(tPush,sq.minjerk(tPush,sq.find('Vertical Bias').values(end),5));
+    sq.find('N/S Bias').after(tPush,sq.minjerk(tPush,sq.find('N/S Bias').values(end),5.4));
+    sq.find('E/W Bias').set(0.8);
+    sq.find('87 Cooling Freq EOM').after(tPush,sq.minjerk(tPush,sq.find('87 Cooling Freq EOM').values(end),3));
+    sq.find('3D Coils Bottom').after(tPush,sq.minjerk(tPush,sq.find('3D Coils Bottom').values(end),0.13));
+    sq.find('3D Coils Top').after(tPush,sq.minjerk(tPush,sq.find('3D Coils Top').values(end),0.15));
+    
+    
+    sq.delay(TpushDelay);
     
     Tcmot = 15e-3;
     sq.delay(Tcmot);
     
     %PGC
-    tmag = linspace(0,5e-3,25);
-    sq.find('3D Coils Bottom').after(tmag,sq.minjerk(tmag,sq.find('3D Coils Bottom').values(end),0));
-    sq.find('3D Coils Top').after(tmag,sq.minjerk(tmag,sq.find('3D Coils Top').values(end),0.));
+    tMagZero = linspace(0,5e-3,25);
+    sq.find('3D Coils Bottom').after(tMagZero,sq.minjerk(tMagZero,sq.find('3D Coils Bottom').values(end),0));
+    sq.find('3D Coils Top').after(tMagZero,sq.minjerk(tMagZero,sq.find('3D Coils Top').values(end),0.));
     sq.find('3D Coils Bottom TTL').after(5e-3,0);
     sq.find('3D Coils Top TTL').after(5e-3,0);
     
-    sq.find('Vertical Bias').set(1.);
+    sq.find('Vertical Bias').set(0.9);
     sq.find('E/W Bias').set(0.55);
     sq.find('N/S Bias').set(0.78);
     
     sq.find('87 Cooling Freq EOM').set(0);
     sq.find('87 Repump Amp EOM').set(1.5);
     
-    t=linspace(0,15e-3,75);
-     sq.find('3DHMOT Amp AOM').after(t,sq.minjerk(t,sq.find('3DHMot Amp AOM').values(end),-0.45));
-     sq.dds(1).after(t,110*ones(size(t)),sq.minjerk(t,sq.dds(1).values(end,2),485),zeros(size(t)));
+    tPGC=linspace(0,15e-3,75);
+    sq.find('3DHMOT Amp AOM').after(tPGC,sq.minjerk(tPGC,sq.find('3DHMot Amp AOM').values(end),-0.45));
+    sq.dds(1).after(tPGC,110*ones(size(tPGC)),sq.minjerk(tPGC,sq.dds(1).values(end,2),485),zeros(size(tPGC)));
     
     
     %depump
@@ -68,6 +76,9 @@ function varargout = makeSequence(varargin)
     sq.find('87 Repump TTL EOM').set(0);
     sq.find('3DHMOT Amp AOM').set(-0.45);
     sq.dds(1).set(110,0,0);
+    sq.find('Vertical Bias').set(3);
+    sq.find('E/W Bias').set(3);
+    sq.find('87 Cooling Amp EOM').set(2);
     
     %% Ramp coils
  %   t = linspace(0,100e-3,100);
@@ -75,59 +86,68 @@ function varargout = makeSequence(varargin)
  %   sq.find('3d coils bottom').after(t,sq.linramp(t,sq.find('3d coils bottom').values(end),0));
     
     %%Take Absorption Image
-    Tdrop = varargin{2};
+    Tdrop = 15e-3;
     sq.delay(Tdrop);
     
-     sq.find('87 Cooling Freq EOM').before(0.1*10^-3,7.91);
+    
+     sq.find('87 Cooling Freq EOM').before(0.1*10^-3,6.85);
      sq.find('87 Cooling Amp EOM').before(0.1*10^-3,2);
-     sq.find('87 Repump Freq EOM').before(0.1*10^-3,2.076);
+     sq.find('87 Repump Freq EOM').before(0.1*10^-3,2.125);
      sq.find('87 Repump Amp EOM').before(0.1*10^-3,4);
-     
-%     %repump pulse     
+       
+    sq.anchor(sq.latest);
+    
+%    %repump pulse
+     Trepump=0.3*10^-3;
      sq.find('87 Repump TTL EOM').set(1);
      sq.find('Imaging AOM TTL').set(1);
-%     %imaging pulse
-     sq.find('87 Repump TTL EOM').after(0.3*10^-3,0);
-     sq.find('Camera Trigger').after(0.3*10^-3,1);
-     sq.find('87 Repump Amp EOM').after(0.3*10^-3,0);
-     sq.find('87 Cooling Amp EOM').after(0.3*10^-3,2.6);
-%     %after imagepulse settings
-     sq.find('87 Cooling Freq EOM').after(0.4*10^-3,0);
-     sq.find('Camera Trigger').after(0.4*10^-3,0);
-     sq.find('Imaging AOM TTL').after(0.4*10^-3,0);
-     sq.find('87 Repump Amp EOM').after(0.4*10^-3,1.7);
+%    %imaging pulse
+     Timage=0.1*10^-3;
+     sq.find('87 Repump TTL EOM').after(Trepump,0);
+     sq.find('Camera Trigger').after(Trepump,1);
+     sq.find('87 Repump Amp EOM').after(Trepump,0);
+     sq.find('87 Cooling Amp EOM').after(Trepump,2.6);
+%    %after imagepulse settings
+     sq.find('87 Cooling Freq EOM').after(Trepump+Timage,0);
+     sq.find('Camera Trigger').after(Timage,0);
+     sq.find('Imaging AOM TTL').after(Trepump+Timage,0); %Note that this wasn't called in the repump pulse, hence you have to use both times
+     sq.find('87 Repump Amp EOM').after(Timage,1.7);
     
      TbackgroundPic=0.1;
      sq.delay(TbackgroundPic);
     
-    %BackgroundImage
+    %BackgroundImage (ramp VCOs to desired value for imaging/repump)
     
-      sq.find('87 Cooling Freq EOM').before(0.1*10^-3,7.91);
+      sq.find('87 Cooling Freq EOM').before(0.1*10^-3,6.85);
      sq.find('87 Cooling Amp EOM').before(0.1*10^-3,2);
-     sq.find('87 Repump Freq EOM').before(0.1*10^-3,2.076);
+     sq.find('87 Repump Freq EOM').before(0.1*10^-3,2.125);
      sq.find('87 Repump Amp EOM').before(0.1*10^-3,4);
-     
-%     %repump pulse     
+       
+    sq.anchor(sq.latest);
+    
+%    %repump pulse
+     Trepump=0.3*10^-3;
      sq.find('87 Repump TTL EOM').set(1);
      sq.find('Imaging AOM TTL').set(1);
-%     %imaging pulse
-     sq.find('87 Repump TTL EOM').after(0.3*10^-3,0);
-     sq.find('Camera Trigger').after(0.3*10^-3,1);
-     sq.find('87 Repump Amp EOM').after(0.3*10^-3,0);
-     sq.find('87 Cooling Amp EOM').after(0.3*10^-3,2.6);
-%     %after imagepulse settings
-     sq.find('87 Cooling Freq EOM').after(0.4*10^-3,0);
-     sq.find('Camera Trigger').after(0.4*10^-3,0);
-     sq.find('Imaging AOM TTL').after(0.4*10^-3,0);
-     sq.find('87 Repump Amp EOM').after(0.4*10^-3,1.7);
+%    %imaging pulse
+     Timage=0.1*10^-3;
+     sq.find('87 Repump TTL EOM').after(Trepump,0);
+     sq.find('Camera Trigger').after(Trepump,1);
+     sq.find('87 Repump Amp EOM').after(Trepump,0);
+     sq.find('87 Cooling Amp EOM').after(Trepump,2.6);
+%    %after imagepulse settings
+     sq.find('87 Cooling Freq EOM').after(Trepump+Timage,0);
+     sq.find('Camera Trigger').after(Timage,0);
+     sq.find('Imaging AOM TTL').after(Trepump+Timage,0);
+     sq.find('87 Repump Amp EOM').after(Timage,1.7);
     
     Tcleanup=0.1;
     sq.delay(Tcleanup);
     %% Finish
     sq.find('87 Repump TTL EOM').set(1);
     sq.find('87 repump amp eom').set(4);
-    t = linspace(0,1,100);
-    sq.find('87 cooling amp eom').after(t,sq.linramp(t,sq.find('87 cooling amp eom').values(end),0));
+    tReset = linspace(0,1,100);
+    sq.find('87 cooling amp eom').after(tReset,sq.linramp(tReset,sq.find('87 cooling amp eom').values(end),0));
 %     sq.dds(1).after(t,110-2*t,45*ones(size(t)),zeros(size(t)));
     
     %% Automatic start
