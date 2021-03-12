@@ -155,34 +155,39 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   each element to the corresponding row in VALUE. This uses a
             %   recursive call to AT, so may run into memory issues
 
-
+            time = time(:);
+            N = numel(time);
             if numel(ch) > 1
                 %If an array of channels is passed, loop through each individually
                 for nn = 1:numel(ch)
-                    ch(nn).at(time,value);
+                    ch(nn).at(time,value,varargin{:});
                 end
-            elseif ~isa(value,'function_handle') && (numel(time) > 1) && (numel(varargin) ~= 0)
+            elseif ~isa(value,'function_handle') && (N > 1) && (numel(varargin) ~= 0)
                 %If TIME is Nx1 and VALUE and VARARGIN{...} are each
                 %Nx1, recursively add events
                 value = value(:);
+                Nv = numel(value);
+                if Nv == 1
+                    value = value*ones(N,1);
+                end
                 for nn = 1:numel(varargin)
                     tmp = varargin{nn};
-                    value(:,nn+1) = tmp(:);
+                    value(:,nn+1) = tmp(:).*ones(N,1);
                 end
                 for nn = 1:numel(time)
                     ch.at(time(nn),value(nn,:));
                 end
-            elseif ~isa(value,'function_handle') && (numel(time) == numel(value)) && (numel(time) > 1)
+            elseif ~isa(value,'function_handle') && (N == numel(value)) && (numel(time) > 1)
                 %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
-                for nn = 1:numel(time)
+                for nn = 1:N
                     ch.at(time(nn),value(nn));
                 end
-            elseif ~isa(value,'function_handle') && (numel(time) == size(value,1)) && (numel(time) > 1)
+            elseif ~isa(value,'function_handle') && (N == size(value,1)) && (numel(time) > 1)
                 %If TIME is Nx1 and VALUE is NxM, recursively add events
-                for nn = 1:numel(time)
+                for nn = 1:N
                     ch.at(time(nn),value(nn,:));
                 end
-            elseif isa(value,'function_handle') && (numel(time) > 1)
+            elseif isa(value,'function_handle') && (N > 1)
                 %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
                 v = value(time);
                 ch.at(time,v);

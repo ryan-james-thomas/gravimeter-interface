@@ -150,6 +150,11 @@ function varargout = makeSequence(varargin)
     sq.find('87 cooling amp eom').after(tReset,sq.linramp(tReset,sq.find('87 cooling amp eom').values(end),0));
 %     sq.dds(1).after(t,110-2*t,45*ones(size(t)),zeros(size(t)));
     
+    %% Automatic save of run
+    fpathfull = [mfilename('fullpath'),'.m'];
+    [fpath,fname,fext] = fileparts(fpathfull);
+    dstr = datestr(datetime,'YY_mm_dd_hh_MM_ss');
+    copyfile(fpathfull,sprintf('%s/%s/%s_%s%s',fpath,sq.directory,fname,dstr,fext));
     %% Automatic start
     %If no output argument is requested, then compile and run the above
     %sequence

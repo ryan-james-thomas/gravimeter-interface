@@ -6,6 +6,8 @@ classdef TimingSequence < handle
         channels        %Array of TimingControllerChannel objects
         dds             %Array of DDS objects
         ddsTrigDelay    %Offset time between start of sequence and start of DDS
+        
+        directory       %Directory where to save sequence builder files
     end
 
     properties(SetAccess = immutable)
@@ -55,6 +57,8 @@ classdef TimingSequence < handle
             end
             
             self.time = 0;
+            
+            self.directory = 'run-archive';
         end
 
 
@@ -63,6 +67,9 @@ classdef TimingSequence < handle
             self.time = 0;
             for nn = 1:self.numChannels
                 self.channels(nn).reset;
+            end
+            for nn=1:numel(self.dds)
+                self.dds(nn).reset;
             end
         end
 
