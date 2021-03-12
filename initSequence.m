@@ -56,7 +56,7 @@ function sq = initSequence
     sq.analog(17).setName('3DVMOT Amp AOM','CO/0').setDefault(0);
     sq.analog(18).setName('3DVMOT Freq AOM','CO/1').setDefault(0);
     sq.analog(19).setName('CO/2 - DEAD','CO/2','DEAD').setDefault(0);
-    sq.analog(20).setName('Imaging AOM Amp','CO/3').setDefault(2.3);
+    sq.analog(20).setName('Imaging AOM Amp','CO/3').setDefault(2.4);
     sq.analog(21).setName('H Dipole AMP','CO/4','Raycus 1').setDefault(0);
     sq.analog(22).setName('WG AMP 1','CO/5','Raycus 2').setDefault(0);
     sq.analog(23).setName('WG AMP 2','CO/6','Raycus 3').setDefault(0);
