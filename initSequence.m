@@ -63,8 +63,8 @@ function sq = initSequence
     sq.analog(24).setName('WG AMP 3','CO/7','Raycus 4').setDefault(0);
 
     %% DDS default
-    sq.dds(1).setDefault([110,0,0]);
-    sq.dds(2).setDefault([110,0,0]);
+    sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
+    sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
     
 
 end

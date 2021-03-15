@@ -414,6 +414,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             else
                 returnHandle = false;
                 plotargs = {};
+                plotIdx = 1:size(ch.values,2);
                 for nn = 1:2:numel(varargin)
                     v = varargin{nn+1};
                     switch lower(varargin{nn})
@@ -421,6 +422,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                             plotargs = v;
                         case 'returnhandle'
                             returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
                     end
                 end
             end
@@ -434,7 +437,9 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             
             [tplot,vplot] = ch.getPlotValues(varargin{:});
             cargs = {'linewidth',1.5,'tag',ch.name};
-            cargs = [cargs,plotargs];
+            if numel(plotargs) > 0
+                cargs = [cargs,plotargs];
+            end
             if ~ch.IS_DIGITAL
                 h = plot(ax,tplot,vplot,'.-',cargs{:});
             else
@@ -453,6 +458,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 offset = 0;
                 finalTime = [];
                 returnHandle = false;
+                plotIdx = 1:size(ch.values,2);
                 for nn = 1:2:numel(varargin)
                     v = varargin{nn+1};
                     switch lower(varargin{nn})
@@ -462,6 +468,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                             finalTime = v;
                         case 'returnhandle'
                             returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
                     end
                 end
             end
@@ -478,10 +486,9 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             end
             tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
             tplot = tplot(tplot >= 0);
-            vplot = zeros(numel(tplot),size(v,2));
-            
-            for nn = 1:size(vplot,2)
-                vplot(:,nn) = interp1(t,v(:,nn),tplot,'previous');
+            vplot = zeros(numel(tplot),numel(plotIdx));
+            for nn = 1:numel(plotIdx)
+                vplot(:,nn) = interp1(t,v(:,plotIdx(nn)),tplot,'previous');
             end
             vplot = vplot + offset;
         end

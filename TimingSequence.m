@@ -122,6 +122,14 @@ classdef TimingSequence < handle
                 end
             end
             if isempty(ch)
+                for nn = 1:numel(self.dds)
+                    if strcmpi(self.dds(nn).name,name)
+                        ch = self.dds(nn);
+                        break;
+                    end
+                end
+            end
+            if isempty(ch)
                 error('Channel %s not found.  Check spelling?',name);
             end
         end
