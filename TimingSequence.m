@@ -122,6 +122,14 @@ classdef TimingSequence < handle
                 end
             end
             if isempty(ch)
+                for nn = 1:numel(self.dds)
+                    if strcmpi(self.dds(nn).name,name)
+                        ch = self.dds(nn);
+                        break;
+                    end
+                end
+            end
+            if isempty(ch)
                 error('Channel %s not found.  Check spelling?',name);
             end
         end
@@ -309,7 +317,8 @@ classdef TimingSequence < handle
             end
             str = {};
             for nn = 1:self.numChannels
-                self.channels(nn).plot((jj-1)*offset,self.latest);
+%                 self.channels(nn).plot((jj-1)*offset,self.latest);
+                self.channels(nn).plot('offset',(jj-1)*offset,'finaltime',self.latest);
                 hold on;
                 if self.channels(nn).exists
                     if isempty(self.channels(nn).name)

@@ -385,40 +385,112 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
         end
 
         
-        function ch = plot(ch,offset,finalTime)
+        function varargout = plot(ch,varargin)
             %PLOT Plots the current sequence as a function of time.
             %
             %   ch.plot plots the current sequence as a function of time.
             %   If there are no events, a message is displayed.
             %
-            %   ch.plot(OFFSET) plots the current sequence with a vertical 
-            %   offset given by OFFSET.  This is useful if you want to plot
-            %   multiple signals on the same plot
+            %   ch.plot(AX) plots the current sequence on the axes given by
+            %   AX.
             %
-            %   ch.plot(OFFSET,FINALTIME) plots the current sequence with
-            %   OFFSET and extends plot to FINALTIME
-            [t,v] = ch.getEvents;
-            if ~ch.exists
+            %   ch.plot(AX,'Name','Value',...) plots the current sequnce on
+            %   axes AX with properties given by Name and Value.  Name can
+            %   be OFFSET, which gives a vertical offset on the channel,
+            %   FINALTIME, which plots the sequence out to FINALTIME, and
+            %   PLOTARGS, which is a cell array of plot-arguments
+            %
+            %   ch.plot('Name','Value') plots as above in the current axes
+            %
+            if numel(varargin) >= 1 && all(ishandle(varargin{1})) && strcmpi(get(varargin{1},'type'),'axes')
+                ax = varargin{1};
+                varargin = varargin(2:end);
+            else
+                ax = gca;
+            end
+            
+            if mod(numel(varargin),2) ~= 0
+                error('Arguments must be in name/value pairs');
+            else
+                returnHandle = false;
+                plotargs = {};
+                plotIdx = 1:size(ch.values,2);
+                for nn = 1:2:numel(varargin)
+                    v = varargin{nn+1};
+                    switch lower(varargin{nn})
+                        case 'plotargs'
+                            plotargs = v;
+                        case 'returnhandle'
+                            returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
+                    end
+                end
+            end
+            
+            if ~ch.exists && ~returnHandle
+                if nargout > 0
+                    varargout{1} = [];
+                end
                 return
             end
             
-            if nargin >= 3 && t(end) ~= finalTime
+            [tplot,vplot] = ch.getPlotValues(varargin{:});
+            cargs = {'linewidth',1.5,'tag',ch.name};
+            if numel(plotargs) > 0
+                cargs = [cargs,plotargs];
+            end
+            if ~ch.IS_DIGITAL
+                h = plot(ax,tplot,vplot,'.-',cargs{:});
+            else
+                h = plot(ax,tplot,vplot,'.--',cargs{:});
+            end
+            
+            if nargout > 0
+                varargout{1} = h;
+            end
+        end
+        
+        function [tplot,vplot] = getPlotValues(ch,varargin)
+            if mod(numel(varargin),2) ~= 0
+                error('Arguments must be in name/value pairs');
+            else
+                offset = 0;
+                finalTime = [];
+                returnHandle = false;
+                plotIdx = 1:size(ch.values,2);
+                for nn = 1:2:numel(varargin)
+                    v = varargin{nn+1};
+                    switch lower(varargin{nn})
+                        case 'offset'
+                            offset = v;
+                        case 'finaltime'
+                            finalTime = v;
+                        case 'returnhandle'
+                            returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
+                    end
+                end
+            end
+            [t,v] = ch.getEvents;
+            if ~ch.exists && ~returnHandle
+                tplot = [];
+                vplot = [];
+                return
+            end
+            
+            if t(end) ~= finalTime
                 t = [t;finalTime];
                 v = [v;v(end,:)];
             end
             tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
-            vplot = zeros(numel(tplot),size(v,2));
-            for nn = 1:size(vplot,2)
-                vplot(:,nn) = interp1(t,v(:,nn),tplot,'previous');
+            tplot = tplot(tplot >= 0);
+            vplot = zeros(numel(tplot),numel(plotIdx));
+            for nn = 1:numel(plotIdx)
+                vplot(:,nn) = interp1(t,v(:,plotIdx(nn)),tplot,'previous');
             end
-            if nargin >= 2
-                vplot = vplot+offset;
-            end
-            if ~ch.IS_DIGITAL
-                plot(tplot,vplot,'.-','linewidth',1.5);
-            else
-                plot(tplot,vplot,'.--','linewidth',1.5);
-            end
+            vplot = vplot + offset;
         end
         
     end
