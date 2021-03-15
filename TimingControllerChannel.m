@@ -391,12 +391,17 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   ch.plot plots the current sequence as a function of time.
             %   If there are no events, a message is displayed.
             %
-            %   ch.plot(OFFSET) plots the current sequence with a vertical 
-            %   offset given by OFFSET.  This is useful if you want to plot
-            %   multiple signals on the same plot
+            %   ch.plot(AX) plots the current sequence on the axes given by
+            %   AX.
             %
-            %   ch.plot(OFFSET,FINALTIME) plots the current sequence with
-            %   OFFSET and extends plot to FINALTIME
+            %   ch.plot(AX,'Name','Value',...) plots the current sequnce on
+            %   axes AX with properties given by Name and Value.  Name can
+            %   be OFFSET, which gives a vertical offset on the channel,
+            %   FINALTIME, which plots the sequence out to FINALTIME, and
+            %   PLOTARGS, which is a cell array of plot-arguments
+            %
+            %   ch.plot('Name','Value') plots as above in the current axes
+            %
             if numel(varargin) >= 1 && all(ishandle(varargin{1})) && strcmpi(get(varargin{1},'type'),'axes')
                 ax = varargin{1};
                 varargin = varargin(2:end);
