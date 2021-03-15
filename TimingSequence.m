@@ -309,7 +309,8 @@ classdef TimingSequence < handle
             end
             str = {};
             for nn = 1:self.numChannels
-                self.channels(nn).plot((jj-1)*offset,self.latest);
+%                 self.channels(nn).plot((jj-1)*offset,self.latest);
+                self.channels(nn).plot('offset',(jj-1)*offset,'finaltime',self.latest);
                 hold on;
                 if self.channels(nn).exists
                     if isempty(self.channels(nn).name)

@@ -36,7 +36,11 @@ classdef RemoteControl < handle
         
         RUNNING = 'running';
         STOPPED = 'stopped';
-    end        
+    end    
+    
+    events
+        sequenceChanged
+    end
     
     methods
         function self = RemoteControl
@@ -119,6 +123,7 @@ classdef RemoteControl < handle
                 self.makerCallback = @makeSequence;
             end
             self.sq = self.makerCallback(varargin{:});
+            notify(self,'sequenceChanged');
         end
         
         function self = upload(self,data)
