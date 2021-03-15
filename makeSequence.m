@@ -1,5 +1,8 @@
 function varargout = makeSequence(varargin)
     %% Initialize sequence - defaults should be handled here
+    
+ 
+    
     sq = initSequence;
     sq.ddsTrigDelay = 1e-3;
     sq.find('ADC trigger').at(sq.ddsTrigDelay+0*15e-6,0); %when we thought there was a difference in clock rates
@@ -12,12 +15,12 @@ function varargout = makeSequence(varargin)
     sidebandDelay = 3;
     sq.delay(sidebandDelay);
     %% MOT values
-    sq.find('87 cooling freq eom').set(5.5);
+    sq.find('87 cooling freq eom').set(FreqToV(0,varargin{1},'c'));
     sq.find('87 cooling amp eom').set(2.6);
     sq.find('87 repump amp eom').set(1.6);
-    sq.find('87 repump freq eom').set(2.175);
-    sq.find('3D Coils Top').set(0.16);
-    sq.find('3D Coils Bottom').set(0.15);
+    sq.find('87 repump freq eom').set(FreqToV(0,varargin{1},'r'));
+    sq.find('3D Coils Top').set(varargin{2});
+    sq.find('3D Coils Bottom').set(varargin{2});
     sq.find('3DMOT AOM TTL').set(0);
     sq.find('2DMOT AOM TTL').set(0);
     sq.find('2D coils ttl').set(1);
@@ -86,7 +89,7 @@ function varargout = makeSequence(varargin)
  %   sq.find('3d coils bottom').after(t,sq.linramp(t,sq.find('3d coils bottom').values(end),0));
     
     %%Take Absorption Image
-    Tdrop = 15e-3;
+    Tdrop = 25*10^-3;
     sq.delay(Tdrop);
     
     
@@ -167,6 +170,8 @@ function varargout = makeSequence(varargin)
     end
 
 end
+
+
 
 function makeImagingSequence(sq,varargin)
     imgType = 'in-trap';

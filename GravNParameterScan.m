@@ -2,13 +2,14 @@ function GravNParameterScan(r)
 
 if r.isInit()
     %Initialize run
-    r.data.motfreq = 5:0.1:6;
-    r.data.tof = (20:2.5:30)*1e-3;
+    r.data.coolingfreq = (-40:4:0);
+    r.data.magcoil = (0:0.02:0.2);
     
-    r.data.count = RolloverCounter([numel(r.data.tof),numel(r.data.motfreq)]);
+    r.data.count = RolloverCounter([numel(r.data.coolingfreq),numel(r.data.magcoil)]);
     r.numRuns = r.data.count.total;
     
     r.makerCallback = @makeSequence;
+    
 elseif r.isSet()
     %Increment counter
     if r.currentRun ~= 1
@@ -16,20 +17,18 @@ elseif r.isSet()
     end
     
     %Build/upload/run sequence
-    r.make(r.data.motfreq(r.data.count.idx(2)),...
-        r.data.tof(r.data.count.idx(1)));
+    r.make(r.data.coolingfreq(r.data.count.idx(1)),r.data.magcoil(r.data.count.idx(2)));
     r.upload;
-%     r.data.sq(r.currentRun,1) = r.sq.data;
     %Print information about current run
-    fprintf(1,'Run %d/%d, MOT freq: %.2f V, TOF: %.3f ms\n',r.currentRun,r.numRuns,...
-        r.data.motfreq(r.data.count.idx(2)),r.data.tof(r.data.count.idx(1))*1e3);
+    fprintf(1,'Run %d/%d, MOT, TOF: %.3f ms\n',r.currentRun,r.numRuns,r.data.coolingfreq(r.data.count.idx(1)));
 
 elseif r.isAnalyze()
+    % Make shorthand variables for indexing
     nn = r.currentRun;
     i1 = r.data.count.idx(1);
     i2 = r.data.count.idx(2);
     pause(1.0); %Wait for other image analysis program to finish with files
-    
+%     i2=1;
     %Analyze image data from last image
     c = Abs_Analysis('last');
     r.data.files{i1,i2} = c.raw.files(1).name;r.data.files{i1,i2} = c.raw.files(2).name;
@@ -45,13 +44,19 @@ elseif r.isAnalyze()
     r.data.Tx(i1,i2) = c.T(1);
     r.data.Ty(i1,i2) = c.T(2);
     
-    figure(10);clf;
-    plot(r.data.tof(1:i1),r.data.xw(1:i1,i2),'o-');
-    hold on
-    plot(r.data.tof(1:i1),r.data.yw(1:i1,i2),'o-');
+    figure(10);%clf;
+    subplot(1,2,1);
+    cla;
+    plot(r.data.coolingfreq(1:i1),r.data.N(1:i1,i2),'o-');
+    subplot(1,2,2)
     
     if r.data.count.idx(1) == r.data.count.maxRuns(1)
-        %Get temperature here
+        %cla;
+        for mm = 1:i2
+            plot(r.data.coolingfreq,r.data.N(:,mm),'o-');
+            
+            hold on;
+        end
     end
 
 
