@@ -5,7 +5,7 @@ function varargout = makeSequenceFull(varargin)
     P25 = @(x) (x+2.5896)/2.8594;   %Gives voltage for powers in W
     P50 = @(x) (x+4.3628)/5.7754;
     
-    sq.find('50w ttl').set(0);
+    sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
     sq.find('50w amp').set(P50(19));
     sq.find('25w amp').set(P25(19));    
@@ -78,38 +78,66 @@ function varargout = makeSequenceFull(varargin)
     Trampcoils = 180e-3;
     t = linspace(0,Trampcoils,100);
     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0.508));
+    Trampbias = 470e-3;
+    t = linspace(0,Trampbias,100);
+    sq.find('bias e/w').after(t,sq.minjerk(t,sq.find('bias e/w').values(end),0));
+    sq.find('bias n/s').after(t,sq.minjerk(t,sq.find('bias n/s').values(end),0));
+    sq.find('bias u/d').after(t,sq.minjerk(t,sq.find('bias u/d').values(end),0));
     sq.delay(Trampcoils);
     
     %% Optical evaporation
-    %Ramp down magnetic trap in 1.01 s
-%     Trampcoils = 1.01;
-%     Trampcoils = 100e-3;
-%     t = linspace(0,Trampcoils,100);
-%     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
-%     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
+    %Ramp down magnetic trap in 1 s
+    Trampcoils = 1;
+    t = linspace(0,Trampcoils,100);
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
+    sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
-%     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
-%     
-%     %At the same time, start optical evaporation
-%     sq.delay(30e-3);
-%     Tevap = 1.97;
-%     t = linspace(0,Tevap,300);
-%     sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
-%     sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
-%     sq.delay(Tevap);
+% %     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
+    
+    %At the same time, start optical evaporation
+    sq.delay(30e-3);
+    Tevap = 1.97;
+    t = linspace(0,Tevap,300);
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
+    sq.delay(Tevap);
+    
     
     %% Drop atoms
     sq.anchor(sq.latest);
-    sq.delay(20e-3);
+%     sq.delay(20e-3);
+    sq.find('bias e/w').before(200e-3,10);
     sq.find('mw freq').set(0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
-    sq.find('50w ttl').set(0);
     sq.find('25w ttl').set(0);
+    sq.find('50w ttl').set(0);
+    
+
+    %% Interferometry
+    sq.find('dds trig').before(10e-3,1);
+    sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
+    sq.find('dds trig').after(10e-3,1);
+
+    %% Raman
+%     sq.find('raman ttl').set(5);
+%     sq.delay(6e-3);
+%     sq.find('raman ttl').set(0);
+% 
+    %% SG
+%     sq.find('mot coil ttl').set(1);
+%     t = linspace(0,5e-3,20);
+%     sq.find('3d coils').after(t,sq.linramp(t,0,0.0));
+%     sq.find('3d coils').after(t,sq.linramp(t,0.0,0));
+%     sq.delay(10e-3);
+%     sq.find('mot coil ttl').set(0);
+%     sq.find('3d coils').set(0);
+%     sq.delay(4e-3);
+    
 
     %% Imaging stage
-    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
+    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
+        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
