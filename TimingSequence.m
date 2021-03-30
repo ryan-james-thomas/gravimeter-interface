@@ -4,6 +4,10 @@ classdef TimingSequence < handle
 
     properties
         channels        %Array of TimingControllerChannel objects
+        dds             %Array of DDS objects
+        ddsTrigDelay    %Offset time between start of sequence and start of DDS
+        
+        directory       %Directory where to save sequence builder files
     end
 
     properties(SetAccess = immutable)
@@ -43,7 +47,18 @@ classdef TimingSequence < handle
             for nn = (self.numDigitalChannels+1):self.numChannels
                 self.channels(nn) = AnalogChannel;
             end
+            
+            self.ddsTrigDelay = 0;
+%             tmp2(2) = DDSChannel;
+            self.dds = DDSChannel;
+            self.dds(2) = DDSChannel;
+            for nn = 1:numel(self.dds)
+                self.dds(nn).channel = nn;
+            end
+            
             self.time = 0;
+            
+            self.directory = 'run-archive';
         end
 
 
@@ -52,6 +67,9 @@ classdef TimingSequence < handle
             self.time = 0;
             for nn = 1:self.numChannels
                 self.channels(nn).reset;
+            end
+            for nn=1:numel(self.dds)
+                self.dds(nn).reset;
             end
         end
 
@@ -104,6 +122,14 @@ classdef TimingSequence < handle
                 end
             end
             if isempty(ch)
+                for nn = 1:numel(self.dds)
+                    if strcmpi(self.dds(nn).name,name)
+                        ch = self.dds(nn);
+                        break;
+                    end
+                end
+            end
+            if isempty(ch)
                 error('Channel %s not found.  Check spelling?',name);
             end
         end
@@ -117,6 +143,9 @@ classdef TimingSequence < handle
             self.time = time;
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(time);
+            end
+            for nn = 1:numel(self.dds)
+                self.dds(nn).anchor(time);
             end
         end
 
@@ -135,6 +164,9 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(self.time);
             end
+            for nn = 1:numel(self.dds)
+                self.dds(nn).anchor(self.time);
+            end
         end
 
         function self = waitFromLatest(self,waitTime)
@@ -148,6 +180,9 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(self.time);
             end
+            for nn = 1:numel(self.dds)
+                self.dds(nn).anchor(self.time);
+            end
         end
 
         function time = latest(self)
@@ -159,6 +194,11 @@ classdef TimingSequence < handle
             for nn = 1:self.numChannels
                 if self.channels(nn).last > time
                     time = self.channels(nn).last;
+                end
+            end
+            for nn = 1:numel(self.dds)
+                if self.dds(nn).last > time
+                    time = self.dds(nn).last;
                 end
             end
             
@@ -226,7 +266,12 @@ classdef TimingSequence < handle
             self.data.t = buf(:,1)/self.SAMPLE_CLK;
             self.data.d = uint32(sum(buf(:,1+(1:self.numDigitalChannels)).*repmat(2.^bits,size(buf,1),1),2));
             self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
-
+            
+            for nn = 1:numel(self.dds)
+                % self.dds(nn).expand(self.data.t);
+                self.data.dds(nn) = self.dds(nn).compile(self.ddsTrigDelay);
+            end
+            
             r = self.data;
         end
 
@@ -272,7 +317,8 @@ classdef TimingSequence < handle
             end
             str = {};
             for nn = 1:self.numChannels
-                self.channels(nn).plot((jj-1)*offset,self.latest);
+%                 self.channels(nn).plot((jj-1)*offset,self.latest);
+                self.channels(nn).plot('offset',(jj-1)*offset,'finaltime',self.latest);
                 hold on;
                 if self.channels(nn).exists
                     if isempty(self.channels(nn).name)
@@ -333,7 +379,7 @@ classdef TimingSequence < handle
         function sq = buildFromCompiledData(data)
             sq = TimingSequence(32,size(data.a,2));
             sq.loadCompiledData(data);
-            end
+        end
     end
 
 

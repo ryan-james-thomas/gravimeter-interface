@@ -15,8 +15,9 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
     
     properties(SetAccess = protected)
         default     %Default value for this channel
+%         numSubValues%Number of sub values, expressed as columns in values property
         
-        values      %Array of values in channel sequence.  Only 0 or 1 values are allowed
+        values      %Array of values in channel sequence.
         times       %Array of times in the channel sequence in seconds
         numValues   %Number of time/value pairs
         
@@ -25,6 +26,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
         bounds      %Allowed bounds for values
         IS_DIGITAL  %Indicates if a channel is a digital channel
         IS_ANALOG   %Indicates if a channel is an analog channel
+        IS_DDS      %Indicates if a channel is a DDS channel
     end
     
     methods
@@ -33,14 +35,16 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
 
             ch.IS_DIGITAL = false;
             ch.IS_ANALOG = false;
+            ch.IS_DDS = false;
             ch.bounds = [0,0];
-            ch.setDefault(0);
+            ch.default = 0;
             ch.manual = ch.default;
-            ch.reset;
             ch.numValues = 0;
             ch.lastTime = 0;
-            self.port = '';
-            self.description = '';
+            ch.port = '';
+            ch.description = '';
+            ch.times = [];
+            ch.values = [];
         end
         
         function ch = setName(ch,name,port,description)
@@ -74,12 +78,12 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 idx = find(ch.times == 0);
                 if isempty(idx)
                     ch.times(end+1) = 0;
-                    ch.values(end+1) = ch.default;
+                    ch.values(end+1,:) = ch.default;
                     lt = ch.lastTime;
                     ch.sort;
                     ch.lastTime = lt;
                 else
-                    ch.values(idx) = ch.default;
+                    ch.values(idx,:) = ch.default;
                 end
             end
             ch.numValues = numel(ch.times);
@@ -124,38 +128,76 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.bounds(2) = max(bounds);
         end
         
-        function ch = at(ch,time,value)
+        function ch = at(ch,time,value,varargin)
             %AT Adds a value at the given time
             %
             %   ch = ch.at(TIME,VALUE) adds VALUE to the events at the time 
             %   given by TIME.  Assumes that TIME and VALUE are scalars.  TIME must 
             %   be in seconds.  Sets the lastTime property to TIME
             %
-            %   CH = CH.at(TIME,VALUE) if TIME and VALUE are Nx1 arrays adds each element
-            %   in VALUE to events at time given by corresponding element in VALUE.
-            %   This uses a recursive call to AT, so may run into memory issues
+            %   CH = CH.at(TIME,VALUE) if TIME and VALUE are Nx1 arrays
+            %   adds each row in VALUE to events at time given by
+            %   corresponding row in VALUE. This uses a recursive call to
+            %   AT, so may run into memory issues 
             %
-            %   CH = CH.at(TIME,VALUEFUNC) if TIME is an Nx1 array and VALUEFUNC is a function
-            %   handle, adds the calculated values VALUEFUNC(TIME) to events.  Uses recursive
-            %   calls, so may run into memory issues
+            %   CH = CH.at(TIME,VALUE) if TIME is an Nx1 array and VALUE is
+            %   an NxM array adds each row in VALUE to events at time given
+            %   by corresponding row in VALUE. This uses a recursive call
+            %   to AT, so may run into memory issues
+            %
+            %   CH = CH.at(TIME,VALUEFUNC) if TIME is an Nx1 array and
+            %   VALUEFUNC is a function handle, adds the calculated values
+            %   VALUEFUNC(TIME) to events.  Uses recursive calls, so may
+            %   run into memory issues
+            %
+            %   CH = CH.at(TIME,VARARGIN) if time is an Nx1 array and each
+            %   of the VARARGIN elements are Nx1 array, adds the values for
+            %   each element to the corresponding row in VALUE. This uses a
+            %   recursive call to AT, so may run into memory issues
 
-
+            time = time(:);
+            N = numel(time);
             if numel(ch) > 1
                 %If an array of channels is passed, loop through each individually
                 for nn = 1:numel(ch)
-                    ch(nn).at(time,value);
+                    ch(nn).at(time,value,varargin{:});
                 end
-            elseif ~isa(value,'function_handle') && (numel(time) == numel(value)) && (numel(time) > 1)
-                %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
+            elseif ~isa(value,'function_handle') && (N > 1) && (numel(varargin) ~= 0)
+                %If TIME is Nx1 and VALUE and VARARGIN{...} are each
+                %Nx1, recursively add events
+                value = value(:);
+                Nv = numel(value);
+                if Nv == 1
+                    value = value*ones(N,1);
+                end
+                for nn = 1:numel(varargin)
+                    tmp = varargin{nn};
+                    value(:,nn+1) = tmp(:).*ones(N,1);
+                end
                 for nn = 1:numel(time)
+                    ch.at(time(nn),value(nn,:));
+                end
+            elseif ~isa(value,'function_handle') && (N == numel(value)) && (numel(time) > 1)
+                %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
+                for nn = 1:N
                     ch.at(time(nn),value(nn));
                 end
-            elseif isa(value,'function_handle') && (numel(time) > 1)
+            elseif ~isa(value,'function_handle') && (N == size(value,1)) && (numel(time) > 1)
+                %If TIME is Nx1 and VALUE is NxM, recursively add events
+                for nn = 1:N
+                    ch.at(time(nn),value(nn,:));
+                end
+            elseif isa(value,'function_handle') && (N > 1)
                 %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
                 v = value(time);
                 ch.at(time,v);
             else
                 %Otherwise add single events
+                if numel(varargin) ~= 0
+                    for nn = 1:numel(varargin)
+                        value(:,nn+1) = varargin{nn};
+                    end
+                end
                 ch.checkValue(value);   %Check that value is within bounds
 
                 time = round(time*TimingSequence.SAMPLE_CLK)/TimingSequence.SAMPLE_CLK;   %Round time to multiple of sample clock
@@ -163,13 +205,13 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 if isempty(idx)
                     %If this time has not been used previously, add a new value at this time
                     N = ch.numValues+1;
-                    ch.values(N,1) = value;
+                    ch.values(N,:) = value;
                     ch.times(N,1) = time;
                     ch.numValues = N;
                     ch.lastTime = time;
                 else
                     %If time has been used, replace that value
-                    ch.values(idx,1) = value;
+                    ch.values(idx,:) = value;
                     ch.times(idx,1) = time;
                     ch.lastTime = time;
                 end
@@ -181,21 +223,21 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.at(varargin{:});
         end
         
-        function ch = set(ch,value)
+        function ch = set(ch,value,varargin)
             %SET Sets a value at the current lastTime
             %
             %   ch = set(ch,value) sets the current value to be value at time
             %   lastTime
             if numel(ch) > 1
                 for nn = 1:numel(ch)
-                    ch(nn).at(ch(nn).lastTime,value);
+                    ch(nn).at(ch(nn).lastTime,value,varargin{:});
                 end
             else
-                ch.at(ch.lastTime,value);
+                ch.at(ch.lastTime,value,varargin{:});
             end
         end
         
-        function ch = after(ch,delay,value)
+        function ch = after(ch,delay,value,varargin)
             %AFTER Adds a value to the events after the last added event
             %
             %   ch = ch.after(DELAY,VALUE) adds value to the events a time
@@ -204,15 +246,15 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             
             if numel(ch) > 1
                 for nn = 1:numel(ch)
-                    ch(nn).after(delay,value);
+                    ch(nn).after(delay,value,varargin{:});
                 end
             else
                 time = ch.lastTime+delay;
-                ch.at(time,value);
+                ch.at(time,value,varargin{:});
             end
         end
         
-        function ch = before(ch,delay,value)
+        function ch = before(ch,delay,value,varargin)
             %BEFORE Adds a value to the events before the last added event
             %
             %   ch = ch.before(DELAY,VALUE) adds value to the events a time
@@ -221,11 +263,11 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             
             if numel(ch) > 1
                 for nn = 1:numel(ch)
-                    ch(nn).before(delay,value);
+                    ch(nn).before(delay,value,varargin{:});
                 end
             else
                 time = ch.lastTime-delay;
-                ch.at(time,value);
+                ch.at(time,value,varargin{:});
             end
         end
         
@@ -249,7 +291,11 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   [t,v] = ch.last returns the last time t and last value v
             [t,v] = ch.getEvents;
             time = t(end);
-            value = v(end);
+            if any(size(v) ~= 1)
+                value = v(end,:);
+            else
+                value = v(end);
+            end
         end
         
         function ch = reset(ch)
@@ -269,7 +315,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             if numel(ch.times)>0
                 [B,K] = sort(ch.times);
                 ch.times = B;
-                ch.values = ch.values(K);
+                ch.values = ch.values(K,:);
                 ch.lastTime = ch.times(end);
             end
             ch.numValues = numel(ch.times);
@@ -307,8 +353,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   CH = CHECK(CH) Checks events to make sure times are positive and that unique times
             %   are given.  Also checks that values are within bounds
             ch.checkTimes();
-            for nn = 1:numel(ch.values)
-                ch.checkValue(ch.values(nn));
+            for nn = 1:ch.numValues
+                ch.checkValue(ch.values(nn,:));
             end
         end
 
@@ -322,7 +368,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             for nn = 2:numel(v)
                 if v(nn) ~= v(nn-1)
                     ch.times(idx,1) = t(nn);
-                    ch.values(idx,1) = v(nn);
+                    ch.values(idx,:) = v(nn,:);
                     idx = idx + 1;
                 end
             end
@@ -334,42 +380,117 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 idx = 1:numel(ch.times);
             end
             for nn = idx
-                fprintf(1,'Time: % 12.6f, Value: % 6.3f\n',ch.times(nn),ch.values(nn));
+                fprintf(1,['Time: % 12.6f, Value: ',repmat('% 12.3f ',1,size(ch.values,2)),'\n'],ch.times(nn),ch.values(nn,:));
             end 
         end
 
         
-        function ch = plot(ch,offset,finalTime)
+        function varargout = plot(ch,varargin)
             %PLOT Plots the current sequence as a function of time.
             %
             %   ch.plot plots the current sequence as a function of time.
             %   If there are no events, a message is displayed.
             %
-            %   ch.plot(OFFSET) plots the current sequence with a vertical 
-            %   offset given by OFFSET.  This is useful if you want to plot
-            %   multiple signals on the same plot
+            %   ch.plot(AX) plots the current sequence on the axes given by
+            %   AX.
             %
-            %   ch.plot(OFFSET,FINALTIME) plots the current sequence with
-            %   OFFSET and extends plot to FINALTIME
-            [t,v] = ch.getEvents;
-            if ~ch.exists
+            %   ch.plot(AX,'Name','Value',...) plots the current sequnce on
+            %   axes AX with properties given by Name and Value.  Name can
+            %   be OFFSET, which gives a vertical offset on the channel,
+            %   FINALTIME, which plots the sequence out to FINALTIME, and
+            %   PLOTARGS, which is a cell array of plot-arguments
+            %
+            %   ch.plot('Name','Value') plots as above in the current axes
+            %
+            if numel(varargin) >= 1 && all(ishandle(varargin{1})) && strcmpi(get(varargin{1},'type'),'axes')
+                ax = varargin{1};
+                varargin = varargin(2:end);
+            else
+                ax = gca;
+            end
+            
+            if mod(numel(varargin),2) ~= 0
+                error('Arguments must be in name/value pairs');
+            else
+                returnHandle = false;
+                plotargs = {};
+                plotIdx = 1:size(ch.values,2);
+                for nn = 1:2:numel(varargin)
+                    v = varargin{nn+1};
+                    switch lower(varargin{nn})
+                        case 'plotargs'
+                            plotargs = v;
+                        case 'returnhandle'
+                            returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
+                    end
+                end
+            end
+            
+            if ~ch.exists && ~returnHandle
+                if nargout > 0
+                    varargout{1} = [];
+                end
                 return
             end
             
-            if nargin >= 3 && t(end) ~= finalTime
-                t = [t;finalTime];
-                v = [v;v(end)];
-            end
-            tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
-            vplot = interp1(t,v,tplot,'previous');
-            if nargin >= 2
-                vplot = vplot+offset;
+            [tplot,vplot] = ch.getPlotValues(varargin{:});
+            cargs = {'linewidth',1.5,'tag',ch.name};
+            if numel(plotargs) > 0
+                cargs = [cargs,plotargs];
             end
             if ~ch.IS_DIGITAL
-                plot(tplot,vplot,'.-','linewidth',1.5);
+                h = plot(ax,tplot,vplot,'.-',cargs{:});
             else
-                plot(tplot,vplot,'.--','linewidth',1.5);
+                h = plot(ax,tplot,vplot,'.--',cargs{:});
             end
+            
+            if nargout > 0
+                varargout{1} = h;
+            end
+        end
+        
+        function [tplot,vplot] = getPlotValues(ch,varargin)
+            if mod(numel(varargin),2) ~= 0
+                error('Arguments must be in name/value pairs');
+            else
+                offset = 0;
+                finalTime = [];
+                returnHandle = false;
+                plotIdx = 1:size(ch.values,2);
+                for nn = 1:2:numel(varargin)
+                    v = varargin{nn+1};
+                    switch lower(varargin{nn})
+                        case 'offset'
+                            offset = v;
+                        case 'finaltime'
+                            finalTime = v;
+                        case 'returnhandle'
+                            returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
+                    end
+                end
+            end
+            [t,v] = ch.getEvents;
+            if ~ch.exists && ~returnHandle
+                tplot = [];
+                vplot = [];
+                return
+            end
+            
+            if t(end) ~= finalTime
+                t = [t;finalTime];
+                v = [v;v(end,:)];
+            end
+            tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
+            tplot = tplot(tplot >= 0);
+            vplot = zeros(numel(tplot),numel(plotIdx));
+            for nn = 1:numel(plotIdx)
+                vplot(:,nn) = interp1(t,v(:,plotIdx(nn)),tplot,'previous');
+            end
+            vplot = vplot + offset;
         end
         
     end

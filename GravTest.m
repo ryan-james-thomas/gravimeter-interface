@@ -1,7 +1,6 @@
 function GravTest(r)
 
 if r.isInit()
-    
     r.numRuns = 50;
 elseif r.isSet()
     
@@ -36,4 +35,5 @@ elseif r.isAnalyze()
     errorbar((1:nn),r.data.N/1e6,r.data.N/1e6*0.05+0.05,'o');
     subplot(2,1,2);
     errorbar((1:nn),r.data.T(:,1)*1e6,r.data.T(:,1)*1e6*0.05,'o');
+
 end

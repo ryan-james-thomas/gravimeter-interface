@@ -2,6 +2,7 @@ function sq = initSequence
     sq = TimingSequence(32,24);
     
     %% Name digital channels
+
     sq.channels(1).setName('50W TTL','A0').setDefault(0);
     sq.channels(2).setName('DDS Trig','A1').setDefault(1);
     sq.channels(3).setName('50W Pilot','A2').setDefault(1);
@@ -25,8 +26,8 @@ function sq = initSequence
     sq.channels(26).setName('F MOD Imaging Trigger','D1').setDefault(0);
     sq.channels(30).setName('Drop 1 Camera Trig','D5').setDefault(0);
     
-    sq.channels(31).setDefault(1);
-    sq.channels(32).setDefault(0);
+    sq.digital(31).setDefault(1);
+    sq.digital(32).setDefault(0);
     
     %% Name analog channels
     sq.analog(1).setName('2D MOT Freq','AO/0').setDefault(7.65);
@@ -54,6 +55,9 @@ function sq = initSequence
     sq.analog(23).setName('Raman Freq','CO/6').setDefault(9);
     sq.analog(24).setName('3D Coils Loop','CO/7').setDefault(0);
 
-
+    %% DDS default
+%     sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
+%     sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
+    
 
 end
