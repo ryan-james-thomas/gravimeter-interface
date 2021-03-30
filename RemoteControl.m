@@ -169,6 +169,9 @@ classdef RemoteControl < handle
             %RUN Starts a single client run by sending the start word
             self.open;
             fprintf(self.conn,'%s\n',self.startWord);
+            if isfield(self.devices,'p') && strcmpi(self.status,self.RUNNING)
+                self.devices.p.upload;
+            end
         end %end run
         
         function start(self)
