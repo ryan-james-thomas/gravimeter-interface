@@ -1,0 +1,8 @@
+{
+    "TimingSequence.find" : {
+        "inputs" : [
+            {"name":"self", "kind":"required", "type":"TimingSequence"},
+            {"name":"name", "kind":"required", "type":["char","choices={'50W TTL','DDS Trig','50W Pilot','25W TTL','25W Active','A5 - N/C','Bragg/Raman switch','A7 - N/C','2D MOT Amp TTL','3D MOT Amp TTL','Imaging Amp TTL','Push Amp TTL','Repump Amp TTL','Cam Trig','Drop Repump','Fiber Switch Repump','MOT Coil TTL','Stern-Gerlach Trigger','','','','','','','MW Amp TTL','F MOD Imaging Trigger','','','','Drop 1 Camera Trig','','','2D MOT Freq','3D MOT Freq','Imaging Freq','Push Freq','Repump Freq','50W Amp','25W Amp','AO7 - N/C','Liquid crystal Bragg','3D MOT Amp','MW Freq','MW Amp','Repump Amp','Liquid Crystal Repump','Drop Repump Freq','RF Frequency','CO/0 - dead','CO/1 - dead','3D Coils','Bias E/W','Bias N/S','Bias U/D','Stern-Gerlach Amp','3D Coils Loop'}"]}
+        ]
+    }       
+}
