@@ -43,13 +43,23 @@ classdef RemoteControl < handle
     end
     
     methods
-        function self = RemoteControl
+        function self = RemoteControl(varargin)
+            self.setRemoteProperties(varargin{:});
             self.connected = false;
             self.mode = self.INIT;
             self.status = self.STOPPED;
             self.makerCallback = @makeSequence;
             self.reset;
         end %end constructor
+        
+        function self = setRemoteProperties(self,varargin)
+            if numel(varargin) >= 1
+                self.remoteAddress = varargin{1};
+            end
+            if numel(varargin) >= 2
+                self.remotePort = varargin{2};
+            end
+        end
         
         function open(self)
             %OPEN Opens a tcpip port           
