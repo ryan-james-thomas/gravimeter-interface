@@ -2,8 +2,8 @@ function varargout = makeSequence(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
     %Enable optical dipole traps
-    P25 = @(x) (x+2.5896)/2.8594;   %Gives voltage for powers in W
-    P50 = @(x) (x+4.3628)/5.7754;
+    P25 = @(x) (x+2.6412)/2.8305;   %Gives voltage for powers in W
+    P50 = @(x) (x+3.7580)/5.5445;
     
     sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
