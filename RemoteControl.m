@@ -83,20 +83,14 @@ classdef RemoteControl < handle
         end %end open
         
         function setFunc(self)
+            %SETFUNC Sets the BytesAvailableFcn to self.resp()
             self.open;
             self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
         end
         
         function instr = findTCPPort(self)
             %FINDTCPPORT Finds all existing TCP ports
-            instr = instrfindall('type','tcpip','RemotePort',self.remotePort,'RemoteHost',self.remoteAddress);
-%             for nn = 1:numel(instr)
-%                 if isa(instr(nn),'tcpip') && strcmpi(instr(nn).RemotePort,self.remotePort) && strcmpi(instr(nn).RemoteHost,self.remoteAddress)
-%                     r = instr(nn);
-%                     return;
-%                 end
-%             end
-%             r = false;       
+            instr = instrfindall('type','tcpip','RemotePort',self.remotePort,'RemoteHost',self.remoteAddress);      
         end
         
         function r = read(self)
@@ -122,7 +116,15 @@ classdef RemoteControl < handle
             fprintf(1,'Remote control session terminated\n');
             self.connected = false;
             self.status = self.STOPPED;
-        end %end fclose
+        end
+        
+        function delete(self)
+            %DELETE Deletes this object
+            %
+            %   Closes then deletes the tcpip connection with the LabVIEW
+            %   interface before deleting the object
+            self.stop;
+        end
 
         function self = make(self,varargin)
             %MAKE Makes the sequence to be uploaded
@@ -206,9 +208,9 @@ classdef RemoteControl < handle
             %RUN Starts a single client run by sending the start word
             self.open;
             fprintf(self.conn,'%s\n',self.startWord);
-            if isfield(self.devices,'p') && strcmpi(self.status,self.RUNNING)
-                self.devices.p.upload;
-            end
+%             if isfield(self.devices,'p') && strcmpi(self.status,self.RUNNING)
+%                 self.devices.p.upload;
+%             end
         end %end run
         
         function start(self)
