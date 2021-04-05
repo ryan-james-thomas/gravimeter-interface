@@ -100,6 +100,11 @@ classdef RolloverCounter < handle
             end
         end
         
+        function c = now(self)
+            %NOW Alias of CURRENT()
+            c = self.current;
+        end
+        
         function self = increment(self)
             %INCREMENT Increments the counter by 1
             %
@@ -118,6 +123,14 @@ classdef RolloverCounter < handle
                 end
                     
             end
+        end
+        
+        function r = done(self)
+            %DONE Indicates if counter is done
+            %
+            %   R = COUNTER.done() returns true if COUNTER is on its last
+            %   value, false otherwise
+            r = (self.current() == self.total());
         end
         
         function varargout = print(self)

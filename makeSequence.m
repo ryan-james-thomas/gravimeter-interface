@@ -89,7 +89,7 @@ function varargout = makeSequence(varargin)
     %Ramp down magnetic trap in 1.01 s
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);
-    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0));
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-50e-3));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
 %     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
@@ -118,13 +118,14 @@ function varargout = makeSequence(varargin)
     sq.find('mw freq').set(0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
+    sq.find('3D Coils').set(-0.05);
     sq.find('25w ttl').set(0);
     sq.find('50w ttl').set(0);
     
 
     %% Interferometry
     sq.find('dds trig').before(10e-3,1);
-    sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
+%     sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
     sq.find('dds trig').after(10e-3,1);
 
     %% Raman
@@ -133,19 +134,16 @@ function varargout = makeSequence(varargin)
 %     sq.find('raman ttl').set(0);
 % 
     %% SG
-%     sq.find('mot coil ttl').set(1);
-%     t = linspace(0,5e-3,20);
-%     sq.find('3d coils').after(t,sq.linramp(t,0,0.0));
-%     sq.find('3d coils').after(t,sq.linramp(t,0.0,0));
-%     sq.delay(10e-3);
-%     sq.find('mot coil ttl').set(0);
-%     sq.find('3d coils').set(0);
-%     sq.delay(4e-3);
+    sq.find('mot coil ttl').after(5e-3,1);
+    t = 5e-3 + linspace(0,15e-3,20);
+    sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.4));
+    sq.find('mot coil ttl').after(15e-3,0);
+    sq.find('3d coils').set(-50e-3);
     
 
     %% Imaging stage
-    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
+    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
+        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 

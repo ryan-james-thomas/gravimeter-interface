@@ -5,8 +5,6 @@ classdef RemoteControl < handle
         connected       %Is LabVIEW client connected?
         %% Sequence properties
         status          %Current status of run: RUNNING or STOPPED
-        currentRun      %Current run number
-        numRuns         %Total number of runs
         sq              %Sequence object representing current sequence
         makerCallback   %Callback function for creating a TimingSequence object
         %% Data properties
@@ -24,7 +22,7 @@ classdef RemoteControl < handle
     end %end constant properties
     
     properties(SetAccess = immutable)
-        c               %Rollover counter object
+        c               %Rollover counter object, keeps track of runs
     end
     
     properties(Constant, Hidden=true)
@@ -213,9 +211,6 @@ classdef RemoteControl < handle
             %RUN Starts a single client run by sending the start word
             self.open;
             fprintf(self.conn,'%s\n',self.startWord);
-%             if isfield(self.devices,'p') && strcmpi(self.status,self.RUNNING)
-%                 self.devices.p.upload;
-%             end
         end %end run
         
         function start(self)
@@ -243,7 +238,7 @@ classdef RemoteControl < handle
                 self.connected = true;
                 self.status = self.STOPPED;
             elseif strcmpi(s,self.readyWord) && strcmpi(self.status,self.RUNNING)
-                if self.currentRun == self.numRuns
+                if self.c.done()
                     % Analyze
                     self.analyze;
                     % Stop
@@ -252,7 +247,7 @@ classdef RemoteControl < handle
                     % Analyze
                     self.analyze;
                     % Run again
-                    self.currentRun = self.currentRun + 1;
+                    self.c.increment();
                     self.set;
                     self.run;
                 end
@@ -263,7 +258,7 @@ classdef RemoteControl < handle
             %SET Sets the mode to INIT and calls the callback function if
             %currentRun is 1
             self.setFunc;
-            if self.currentRun==1
+            if self.c.current() == 1
                 self.mode = self.INIT;
                 self.callback(self);
             end
@@ -299,7 +294,7 @@ classdef RemoteControl < handle
         
         function reset(self)
             %RESET Resets currentRun to 1, data to [], mode to INIT
-            self.currentRun = 1;
+            self.c.reset;
             self.data = [];
             self.mode = self.INIT;
         end
