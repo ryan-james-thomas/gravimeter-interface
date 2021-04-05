@@ -7,8 +7,8 @@ function varargout = makeSequence(varargin)
     
     sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
-    sq.find('50w amp').set(P50(19));
-    sq.find('25w amp').set(P25(19));    
+    sq.find('50w amp').set(P50(25));
+    sq.find('25w amp').set(P25(20));    
     %% Set up the MOT loading values                
     sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
     sq.find('3d coils').set(0.42);
@@ -16,7 +16,7 @@ function varargout = makeSequence(varargin)
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(0);
     
-    Tmot = 6;                           %6 s MOT loading time
+    Tmot = 5;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
     %% Compressed MOT stage
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
@@ -41,8 +41,8 @@ function varargout = makeSequence(varargin)
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
     %Smooth ramps for these parameters
-    sq.find('3D MOT Amp').after(t,f(5,4));
-    sq.find('3D MOT Freq').after(t,f(6,3.2)); 
+    sq.find('3D MOT Amp').after(t,f(5,3));
+    sq.find('3D MOT Freq').after(t,f(6,5)); 
     sq.find('3D coils').after(t,f(0.15,0.02));
 
     sq.delay(Tpgc);
@@ -65,8 +65,8 @@ function varargout = makeSequence(varargin)
     %% Microwave evaporation
     sq.delay(20e-3);
     evapRate = 0.3;
-    evapStart = 7.2;
-    evapEnd = 7.95;
+    evapStart = 7.05;
+    evapEnd = 7.9;
     Tevap = (evapEnd-evapStart)/evapRate;
 %     Tevap = 3.2;
     t = linspace(0,Tevap,100);
@@ -93,13 +93,13 @@ function varargout = makeSequence(varargin)
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
 %     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
-%     
+    
     %At the same time, start optical evaporation
     sq.delay(30e-3);
-    Tevap = 1.97+0.75;
+    Tevap = 1.97;
     t = linspace(0,Tevap,300);
-    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
-    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.3));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.3));
     sq.delay(Tevap);
    
     
@@ -114,7 +114,7 @@ function varargout = makeSequence(varargin)
     
     %% Drop atoms
     sq.anchor(sq.latest);
-    sq.find('bias e/w').before(200e-3,10);
+%     sq.find('bias e/w').before(200e-3,10);
     sq.find('mw freq').set(0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
@@ -124,7 +124,7 @@ function varargout = makeSequence(varargin)
 
     %% Interferometry
     sq.find('dds trig').before(10e-3,1);
-%     sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
+    sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
     sq.find('dds trig').after(10e-3,1);
 
     %% Raman
@@ -144,8 +144,8 @@ function varargout = makeSequence(varargin)
     
 
     %% Imaging stage
-    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
+    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
+        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
