@@ -1,13 +1,14 @@
 function GravTest(r)
 
 if r.isInit()
-    r.numRuns = 50;
+    r.data.param = const.randomize(2:12);
+    r.numRuns = numel(r.data.param);
 elseif r.isSet()
     
-    r.make(8.5,35e-3,2);
+    r.make(8.5,35e-3,1.8,r.data.param(r.currentRun));
     r.upload;
 %     pause(5);
-    fprintf(1,'Run %d/%d\n',r.currentRun,r.numRuns);
+    fprintf(1,'Run %d/%d, Param = %.3f\n',r.currentRun,r.numRuns,r.data.param(r.currentRun));
     
 elseif r.isAnalyze()
     nn = r.currentRun;
@@ -17,6 +18,7 @@ elseif r.isAnalyze()
     r.data.T(nn,:) = c.T;
     r.data.OD(nn,1) = c.peakOD;
     r.data.pos(nn,:) = c.pos;
+    r.data.PSD(nn,1) = c.PSD;
 
 %     pause(0.1);
 %     figure(10);clf;
@@ -32,8 +34,10 @@ elseif r.isAnalyze()
     
     figure(10);clf;
     subplot(2,1,1);
-    errorbar((1:nn),r.data.N/1e6,r.data.N/1e6*0.05+0.05,'o');
+    errorbar(r.data.param(1:nn),r.data.N/1e6,r.data.N/1e6*0.05+0.05,'o');
     subplot(2,1,2);
-    errorbar((1:nn),r.data.T(:,1)*1e6,r.data.T(:,1)*1e6*0.05,'o');
+    errorbar(r.data.param(1:nn),r.data.T(:,1)*1e6,r.data.T(:,1)*1e6*0.05,'o');
+%     subplot(2,1,3);
+%     plot(r.data.param(1:nn),r.data.PSD(:,1),'o');
 
 end

@@ -23,6 +23,10 @@ classdef RemoteControl < handle
 
     end %end constant properties
     
+    properties(SetAccess = immutable)
+        c               %Rollover counter object
+    end
+    
     properties(Constant, Hidden=true)
         readyWord = 'ready';          %Word indicating that client is ready
         startWord = 'start';          %Word telling host to start
@@ -49,6 +53,7 @@ classdef RemoteControl < handle
             self.mode = self.INIT;
             self.status = self.STOPPED;
             self.makerCallback = @makeSequence;
+            self.c = RolloverCounter();
             self.reset;
         end %end constructor
         
@@ -108,7 +113,7 @@ classdef RemoteControl < handle
         
         function stop(self)
             %STOP Releases client from remote control and closes TCP conn
-            if strcmpi(self.conn.Status,'open')
+            if ~isempty(self.conn) && isvalid(self.conn) && strcmpi(self.conn.Status,'open')
 %                 fprintf(self.conn,'%s',self.endWord);
                 fclose(self.conn);
             end
