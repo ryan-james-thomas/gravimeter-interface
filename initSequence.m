@@ -62,7 +62,8 @@ function sq = initSequence
 
     %% DDS default
     sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
+    sq.dds(1).rfscale = 2.38;
     sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
-    
+    sq.dds(2).rfscale = 2.08;
 
 end

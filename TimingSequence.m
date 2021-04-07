@@ -268,7 +268,6 @@ classdef TimingSequence < handle
             self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
             
             for nn = 1:numel(self.dds)
-                % self.dds(nn).expand(self.data.t);
                 self.data.dds(nn) = self.dds(nn).compile(self.ddsTrigDelay);
             end
             

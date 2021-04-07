@@ -113,7 +113,8 @@ function varargout = makeSequence(varargin)
 %     sq.delay(T);
     
     %% Drop atoms
-    sq.anchor(sq.latest);
+    timeAtDrop = sq.latest;
+    sq.anchor(timeAtDrop);
 %     sq.find('bias e/w').before(200e-3,10);
     sq.find('mw freq').set(0);
     sq.find('mw amp ttl').set(0);
@@ -125,23 +126,33 @@ function varargout = makeSequence(varargin)
 
     %% Interferometry
     sq.find('dds trig').before(10e-3,1);
-%     sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
+    sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
     sq.find('dds trig').after(10e-3,1);
+    
+    sq.ddsTrigDelay = timeAtDrop;
+    makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',10e-3,'T',1e-3,...
+        'width',50e-6,'Tasym',0,'phase',45,'power',0.05*[1,2,1],'chirp',25.105e6);
 
     %% Raman
-%     sq.find('raman ttl').set(5);
-%     sq.delay(6e-3);
-%     sq.find('raman ttl').set(0);
-% 
+    sq.dds.anchor(timeAtDrop);
+    makeGaussianPulse(sq.dds,'t0',5e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
+        'df',153.5e-3);
+    sq.find('raman ttl').set(5);
+    sq.delay(6e-3);
+    sq.find('raman ttl').set(0);
+
     %% SG
-    sq.find('mot coil ttl').after(5e-3,1);
-    t = 5e-3 + linspace(0,15e-3,20);
+    sq.delay(1e-3);
+    sq.find('mot coil ttl').set(1);
+    t = linspace(0,15e-3,20);
     sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.4));
-    sq.find('mot coil ttl').after(15e-3,0);
+    sq.delay(15e-3);
+    sq.find('mot coil ttl').set(0);
     sq.find('3d coils').set(-50e-3);
     
 
     %% Imaging stage
+    sq.anchor(timeAtDrop);
     makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
         'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...

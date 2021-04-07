@@ -12,6 +12,8 @@ classdef RemoteControl < handle
         devices         %Structure listing MATLAB devices used in callback
         data            %Data structure to use in callback function
         callback        %Callback function, takes argument of Rebeka object
+        %% DDS properties
+        mog             %MOGLabs parent object
     end
     
     properties(SetAccess = protected)
@@ -170,6 +172,10 @@ classdef RemoteControl < handle
                 end
             end
             
+            %% Upload DDS data
+            self.uploadDDSData(data.dds);
+            
+            %% Open connection with LabVIEW VI
             self.open;
             
             %% Upload analog data
@@ -184,27 +190,41 @@ classdef RemoteControl < handle
             s = s(1:end-2);
             pause(0.1);
             fprintf(self.conn,s);
-            
-            %% Upload DDS data
-%             self.uploadDDSData('ch1',data.dds(1));
-%             self.uploadDDSData('ch2',data.dds(2));
 
         end
         
-        function uploadDDSData(self,channel,dds)
-%             if isnan(dds)
-%                 return
-%             end
-            fprintf(self.conn,'%s\n',channel);
-%             v = zeros(numel(dds),4);
-%             for nn = 1:size(v,1)
-%                 v(nn,:) = [dds(nn).dt,dds(nn).freq,dds(nn).amp,dds(nn).phase];
-%             end
-            v = [dds.dt,dds.freq,dds.amp,dds.phase];
-            s = sprintf('%d,%.6f,%d,%.6f%%',v');
-            s = s(1:end-1);
-            pause(0.1);
-            fprintf(self.conn,s);
+        function uploadDDSData(self,dds)
+            if isempty(self.mog)
+                return
+            end
+            
+            if isempty(self.mog.cx)
+                error('Connect to MOGLabs ARF box first!');
+            end
+            % Create mogtable objects
+            tb = mogtable(self.mog,1);
+            tb(2) = mogtable(self.mog,2);
+            
+            % Put data into mogtable objects
+            for nn = 1:numel(tb)
+                tb(nn).t = dds(nn).t;
+                tb(nn).freq = dds(nn).freq;
+                tb(nn).pow = dds(nn).pow;
+                tb(nn).phase = dds(nn).phase;
+            end
+            
+            % Reduce instruction sizes and make sure both tables have
+            % instructions at the same time
+            tb(1).reduce;
+            tb(2).reduce(tb(1).sync);
+            
+            % Send commands to device
+            for nn = 1:numel(tb)
+                self.mog.cmd('mode,%d,%s',tb(nn).channel,tb(nn).MODE);
+                self.mog.cmd('table,stop,%d',tb(nn).channel);
+            end
+            self.mog.cmd('table,sync,1');
+            tb.upload;
         end
         
         function run(self)
