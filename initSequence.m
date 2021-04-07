@@ -51,7 +51,7 @@ function sq = initSequence
     sq.analog(14).setName('Liquid Crystal Repump','BO/5').setDefault(-2.22);
     sq.analog(15).setName('Drop Repump Freq','BO/6').setDefault(4.3);
     sq.analog(16).setName('RF Frequency','BO/7').setDefault(0);
-    sq.analog(17).setName('Raman TTL','CO/0').setDefault(0);
+    sq.analog(17).setName('Raman Amp','CO/0').setDefault(0);
     sq.analog(18).setName('CO/1 - dead','CO/1').setDefault(0);
     sq.analog(19).setName('3D Coils','CO/2').setDefault(0.42);
     sq.analog(20).setName('Bias E/W','CO/3').setDefault(0);
