@@ -67,6 +67,10 @@ classdef DDSChannel < TimingControllerChannel
             t = t(idx);
             v = ch.values(idx,:);
             
+            if t(1) ~= 0
+                t = [0;t];
+                v = [ch.DEFAULT_FREQ,0,0;v];
+            end
             data.t = t;
             data.freq = v(:,1);
             data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
