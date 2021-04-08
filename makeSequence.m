@@ -92,7 +92,6 @@ function varargout = makeSequence(varargin)
     sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-50e-3));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
-%     sq.find('imaging amp ttl').after(Trampcoils,1).after(1e-3,0);
     
     %At the same time, start optical evaporation
     sq.delay(30e-3);
@@ -101,19 +100,9 @@ function varargout = makeSequence(varargin)
     sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.3));
     sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.3));
     sq.delay(Tevap);
-   
     
     %% Drop atoms
-%     sq.anchor(sq.latest);
-%     sq.find('bias e/w').before(200e-3,10);
-%     T = 100e-3;
-%     t = linspace(0,T,1e2);
-%     sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50w amp').values(end),P50(varargin{3}+0.2)));
-%     sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25w amp').values(end),P25(varargin{3}+0.2)));
-%     sq.delay(T);
-    
-    %% Drop atoms
-    timeAtDrop = sq.latest;
+    timeAtDrop = sq.latest; %Store the time when the atoms are dropped for later
     sq.anchor(timeAtDrop);
     sq.find('bias e/w').before(200e-3,10);
     sq.find('mw amp ttl').set(0);
@@ -124,39 +113,79 @@ function varargout = makeSequence(varargin)
     
 
     %% Interferometry
+    % Issue falling-edge trigger for MOGLabs DDS box
     sq.find('dds trig').before(10e-3,1);
     sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
     sq.find('dds trig').after(10e-3,1);
     
-    sq.ddsTrigDelay = timeAtDrop;
-    makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',10e-3,'T',1e-3,...
-        'width',50e-6,'Tasym',0,'phase',45,'power',0.05*[1,2,1],'chirp',25.105e6);
+    % Create a sequence of Bragg pulses. The property ddsTrigDelay is used
+    % in compiling the DDS instructions and making sure that they start at
+    % the correct time.
+    sq.ddsTrigDelay = timeAtDrop;   
+    makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',30e-3,'T',1e-3,...
+        'width',50e-6,'Tasym',0,'phase',45,'power',0.0415*[1,2,1],'chirp',25.12e6);
 
     %% Raman
+    %
+    % Start by re-anchoring the internal pointer for the DDS channels at the
+    % drop time.  I do this to make referencing the time at which the Raman
+    % pulse occurs easier to calculate
+    %
     sq.dds.anchor(timeAtDrop);
+    %
+    %This makes a Gaussian pulse with the specified parameters: centered at
+    %'t0' with FWHM of 'width', a maximum power of 'power', and the channel
+    %2 frequency 'df' higher than channel 1.
+    %
     makeGaussianPulse(sq.dds,'t0',5e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
         'df',153.5e-3);
-    sq.find('raman ttl').set(5);    %This is an analog value, so set to 5 V to turn on
+    %
+    % Turn on the amplifier for the Raman AOM. Keep in mind that the
+    % internal pointer for Raman Amp is still at timeAtDrop
+    %
+    sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
     sq.delay(6e-3);
-    sq.find('raman ttl').set(0);
+    sq.find('raman amp').set(0);
 
     %% SG
+    %
+    % Apply a Stern-Gerlach pulse to separate states based on magnetic
+    % moment.  A ramp is used to ensure that the magnetic states
+    % adiabatically follow the magnetic field
+    %
     sq.delay(1e-3);
+    Tsg = 15e-3;
     sq.find('mot coil ttl').set(1);
-    t = linspace(0,15e-3,20);
+    t = linspace(0,Tsg,20);
     sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.4));
-    sq.delay(15e-3);
+    sq.delay(Tsg);
     sq.find('mot coil ttl').set(0);
     sq.find('3d coils').set(-50e-3);
     
 
     %% Imaging stage
+    %
+    % Image the atoms.  Reset the pointer for the whole sequence to when
+    % the atoms are dropped from the trap.  This means that the
+    % time-of-flight (tof) used in makeImagingSequence is now the delay
+    % from the time at which the atoms are dropped to when the first
+    % imaging pulse occurs
+    %
     sq.anchor(timeAtDrop);
     makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
         'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
+    %% Automatic save of run
+    %
+    % This automatically creates a record of this file when the sequence is
+    % created
+    %
+    fpathfull = [mfilename('fullpath'),'.m'];
+    [fpath,fname,fext] = fileparts(fpathfull);
+    dstr = datestr(datetime,'YY_mm_dd_hh_MM_ss');
+    copyfile(fpathfull,sprintf('%s/%s/%s_%s%s',fpath,sq.directory,fname,dstr,fext));
     %% Automatic start
     %If no output argument is requested, then compile and run the above
     %sequence
