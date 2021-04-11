@@ -8,8 +8,9 @@ The basic organization of this interface is as follows.  The classes
   - TimingControllerChannel
   - DigitalChannel
   - AnalogChannel
+  - DDSChannel
 
-together are used to define a `TimingSequence` object which consists of an array of `TimingControllerChannels` (the channels), each of which is an instance of either sub-class `DigitalChannel` or `AnalogChannel`.  Each channel contains an array of values and the times at which to output those values.  These channels can be programmed independently.  The TimingSequence object has a compilation function which collates all the channel times and values and creates a set of arrays that are understood by the LabVIEW control program.  
+together are used to define a `TimingSequence` object which consists of an array of `TimingControllerChannels` (the channels), each of which is an instance of sub-classes `DigitalChannel`, `AnalogChannel`, or `DDSChannel`.  Each channel contains an array of values and the times at which to output those values.  These channels can be programmed independently.  The TimingSequence object has a compilation function which collates all the channel times and values and creates a set of arrays that are understood by the LabVIEW control program.  
 
 The function `makeSequence` is the default program used for creating a specific `TimingSequence` object that runs a given experiment.  The idea is that `makeSequence` has a variable argument list, and the user of the program can edit the function so that different arguments do different things.  So `makeSequence` should be called as
 ```
@@ -30,16 +31,25 @@ where the input arguments are the number of digital and analog channels, respect
 sq.channels(idx); %For accessing any channel - the list starts with digital channels and then goes to analog channels
 sq.digital(idx);  %For accessing the idx'th digital channel.  Call without any arguments to get an array of all digital channels
 sq.analog(idx);   %For accessing the idx'th analog channel.  Call without any arguments to get an array of all analog channels
+sq.dds(idx);      %For accessing the idx'th DDS channel.  Call as an array without the index to return all DDS channels
 ```
 Remembering the index of each channel is inconvenient, so channels can be given names, ports, and descriptions.  For instance, one might want to call the 14th channel "Cam Trig".  This can be done using
 ```
 sq.channels(14).setName('Cam Trig','B5','The camera trigger');
 ```
-where the second number is a port number that is not used internally but may be useful for matching up the named channels to labels on breakout boards.  The function `sq = initSequence` should be used for defining all the channel names and default values (using the method setDefault()).  Once a channel is named it can be accessed using
+where the second string is a port number that is not used internally but may be useful for matching up the named channels to labels on breakout boards.  The last string is a description that can be useful for understanding what the channel does.  Upper and lower bounds can be set using the `setBounds()` function, invoked as
+```
+sq.channels(14).setBounds([minBound,maxBound]);
+```
+The `setBounds()` function can be appended after the `setName()` function to form a single line
+```
+sq.channels(37).setName('Some amplitude','AO/5','An amplifier amplitude').setBounds([minBound,maxBound]);
+```
+The function `sq = initSequence` should be used for defining all the channel names and default values (using the method setDefault()).  Once a channel is named it can be accessed using
 ```
 ch = sq.find('Cam trig');
 ```
-where the input argument for `find` is case-insensitive.  In the above command, `ch` is the `TimingControllerChannel` object corresponding to the channel with name 'Cam trig'.  
+where the input argument for `find` is case-insensitive.  In the above command, `ch` is the `TimingControllerChannel` object corresponding to the channel with name 'Cam trig'.
 
 # Defining channel updates
 
@@ -71,7 +81,7 @@ sq.find('cam trig').at(2.5,0);  %lastTime = 2.5
 ```
 If you call the sort method on a channel `ch` using `ch.sort()` then the `lastTime` property will be set to the latest time in the chronologically ordered set of times.
 
-The `lastTime` property is used for certain semantically useful methods for defining channel updates.  There are four such methods: `anchor(time)`, `set(values)`, `before(times,values)`, and `after(times,values)`.  The `anchor(time)` method sets the value of `lastTime` to the input argument `time` without adding an update.  The method `set(value)` sets the value to `value` at the time corresponding to `lastTime`.  The methods `before(times,values)` and `after(times,values)` can be used to create updates that occur either before or after `lastTime`.  The methods `set`, `before`, and `after` internally invoke `at(lastTime,values)`, `at(lastTime-times,values)` or `at(lastTime+times,values)` for the before and after methods, respectively, so they work with the same inputs as `at`, namely array inputs.  As a result, the following commands have the results indicated in the comments
+The `lastTime` property is used for certain semantically useful methods for defining channel updates.  There are four such methods: `anchor(time)`, `set(values)`, `before(times,values)`, and `after(times,values)`.  The `anchor(time)` method sets the value of `lastTime` to the input argument `time` without adding an update.  The method `set(value)` sets the value to `value` at the time corresponding to `lastTime`.  The methods `before(times,values)` and `after(times,values)` can be used to create updates that occur either before or after `lastTime`.  The methods `set(value)`, `before(times,values)`, and `after(times,values)` internally invoke `at(lastTime,value)`, `at(lastTime-times,values)` or `at(lastTime+times,values)` for the before and after methods, respectively, so they work with the same inputs as `at`, namely array inputs.  As a result, the following commands have the results indicated in the comments
 ```
 sq.find('cam trig').at(0,0);                    %Sets the value to 0 a 0 s. lastTime is 0 s
 sq.find('cam trig').at(3,1);                    %Sets the value to 1 at 3 s.  lastTime is 3 s.
@@ -87,6 +97,29 @@ Note that all of these commands return the channel object, which means that they
 sq.find('cam trig').at(0,0).at(3,1).after(50e-3,0).anchor(10).before(10e-3,1).after(50e-6,0);
 ```
 is equivalent to the first 6 lines of the last set of commands.  
+
+## DDS Channels
+An update to a DDS channel involves changing 3 parameters at the given time: the frequency, amplitude/power, and the phase.  The parent class `TimingControllerChannel` defines all methods for adding updates, and it can handle passing value arrays that are Nx3 where N is the number of updates.  Additionally, updates can be added using a multiple-argument syntax.  For instance, the following commands are equivalent:
+```
+t = linspace(-100e-3,100e-3,100)';  %Define a time vector. Note the transpose operator to make it a column vector!
+f = 110 + t/200e-3;                 %Define a frequency ramp in MHz
+p = exp(-t.^2/50e-6^2);             %Define a Gaussian pulse. The unit of power is a normalized optical power
+ph = zeros(size(t));                %Define a phase array in radians
+%The following commands are equivalent
+sq.dds(1).after(t,[f,p,ph]);        %Pass the values as a single array
+sq.dds(1).after(t,f,p,ph);          %Pass the values as multiple arguments
+sq.dds(1).after(t,f,p,0);           %Any argument with only one element will be expanded to size(t)
+```
+
+Note that the units of the power are a normalized optical power that is converted internally into an RF power.  When initializing a `DDSChannel`, you should set the associated `rfscale` parameter as
+```
+sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
+sq.dds(1).rfscale = 2.38;
+```
+This sets the `rfscale` parameter to 2.38 W.  The conversion between normalized optical power and RF power is
+```
+rf = (asin((P).^0.25)*2/pi).^2*rfscale;
+```
 
 # Building a multi-channel sequence
 
@@ -159,6 +192,8 @@ The 'Freq' channel has only one update while the 'Amp' channel has four.  During
 
 Compiled data is stored in the `TimingSequence` property `TimingSequence.data` which is a structure with fields `t`, `d`, and `a`.  The `t` field is an Nx1 array of double precision values where N is the total number of compiled updates and represents all the update times.  The `d` field is an Nx1 array of unsigned 32-bit integers that represents the output of up to 32 digital channels at each update time.  The `a` field is an NxM array of double-precision values with M the number of analog channels and represents the analog values.
 
+DDS channels do not run through the same hardware as the digital and analog channels, so their compilation process is a little different.  First off, the DDS will start only when it receives a falling edge trigger from the National Instruments box, so a property of the `TimingSequence` called `TimingSequence.ddsTrigDelay` has to be set to the time at which this edge occurs.  This property is used to shift the times of the `DDSChannel` objects from being referenced to when the whole sequence starts to being referenced to when the falling edge occurs.  DDS channel data is stored in the field `TimingSequence.data.dds`.
+
 The compiled data can be easily stored in a MATLAB data file and opened on a computer that does not have the interface classes and functions installed.  Additionally, the method `TimingSequence.loadCompiledData(data)` can convert a compiled data structure into a `TimingSequence`.
 
 # Uploading and running a single sequence
@@ -174,11 +209,13 @@ which internally calls the function stored in `RemoteControl.makerCallback` as `
 ```
 r.makerSequence = @myfunc;
 ```
-The reason for specifying a separate `make()` method for the `RemoteControl` class is so that it can be chained together with the `upload` and `run` methods to enact a single-line make, compile, and run command:
+The reason for specifying a separate `make()` method for the `RemoteControl` class is so that it can be chained together with the `upload` and `run` methods to enact a single-line make, compile, upload, and run command:
 ```
 r.make(varargin).upload.run;
 ```
 where the `upload` method called without an input argument uses the compiled data from the internal `sq` property.  The `run` method tells the LabVIEW program to execute the currently stored program.  Alternatively, given compiled data `data` you can upload that using `r.upload(data)`.
+
+Data destined for the National Instruments box is sent the LabVIEW control interface VI over TCP/IP.  Data for the DDS is converted into a series of commands for the MOGLabs ARF box and sent asynchronously.  This is necessary because MOGLabs designed a very stupid controller in the box itself which cannot handle more than one command at a time.  As a result, a set of commands cannot be sent together as a single block of text, which would cut done enormously on I/O time; instead, each command has to be sent separately.  To upload 1000 instructions (total) for two channels takes about 7 s.  If this uploading is done synchronously, in that it blocks the command line and prevents the sequence from running, then the cycle time of the experiment takes an extra 7 s.  Instead, the data is sent asynchronously and a message is printed on the command line when the upload is finished.  The user needs to ensure that the upload is complete before the DDS is triggered.
 
 # Executing multiple runs and parameter scans
 
@@ -204,23 +241,37 @@ end
 ```
 To facilitate the automated collection of data there is the property `RemoteControl.data`, and different kinds of data can be stored as fields in this property.  For instance, one could store the number of atoms as `r.data.N` and the temperature as `r.data.T` with both `N` and `T` being vectors.
 
-The number of runs to use is controlled by the `RemoteControl.numRuns` and `RemoteControl.currentRun` properties.  When the `RemoteControl` object is first created using `r = RemoteControl`, the value of `r.currentRun` is set to 1.  After the successful completion of each run, which is signaled by the LabVIEW programming sending a 'ready' word to MATLAB using TCP/IP, the value of `r.currentRun` is checked against `r.numRuns` and, if it is smaller, `r.currentRun` is incremented.  If `r.currentRun == r.numRuns` then the set of runs is considered finished and the `r.stop()` method is called.  
+Keeping track of the total number of runs and the current run is handled by the property `RemoteControl.c` which is an instance of the `RolloverCounter` class.  `RolloverCounter` is a counter with multiple indices that increments using modular arithmetic -- it functions very much like a car odometer.  The first index has a particular maximum value, and when that index exceeds its maximum value it rolls back to its start value and the next index increments by 1.  Supposing that one creates a `RolloverCounter` object `c`, one can define a set of three counters with maximum values 3, 4, and 5, as
+```
+c = RolloverCounter([3,4,5]);   %Creates and initializes a RolloverCounter object with 3 indicies with maximum values 3, 4, and 5
+fprintf(1,'Total number of runs is %d\n',c.total());  %Displays the total number of runs. c.total() returns the total number
+while c.now() <= c.total()
+fprintf(1,'Index 1 %d/%d, Index 2 %d/%d, Index 3 %d/%d, Total counts %d/%d\n',c.i(1),c.final(1),c.i(2),c.final(2),c.i(3),c.final(3),c.now(),c.total());
+c.increment();
+end
+```
+The while loop shows how the counters increment.  The function `c.now()` (or `c.current()`) returns the current total index; i.e. the total number of increments that have occurred (minus 1).  You can reset the counter using the method `RolloverCounter.reset()`, and you can reuse a `RolloverCounter` object with different index ranges using the `RolloverCounter.setup()` method:
+```
+c.setup([10,2,5]);
+```
 
-A set of runs is started by using `r.start()`.  As long as `r.currentRun == 1` it will set the internal state of `r` to 'initialize' so when the callback function is executed it will execute the case corresponding to `r.isInit() == true`.  Use this case to define the parameters of interest and also the number of runs.  Note that `r.start()` **does not** reset `r.currentRun` to 1; this behaviour is so that if you can resume a sequence of runs in case of errors.  Use `r.reset` to reset the run counter to 1 and clear the `r.data` property.  From here, the state switches to 'set' and executes the callback case `r.isSet() == true`.  Use this case to create a sequence to upload based on the current parameter.  **Do not** use the `r.run()` method in the callback, as it is automatically called once the callback returns and is in the 'set' state.  When the LabVIEW control program indicates that it is done and ready for a new sequence, `r` moves to the 'analyze' state and executes the case `r.isAnalyze() == true`.  Use this analyze the data generated by the sequence that just finished.  Pretty much anything can be placed into this section to do nearly any kind of analysis.  The data resulting from this analysis can then be stored as fields in the `r.data` property.
+Back to running multiple instances.  When the `RemoteControl` object is first created using `r = RemoteControl`, the value of `r.c` is set to a `RolloverCounter` object where the total number of runs is infinite.  After the successful completion of each run, which is signaled by the LabVIEW programming sending a 'ready' word to MATLAB using TCP/IP, the value of `r.c.now()` is checked against `r.c.total()` and, if it is smaller, `r.c` is incremented using `r.c.increment()`.  If `r.c.now() == r.c.total()` then the set of runs is considered finished and the `r.stop()` method is called.  
+
+A set of runs is started by using `r.start()`.  As long as `r.c.now() == 1` it will set the internal state of `r` to 'initialize' so when the callback function is executed it will execute the case corresponding to `r.isInit() == true`.  Use this case to define the parameters of interest and also the number of runs.  Note that `r.start()` **does not** reset `r.c`; this behaviour is so that if you can resume a sequence of runs in case of errors.  Use `r.reset` to reset the run counter and clear the `r.data` property.  From here, the state switches to 'set' and executes the callback case `r.isSet() == true`.  Use this case to create a sequence to upload based on the current parameter.  **Do not** use the `r.run()` method in the callback, as it is automatically called once the callback returns and is in the 'set' state.  When the LabVIEW control program indicates that it is done and ready for a new sequence, `r` moves to the 'analyze' state and executes the case `r.isAnalyze() == true`.  Use this analyze the data generated by the sequence that just finished.  Pretty much anything can be placed into this section to do nearly any kind of analysis.  The data resulting from this analysis can then be stored as fields in the `r.data` property.
 
 Let's consider an example of a very simple multiple run where we want to change the time-of-flight for the atoms to measure their temperature.  Let us suppose that we have set up our sequence creating function to be `makeSequence(tof)` where `tof` is the time of flight of the atoms.  We want to run through several times-of-flight and analyze the resulting absorption images.  Suppose that we have a function called `Abs_Analysis` that returns a structure with the *x* and *y* widths from the last absorption image.  A potential callback might look like
 ```
 function MeasureTemperature(r)
   if r.isInit
     r.data.tof = 10e-3:2e-3:30e-3;    %Set the times of flights to scan through
-    r.numRuns = numel(r.data.tof);    %Fix the number of runs
+    r.c.setup('var',r.data.tof);      %This is a method of setting the counter up just by passing the keyword 'var' and the parameters to loop through
   elseif r.isSet
-    r.sq = makeSequence(r.data.tof(r.currentRun));  %Create the sequence
+    r.make(r.data.tof(r.c.now));       %Create the sequence
     r.upload;                                       %Upload the sequence
     %Print something to the command line so that we know how far along we are
-    fprintf(1,'Run %d/%d, TOF: %.1f ms\n',r.currentRun,r.numRuns,r.data.tof(r.currentRun)*1e3);
+    fprintf(1,'Run %d/%d, TOF: %.1f ms\n',r.c.now,r.c.total,r.data.tof(r.c.now)*1e3);
   elseif r.isAnalyze
-    nn = r.currentRun;                      %Make a shorter variable name
+    nn = r.c.now;                           %Make a shorter variable name
     c = Abs_Analysis;                       %Analyze the absorption image, return structure c
     r.data.xw(nn,1) = c.xwidth;             %Store the x width
     r.data.yw(nn,1) = c.ywidth;             %Store the y width
@@ -255,43 +306,33 @@ function TemperatureMeasurement(r)
     r.data.tof = 14e-3:3e-3:29e-3; 
     r.data.freq = linspace(6.5:0.1:9);
     
-    r.data.idx = [0,0]; %This is a dual-counting index
-    r.numRuns = numel(r.data.freq)*numel(r.data.tof);
+    r.c.setup('var',r.data.tof,r.data.freq);
   elseif r.isSet()
-    %Increment dual counter
-    if r.data.idx(1) == 0 && r.data.idx(2) == 0
-        r.data.idx = [1,1];
-    elseif r.data.idx(2) == numel(r.data.tof)
-        r.data.idx(1) = r.data.idx(1) + 1;
-        r.data.idx(2) = 1;
-    else
-        r.data.idx(2) = r.data.idx(2) + 1;
-    end
-    r.sq = makeSequence(r.data.freq(r.data.idx(1)),r.data.tof(r.data.idx(2)));
+    
+    r.make(r.data.freq(r.c(1)),r.data.tof(r.c(2)));   %You can also use r.c.i(1) and r.c.i(2). The subscript indexing function has been redefined to allow the behaviour shown here
     r.upload;
-    r.data.sq(r.currentRun,1) = r.sq.data;  %This stores the sequence in the data property in case you need to go back and figure out what changed.
-    fprintf(1,'Run %d/%d, Freq: %.3f V, TOF: %.1f ms\n',r.currentRun,r.numRuns,...
-        r.data.freq(r.data.idx(1)),r.data.tof(r.data.idx(2))*1e3);
+    r.data.sq(r.c.now,1) = r.sq.data;  %This stores the sequence in the data property in case you need to go back and figure out what changed.
+    fprintf(1,'Run %d/%d, Freq: %.3f V, TOF: %.1f ms\n',r.c.now,r.total,...
+        r.data.freq(r.c(1)),r.data.tof(r.c(2))*1e3);
   elseif r.isAnalyze()
-    nn = r.currentRun;
     c = Abs_Analysis;
-    r.data.N(nn,1) = c.N;
-    r.data.xw(nn,1) = c.xwidth;
-    r.data.yw(nn,1) = c.ywidth;
+    r.data.N(r.c(1),r.c(2)) = c.N;
+    r.data.xw(r.c(1),r.c(2)) = c.xwidth;
+    r.data.yw(r.c(1),r.c(2)) = c.ywidth;
 
     Ntof = numel(r.data.tof);
-    if r.data.idx(2) == Ntof;
+    if r.c(1) == r.c.imax(1)
       %After recording the desired times-of-flight, analyze data according to ballistic expansion model
-      xfit = r.data.xw(nn-Ntof-1:nn);
-      yfit = r.data.yw(nn-Ntof-1:nn);
+      xfit = r.data.xw(:,r.c(2));
+      yfit = r.data.yw(:,r.c(2));
       %Insert fitting routines for widths vs times of flight here to get xtemp and ytemp
-      r.data.Tx(r.data.idx(1),1) = xtemp;
-      r.data.Ty(r.data.idx(1),1) = ttemp;
+      r.data.Tx(r.c(2),1) = xtemp;
+      r.data.Ty(r.c(2),1) = ttemp;
 
       figure(1);clf;
-      plot(r.data.freq(1:r.data.idx(1)),r.data.Tx,'o');
+      plot(r.data.freq(1:r.c(2),r.data.Tx,'o');
       hold on;
-      plot(r.data.freq(1:r.data.idx(1)),r.data.Ty,'sq');
+      plot(r.data.freq(1:r.c(2)),r.data.Ty,'sq');
     end
   end
 end
