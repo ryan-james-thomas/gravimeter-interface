@@ -177,6 +177,53 @@ sq.find('amp').set(0);
 ```
 Since the `lastTime` value for 'amp' when the ramp is set is 10 s, the third command waits *another* 10 s after the end of the ramp before setting 'amp' to 0.  So this sequence takes a total of 20 s where the value of 'amp' for the last 10 s is 10.
 
+## Using functions to simplify sequences
+
+You can also create your own stand-alone functions that can simplify the creation of certain sequences that are fixed except for certain parameters.  A good example of this would be an imaging sequence, where you don't need to see all the details of the imaging sequence but you do want an easy way of changing the, for instance, imaging pulse duration.  You can create a function that modifies the whole `TimingSequence` object, or even just a couple of channels.  As a simple example, suppose we want to create avery simple absorption imaging sequence with two images.  We might define a function as
+```
+function makeImagingSequence(sq,expTime,camLoopTime)
+%Creates two absorption images starting at the current sequence time
+
+sq.anchor(sq.latest);           %Anchor the sequence time at now
+%
+% Creates the first absorption image
+%
+sq.find('imaging ttl').set(1);
+sq.find('cam trig').set(1);
+sq.delay(expTime);
+sq.find('imaging ttl').set(0);
+sq.find('cam trig').set(0);
+
+%Wait for the camera to read out the image
+sq.delay(camLoopTime);
+
+%
+% Creates the second absorption image
+%
+sq.find('imaging ttl').set(1);
+sq.find('cam trig').set(1);
+sq.delay(expTime);
+sq.find('imaging ttl').set(0);
+sq.find('cam trig').set(0);
+
+end
+```
+Note that due to the way MATLAB deals with so-called 'handle' classes, you do not need to return the sequence `sq` as an output argument for the function.  MATLAB passes 'handle' objects by *reference*, which means that it passes to the function the memory location at which the object is stored: no copy of the object is made.  This is distinct from the way it passes all other variables, which is by *value* where the value of the variable is copied to a new location in memory which is discared when the function terminates.  What this means is that if you call `makeImagingSequence` in your `makeSequence` function as so
+```
+function makeSequence(varargin)
+
+sq = initSequence;
+
+% Bunch of sequence stuff with sq
+
+% Call the imaging sequence function
+% sq is modified by this function!
+makeImagingSequence(sq,30e-6,50e-3);
+
+end
+```
+Then the sequence object `sq` is modified by the function `makeImagingSequence`.
+
 # Compiling data
 
 Once a sequence is defined it has to be transformed into a form that can be sent to the LabVIEW control program.  Use the method
