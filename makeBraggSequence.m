@@ -10,6 +10,7 @@ Tasym = 0;
 dt = 1e-6;
 finalphase = 0;
 power = 0.05*[1,2,1];
+power1 = [];power2 = [];
 chirp = 2*k*9.795/(2*pi);
 
 if mod(numel(varargin),2) ~= 0
@@ -36,6 +37,10 @@ else
                 chirp = v;
             case 'f'
                 f = v;
+            case 'power1'
+                power1 = v;
+            case 'power2'
+                power2 = v;
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
@@ -48,17 +53,30 @@ recoil = const.hbar*k^2/(2*const.mRb*2*pi);
 numPulses = numel(power);
 fwhm = width/(2*sqrt(log(2)));
 
-%% Create vectors
-min_t = t0 - 5*width;
-max_t = t0 + (numPulses-1)*T + Tasym + 5*width;
-t = (min_t:dt:max_t)';
+if isempty(power1)
+    power1 = power;
+end
+if isempty(power2)
+    power2 = power;
+end
 
-P = zeros(size(t));
+%% Create vectors
+% min_t = t0 - 5*width;
+% max_t = t0 + (numPulses-1)*T + Tasym + 5*width;
+% t = (min_t:dt:max_t)';
+tPulse = (-5*width:dt:5*width)';
+t = repmat(tPulse,1,numPulses);
+for  nn = 1:numPulses
+    t(:,nn) = t(:,nn) + t0 + (nn-1)*T + max((nn-2),0)*Tasym;
+end
+t = t(:);
+
+P = zeros(numel(t),2);
 for nn = 1:numPulses
     tc = t0 + (nn-1)*T + max((nn-2),0)*Tasym;
-    P = P + power(nn)*exp(-(t - tc).^2/fwhm.^2);
+    P(:,1) = P(:,1) + power1(nn)*exp(-(t - tc).^2/fwhm.^2);
+    P(:,2) = P(:,2) + power2(nn)*exp(-(t - tc).^2/fwhm.^2);
 end
-P(:,2) = P(:,1);
 
 ph = zeros(numel(t),2);
 ph(:,2) = finalphase*(t > (t0 + 1.5*T));
