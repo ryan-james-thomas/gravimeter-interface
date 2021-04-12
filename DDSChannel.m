@@ -36,9 +36,10 @@ classdef DDSChannel < TimingControllerChannel
             %   CH = CHECKVALUE(CH,V) checks a given value V, given as
             %   freq, power, and phase, is within the given ranges
             str = {'Frequency','Power','Phase'};
-            for nn = 1:numel(v)
-                if v(nn) < ch.bounds(1,nn) || v(nn) > ch.bounds(2,nn)
-                    error('%s %f is out of range [%f,%f]',str{nn},v(nn),ch.bounds(1,nn),ch.bounds(2,nn));
+            for nn = 1:size(v,2)
+                if any(v(:,nn) < ch.bounds(1,nn)) || any(v(:,nn) > ch.bounds(2,nn))
+                    idx = find((v(:,nn) < ch.bounds(1,nn)) | (v(:,nn) > ch.bounds(2,nn)),1,'first');
+                    error('%s %f is out of range [%f,%f]',str{nn},v(idx,nn),ch.bounds(1,nn),ch.bounds(2,nn));
                 end
             end
         end

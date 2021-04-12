@@ -27,6 +27,10 @@ classdef RolloverCounter < handle
             %   have the same number of elements.
             if nargin > 0
                 self.setup(varargin{:});
+            else
+                self.initial = 1;
+                self.final = Inf;
+                self.N = 1;
             end
         end
         

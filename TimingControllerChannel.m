@@ -174,19 +174,22 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                     tmp = varargin{nn};
                     value(:,nn+1) = tmp(:).*ones(N,1);
                 end
-                for nn = 1:numel(time)
-                    ch.at(time(nn),value(nn,:));
-                end
-            elseif ~isa(value,'function_handle') && (N == numel(value)) && (numel(time) > 1)
+                ch.at(time,value);
+%                 for nn = 1:numel(time)
+%                     ch.at(time(nn),value(nn,:));
+%                 end
+%             elseif ~isa(value,'function_handle') && (N == numel(value)) && (numel(time) > 1)
                 %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
-                for nn = 1:N
-                    ch.at(time(nn),value(nn));
-                end
-            elseif ~isa(value,'function_handle') && (N == size(value,1)) && (numel(time) > 1)
+%                 ch.at(time,value);
+%                 for nn = 1:N
+%                     ch.at(time(nn),value(nn));
+%                 end
+%             elseif ~isa(value,'function_handle') && (N == size(value,1)) && (numel(time) > 1)
                 %If TIME is Nx1 and VALUE is NxM, recursively add events
-                for nn = 1:N
-                    ch.at(time(nn),value(nn,:));
-                end
+%                 ch.at(time,value);
+%                 for nn = 1:N
+%                     ch.at(time(nn),value(nn,:));
+%                 end
             elseif isa(value,'function_handle') && (N > 1)
                 %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
                 v = value(time);
@@ -194,27 +197,47 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             else
                 %Otherwise add single events
                 if numel(varargin) ~= 0
+                    value = value(:);
                     for nn = 1:numel(varargin)
                         value(:,nn+1) = varargin{nn};
                     end
+                elseif any(size(value) == 1)
+                    value = value(:);
                 end
                 ch.checkValue(value);   %Check that value is within bounds
 
                 time = round(time*TimingSequence.SAMPLE_CLK)/TimingSequence.SAMPLE_CLK;   %Round time to multiple of sample clock
-                idx = find(ch.times==time,1,'first');   %Try and find first time
-                if isempty(idx)
-                    %If this time has not been used previously, add a new value at this time
-                    N = ch.numValues+1;
-                    ch.values(N,:) = value;
-                    ch.times(N,1) = time;
-                    ch.numValues = N;
-                    ch.lastTime = time;
-                else
-                    %If time has been used, replace that value
-                    ch.values(idx,:) = value;
-                    ch.times(idx,1) = time;
-                    ch.lastTime = time;
+                for nn = 1:numel(time)
+                    idx = (ch.times == time(nn));
+                    if sum(idx) == 0
+                        %If this has not been used previously, add a new
+                        %value at this time
+                        N = ch.numValues + 1;
+                        ch.values(N,:) = value(nn,:);
+                        ch.times(N,1) = time(nn);
+                        ch.numValues = N;
+                        ch.lastTime = time(nn);
+                    else
+                        %If time has been used, replaced that value
+                        ch.values(idx,:) = value(nn,:);
+                        ch.times(idx) = time(nn);
+                        ch.lastTime = time(nn);
+                    end
                 end
+%                 idx = find(ch.times==time,1,'first');   %Try and find first time
+%                 if isempty(idx)
+%                     %If this time has not been used previously, add a new value at this time
+%                     N = ch.numValues+1;
+%                     ch.values(N,:) = value;
+%                     ch.times(N,1) = time;
+%                     ch.numValues = N;
+%                     ch.lastTime = time;
+%                 else
+%                     %If time has been used, replace that value
+%                     ch.values(idx,:) = value;
+%                     ch.times(idx,1) = time;
+%                     ch.lastTime = time;
+%                 end
             end
         end
         
@@ -342,8 +365,8 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %
             %   CH = CHECKVALUE(CH,V) checks value v to make sure it is within 
             %   a valid range
-            if v < ch.bounds(1) || v > ch.bounds(2)
-                error('Value %.3f is outside of bounds [%.3f,%.3f]',v,ch.bounds);
+            if any(v < ch.bounds(1)) || any(v > ch.bounds(2))
+                error('Value outside of bounds [%.3f,%.3f]',ch.bounds);
             end
         end
 
