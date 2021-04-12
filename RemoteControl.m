@@ -216,7 +216,12 @@ classdef RemoteControl < handle
             % Reduce instruction sizes and make sure both tables have
             % instructions at the same time
             tb(1).reduce;
-            tb(2).reduce(tb(1).sync);
+            if sum(tb(1).sync) == 1
+                tb(2).reduce;
+                tb(1).reduce(tb(2).sync);
+            else
+                tb(2).reduce(tb(1).sync);
+            end
             
             % Send commands to device
             for nn = 1:numel(tb)
@@ -224,7 +229,11 @@ classdef RemoteControl < handle
                 self.mog.cmd('table,stop,%d',tb(nn).channel);
             end
             self.mog.cmd('table,sync,1');
-            tb.upload;
+            numInstr = tb.upload;
+            estUploadTime = numInstr*11/3280;
+            if estUploadTime > (7/8*self.sq.ddsTrigDelay)
+                pause(estUploadTime - self.sq.ddsTrigDelay + 1);
+            end
         end
         
         function run(self)
