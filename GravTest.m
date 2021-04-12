@@ -1,13 +1,11 @@
 function GravTest(r)
 
 if r.isInit()
-    r.data.param = 0:0.001:0.12;
+    r.data.param = 0.02:0.01:0.5;
     r.c.setup('var',r.data.param);
 elseif r.isSet()
-    r.devices.p.makePulses('power',[0,r.data.param(r.c(1)),0]).addRamanPulse;
-    r.devices.p.upload;
     
-    r.make(8.5,216.5e-3,1.325);
+    r.make(8.5,35.5e-3,1.325,r.data.param(r.c.now));
     r.upload;
 %     pause(5);
     fprintf(1,'Run %d/%d, Param = %.3f\n',r.c.now,r.c.total,r.data.param(r.c.now)*1e3);

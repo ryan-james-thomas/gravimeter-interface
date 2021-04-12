@@ -5,6 +5,7 @@ function varargout = makeSequence(varargin)
     P25 = @(x) (x+2.6412)/2.8305;   %Gives voltage for powers in W
     P50 = @(x) (x+3.7580)/5.5445;
     
+%     sq.find('3d mot freq').set(6.85);
     sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
     sq.find('50w amp').set(P50(25));
@@ -123,7 +124,9 @@ function varargout = makeSequence(varargin)
     % the correct time.
     sq.ddsTrigDelay = timeAtDrop;   
     makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',10e-3,'T',1e-3,...
-        'width',50e-6,'Tasym',0,'phase',45,'power',0.05*[1,2,1],'chirp',25.105e6);
+        'width',50e-6,'Tasym',0,'phase',45,'chirp',25.105e6,...
+        'power',varargin{4}*[1,2,1]);
+%         'power1',varargin{4}*[,0,0],'power2',varargin{4}*[2,0,0]);
 
     %% Raman
     %
@@ -131,21 +134,21 @@ function varargout = makeSequence(varargin)
     % drop time.  I do this to make referencing the time at which the Raman
     % pulse occurs easier to calculate
     %
-    sq.dds.anchor(timeAtDrop);
-    %
-    %This makes a Gaussian pulse with the specified parameters: centered at
-    %'t0' with FWHM of 'width', a maximum power of 'power', and the channel
-    %2 frequency 'df' higher than channel 1.
-    %
-    makeGaussianPulse(sq.dds,'t0',5e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
-        'df',153.5e-3);
-    %
-    % Turn on the amplifier for the Raman AOM. Keep in mind that the
-    % internal pointer for Raman Amp is still at timeAtDrop
-    %
-    sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
-    sq.delay(6e-3);
-    sq.find('raman amp').set(0);
+%     sq.dds.anchor(timeAtDrop);
+%     %
+%     %This makes a Gaussian pulse with the specified parameters: centered at
+%     %'t0' with FWHM of 'width', a maximum power of 'power', and the channel
+%     %2 frequency 'df' higher than channel 1.
+%     %
+%     makeGaussianPulse(sq.dds,'t0',5e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
+%         'df',153.5e-3);
+%     %
+%     % Turn on the amplifier for the Raman AOM. Keep in mind that the
+%     % internal pointer for Raman Amp is still at timeAtDrop
+%     %
+%     sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
+%     sq.delay(6e-3);
+%     sq.find('raman amp').set(0);
 
     %% SG
     %
@@ -153,14 +156,14 @@ function varargout = makeSequence(varargin)
     % moment.  A ramp is used to ensure that the magnetic states
     % adiabatically follow the magnetic field
     %
-    sq.delay(1e-3);
-    Tsg = 15e-3;
-    sq.find('mot coil ttl').set(1);
-    t = linspace(0,Tsg,20);
-    sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.4));
-    sq.delay(Tsg);
-    sq.find('mot coil ttl').set(0);
-    sq.find('3d coils').set(-50e-3);
+%     sq.delay(1e-3);
+%     Tsg = 15e-3;
+%     sq.find('mot coil ttl').set(1);
+%     t = linspace(0,Tsg,20);
+%     sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.4));
+%     sq.delay(Tsg);
+%     sq.find('mot coil ttl').set(0);
+%     sq.find('3d coils').set(-50e-3);
     
 
     %% Imaging stage
@@ -172,8 +175,8 @@ function varargout = makeSequence(varargin)
     % imaging pulse occurs
     %
     sq.anchor(timeAtDrop);
-    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
+    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
+        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
         'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
