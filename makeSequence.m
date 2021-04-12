@@ -122,8 +122,8 @@ function varargout = makeSequence(varargin)
     % in compiling the DDS instructions and making sure that they start at
     % the correct time.
     sq.ddsTrigDelay = timeAtDrop;   
-    makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',30e-3,'T',1e-3,...
-        'width',50e-6,'Tasym',0,'phase',45,'power',0.0415*[1,2,1],'chirp',25.12e6);
+    makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',10e-3,'T',1e-3,...
+        'width',50e-6,'Tasym',0,'phase',45,'power',0.05*[1,2,1],'chirp',25.105e6);
 
     %% Raman
     %
