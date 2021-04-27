@@ -8,7 +8,7 @@ width = 50e-6;
 T = 1e-3;
 Tasym = 0;
 dt = 1e-6;
-finalphase = 0;
+appliedPhase = 0;
 power = 0.05*[1,2,1];
 power1 = [];power2 = [];
 chirp = 2*k*9.795/(2*pi);
@@ -29,8 +29,8 @@ else
                 Tasym = v;
             case 'width'
                 width = v;
-            case {'finalphase','phase'}
-                finalphase = v;
+            case {'appliedphase','phase'}
+                appliedPhase = v;
             case 'power'
                 power = v;
             case 'chirp'
@@ -60,6 +60,12 @@ if isempty(power2)
     power2 = power;
 end
 
+if numel(appliedPhase) == 0
+    tmp = zeros(1,numPulses);
+    tmp(end) = appliedPhase;
+    appliedPhase = tmp;
+end
+
 %% Create vectors
 % min_t = t0 - 5*width;
 % max_t = t0 + (numPulses-1)*T + Tasym + 5*width;
@@ -79,7 +85,12 @@ for nn = 1:numPulses
 end
 
 ph = zeros(numel(t),2);
-ph(:,2) = finalphase*(t > (t0 + 1.5*T));
+for nn = 1:numPulses
+%     idx = (t > (nn-1)*t0) & (t < ((nn-1)*t0 + (nn/2-1)*T));
+    idx = (t - t0) > (nn-1-0.5)*T;
+    ph(idx,2) = appliedPhase(nn);
+end
+% ph(:,2) = appliedPhase*(t > (t0 + 1.5*T));
 
 freq(:,1) = dds(1).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*recoil/1e6;
 freq(:,2) = dds(2).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*recoil/1e6;

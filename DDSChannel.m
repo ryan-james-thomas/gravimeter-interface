@@ -68,7 +68,10 @@ classdef DDSChannel < TimingControllerChannel
             t = t(idx);
             v = ch.values(idx,:);
             
-            if t(1) ~= 0
+            if isempty(t)
+                t = 0;
+                v = [ch.DEFAULT_FREQ,0,0];
+            elseif t(1) ~= 0
                 t = [0;t];
                 v = [ch.DEFAULT_FREQ,0,0;v];
             end
