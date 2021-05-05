@@ -1,15 +1,23 @@
 function varargout = makeSequence(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
-    %Enable optical dipole traps
-    P25 = @(x) (x+2.6412)/2.8305;   %Gives voltage for powers in W
+    %
+    % Define useful conversion functions
+    %
+    % Dipole trap powers for 25 W (P25) and 50 W (P50) lasers. Gives
+    % voltage for powers in W
+    P25 = @(x) (x+2.6412)/2.8305;
     P50 = @(x) (x+3.7580)/5.5445;
-    
-%     sq.find('3d mot freq').set(6.85);
+    % Imaging detuning. Gives voltage for detuning in MHz
+    imageVoltage = -varargin{1}*0.4231/6.065 + 8.6214;
+%     imageVoltage = varargin{1};
+
+    sq.find('Imaging Freq').set(imageVoltage);
+    sq.find('3D MOT Freq').set(6.85);
     sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
-    sq.find('50w amp').set(P50(25));
-    sq.find('25w amp').set(P25(20));    
+    sq.find('50w amp').set(P50(15));
+    sq.find('25w amp').set(P25(7.5));    
     %% Set up the MOT loading values                
     sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
     sq.find('3d coils').set(0.42);
@@ -26,8 +34,8 @@ function varargout = makeSequence(varargin)
     
     %Increase the cooling and repump detunings to reduce re-radiation
     %pressure, and weaken the trap
-    sq.find('3D MOT freq').set(6);
-    sq.find('repump freq').set(2.4);
+    sq.find('3D MOT freq').set(5.5);
+    sq.find('repump freq').set(2.6);
     sq.find('3D coils').set(0.15);
     sq.find('bias e/w').set(4);
     sq.find('bias n/s').set(6);
@@ -42,8 +50,8 @@ function varargout = makeSequence(varargin)
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
     %Smooth ramps for these parameters
-    sq.find('3D MOT Amp').after(t,f(5,3));
-    sq.find('3D MOT Freq').after(t,f(6,5)); 
+    sq.find('3D MOT Amp').after(t,f(5,3.25));
+    sq.find('3D MOT Freq').after(t,f(sq.find('3D MOT Freq').values(end),5.25)); 
     sq.find('3D coils').after(t,f(0.15,0.02));
 
     sq.delay(Tpgc);
@@ -51,9 +59,9 @@ function varargout = makeSequence(varargin)
     T = 2e-3;
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
-    sq.find('bias u/d').set(.9);
-    sq.find('bias e/w').set(0);
-    sq.find('bias n/s').set(7.5);
+%     sq.find('bias u/d').set(.9);
+%     sq.find('bias e/w').set(0);
+%     sq.find('bias n/s').set(7.5);
     sq.delay(T);
     
     %% Load into magnetic trap
@@ -65,22 +73,19 @@ function varargout = makeSequence(varargin)
 
     %% Microwave evaporation
     sq.delay(20e-3);
-    evapRate = 0.3;
-    evapStart = 7.05;
-    evapEnd = 7.9;
+    evapRate = 0.2;
+    evapStart = 7.3;
+    evapEnd = 7.95;
     Tevap = (evapEnd-evapStart)/evapRate;
 %     Tevap = 3.2;
     t = linspace(0,Tevap,100);
-%     sq.find('mw freq').after(t,sq.linramp(t,7.05,7.85));
     sq.find('mw freq').after(t,sq.linramp(t,evapStart,evapEnd));
     sq.delay(Tevap);
     
     %% Weaken trap while MW frequency fixed
     Trampcoils = 180e-3;
     t = linspace(0,Trampcoils,100);
-    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),0.508));
-    Trampbias = 470e-3;
-    t = linspace(0,Trampbias,100);
+    sq.find('3d coils').after(t,sq.minjerk(t,sq.find('3d coils').values(end),0.708));
     sq.find('bias e/w').after(t,sq.minjerk(t,sq.find('bias e/w').values(end),0));
     sq.find('bias n/s').after(t,sq.minjerk(t,sq.find('bias n/s').values(end),0));
     sq.find('bias u/d').after(t,sq.minjerk(t,sq.find('bias u/d').values(end),0));
@@ -98,14 +103,17 @@ function varargout = makeSequence(varargin)
     sq.delay(30e-3);
     Tevap = 1.97;
     t = linspace(0,Tevap,300);
-    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.3));
-    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.3));
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
     sq.delay(Tevap);
     
     %% Drop atoms
-    timeAtDrop = sq.latest; %Store the time when the atoms are dropped for later
+%     sq.delay(3.2);
+    timeAtDrop = sq.time; %Store the time when the atoms are dropped for later
     sq.anchor(timeAtDrop);
-    sq.find('bias e/w').before(200e-3,10);
+    sq.find('bias e/w').before(200e-3,0);
+    sq.find('bias n/s').before(200e-3,0);
+    sq.find('bias u/d').before(200e-3,0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
     sq.find('3D Coils').set(-0.05);
@@ -123,24 +131,32 @@ function varargout = makeSequence(varargin)
     % in compiling the DDS instructions and making sure that they start at
     % the correct time.
     sq.ddsTrigDelay = timeAtDrop;   
-    makeBraggSequence(sq.dds,'f',384.224e12,'dt',1e-6,'t0',10e-3,'T',1e-3,...
-        'width',50e-6,'Tasym',0,'phase',45,'chirp',25.105e6,...
+    k = 2*pi*384.224e12/const.c;
+    vrel = 2*const.hbar*k/const.mRb;
+    T = 5e-3;
+    Tasym = 500e-6;
+    dsep = 1.5e-3;
+%     Tsep = dsep/vrel;
+    Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym)*0 + varargin{5};
+    t0 = varargin{2} - 2*T - Tsep;
+    t0 = max(t0,30e-3);
+    makeBraggSequence(sq.dds,'f',384.223e12,'dt',1e-6,'t0',t0,'T',T,...
+        'width',30e-6,'Tasym',Tasym,'phase',[0,0,45],'chirp',25.105e6-0.015e6,...
         'power',varargin{4}*[1,2,1]);
-%         'power1',varargin{4}*[,0,0],'power2',varargin{4}*[2,0,0]);
 
-    %% Raman
-    %
-    % Start by re-anchoring the internal pointer for the DDS channels at the
-    % drop time.  I do this to make referencing the time at which the Raman
-    % pulse occurs easier to calculate
-    %
+%     %% Raman
+%     
+% %     Start by re-anchoring the internal pointer for the DDS channels at the
+% %     drop time.  I do this to make referencing the time at which the Raman
+% %     pulse occurs easier to calculate
+%     
 %     sq.dds.anchor(timeAtDrop);
 %     %
 %     %This makes a Gaussian pulse with the specified parameters: centered at
 %     %'t0' with FWHM of 'width', a maximum power of 'power', and the channel
 %     %2 frequency 'df' higher than channel 1.
 %     %
-%     makeGaussianPulse(sq.dds,'t0',5e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
+%     makeGaussianPulse(sq.dds,'t0',10e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
 %         'df',153.5e-3);
 %     %
 %     % Turn on the amplifier for the Raman AOM. Keep in mind that the
@@ -149,18 +165,18 @@ function varargout = makeSequence(varargin)
 %     sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
 %     sq.delay(6e-3);
 %     sq.find('raman amp').set(0);
-
-    %% SG
-    %
-    % Apply a Stern-Gerlach pulse to separate states based on magnetic
-    % moment.  A ramp is used to ensure that the magnetic states
-    % adiabatically follow the magnetic field
-    %
+% 
+%     % SG
+%     
+% %     Apply a Stern-Gerlach pulse to separate states based on magnetic
+% %     moment.  A ramp is used to ensure that the magnetic states
+% %     adiabatically follow the magnetic field
+% %     
 %     sq.delay(1e-3);
 %     Tsg = 15e-3;
 %     sq.find('mot coil ttl').set(1);
 %     t = linspace(0,Tsg,20);
-%     sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.4));
+%     sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.01));
 %     sq.delay(Tsg);
 %     sq.find('mot coil ttl').set(0);
 %     sq.find('3d coils').set(-50e-3);
@@ -175,9 +191,9 @@ function varargout = makeSequence(varargin)
     % imaging pulse occurs
     %
     sq.anchor(timeAtDrop);
-    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',30e-6,'pulse Delay',00e-6,...
-        'imaging freq',varargin{1},'repump delay',10e-6,'repump freq',4.3,...
+    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
+        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
+        'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
     %% Automatic save of run
@@ -186,9 +202,7 @@ function varargout = makeSequence(varargin)
     % created
     %
     fpathfull = [mfilename('fullpath'),'.m'];
-    [fpath,fname,fext] = fileparts(fpathfull);
-    dstr = datestr(datetime,'YY_mm_dd_hh_MM_ss');
-    copyfile(fpathfull,sprintf('%s/%s/%s_%s%s',fpath,sq.directory,fname,dstr,fext));
+    saveSequenceCopy(fpathfull,sq.directory,varargin);
     %% Automatic start
     %If no output argument is requested, then compile and run the above
     %sequence
