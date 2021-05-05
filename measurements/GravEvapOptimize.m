@@ -2,56 +2,45 @@ function GravEvapOptimize(r)
 
 if r.isInit()
     %Initialize run
-    r.data.param = const.randomize(0.25:0.25:3);
-    r.numRuns = numel(r.data.param);
-    r.makerCallback = @makeSequenceFull;
-    r.data.matlabfiles.callback = fileread('GravEvapOptimize.m');
-    r.data.matlabfiles.init = fileread('gravimeter-interface/initSequence.m');
-    r.data.matlabfiles.sequence = fileread('gravimeter-interface/makeSequenceFull.m');
-    r.data.matlabfiles.analysis = fileread('Abs_Analysis.m');
+    r.data.evapStart = const.randomize(7:0.05:7.5);
+    r.data.evapRate = 0.1:0.05:0.5;
+    r.c.setup('var',r.data.evapStart,r.data.evapRate);
+    
+    r.makerCallback = @makeSequence;
 elseif r.isSet()
     %Build/upload/run sequence
-    r.make(8.0,35e-3,1.4,r.data.param(r.currentRun));
+    r.make(8.5,25e-3,2,r.data.evapStart(r.c(1)),r.data.evapRate(r.c(2)));
     r.upload;
-    r.data.sq(r.currentRun,1) = r.sq.data;
     %Print information about current run
-    fprintf(1,'Run %d/%d, Parameter: %.3f\n',r.currentRun,r.numRuns,...
-        r.data.param(r.currentRun));
+    fprintf(1,'Run %d/%d, Evap Start = %.2f V, Evap Rate = %.2f V/s\n',r.c.now,r.c.total,...
+        r.data.evapStart(r.c(1)),r.data.evapRate(r.c(2)));
     
 elseif r.isAnalyze()
-    nn = r.currentRun;
-    pause(1.0); %Wait for other image analysis program to finish with files
-    
+    i1 = r.c(1);
+    i2 = r.c(2);
+    pause(0.5); %Wait for other image analysis program to finish with files
     %Analyze image data from last image
     c = Abs_Analysis('last');
-    r.data.files{nn,1} = c.raw.files(1).name;r.data.files{nn,2} = c.raw.files(2).name;
-%     if c.N > 100e6
-%         c.N = NaN;
-%     end
-    r.data.N(nn,1) = c.N;
-    r.data.Nth(nn,1) = c.N.*(1-c.becFrac);
-    r.data.Nbec(nn,1) = c.N.*c.becFrac;
-    r.data.F(nn,1) = c.becFrac;
-    r.data.xw(nn,1) = c.gaussWidth(1);
-    r.data.x0(nn,1) = c.pos(1);
-    r.data.yw(nn,1) = c.gaussWidth(2);
-    r.data.y0(nn,1) = c.pos(2);
-    r.data.OD(nn,1) = c.fitdata.params.gaussAmp(1);
-    r.data.T(nn,:) = c.T;
-    r.data.becWidth(nn,:) = c.becWidth;
+    r.data.files{i1,i2} = {c.raw.files(1).name,c.raw.files(2).name};
+    r.data.N(i1,i2) = c.N;
+    r.data.Nsum(i1,i2) = c.Nsum;
+    r.data.T(i1,i2) = sqrt(prod(c.T));
+    r.data.OD(i1,i2) = c.peakOD;
     
-    figure(10);clf;
-%     subplot(1,2,1);
-%     errorbar(r.data.param(1:nn),r.data.Nth/1e6,0.05*r.data.Nth/1e6,'o');
-%     hold on;
-%     errorbar(r.data.param(1:nn),r.data.Nbec/1e6,0.05*r.data.Nbec/1e6,'sq');
-    errorbar(r.data.param(1:nn),r.data.N/1e6,0.05*r.data.N/1e6,'o');
-    plot_format('Ramp Time [s]','Number of atoms \times 10^6','',12);
+    figure(10);
+    subplot(1,2,1);
+    errorbar(r.data.evapStart(1:i1),r.data.N(1:i1,i2)/1e8,0.025*r.data.N(1:i1,i2)/1e8,'o');
+    plot_format('Start voltage','Number of atoms \times 10^8','',12);
     ylim([0,2.5]);
     grid on;
-%     subplot(1,2,2);
-%     plot(r.data.param(1:nn),[r.data.T,sqrt(prod(r.data.T,2))]*1e6,'o');
-%     plot_format('Final evap value [V]','Temperature [uK]','',12);
-%     ylim([0,1]);
-%     grid on;
+    if i1 == r.c.imax(1)
+        subplot(1,2,2);
+        errorbar(r.data.evapStart,r.data.N(:,i2)/1e8,0.025*r.data.N(:,i2)/1e8,'o');
+        plot_format('Start voltage','Number of atoms \times 10^8','',12);
+        hold on;
+        r.data.str{i2} = sprintf('Rate = %.2f',r.data.evapRate(i2));
+        legend(r.data.str);
+        ylim([0,2.5]);
+        grid on;
+    end
 end
