@@ -80,13 +80,16 @@ end
 tPulse = (-5*width:dt:5*width)';
 t = repmat(tPulse,1,numPulses);
 for  nn = 1:numPulses
-    t(:,nn) = t(:,nn) + t0 + sum(T(1:nn)) + max((nn-2),0)*Tasym;
+    t(:,nn) = t(:,nn) + t0 + sum(T(1:nn));
+end
+if numPulses > 3
+    t(:,end) = t(:,end) + Tasym;
 end
 t = t(:);
 
 P = zeros(numel(t),2);
 for nn = 1:numPulses
-    tc = t0 + sum(T(1:nn)) + max((nn-2),0)*Tasym;
+    tc = t0 + sum(T(1:nn)) + (nn == numPulses)*Tasym;
     P(:,1) = P(:,1) + power1(nn)*exp(-(t - tc).^2/fwhm.^2);
     P(:,2) = P(:,2) + power2(nn)*exp(-(t - tc).^2/fwhm.^2);
 end
