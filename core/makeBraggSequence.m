@@ -37,6 +37,9 @@ else
                 chirp = v;
             case 'f'
                 f = v;
+                k = 2*pi*f/const.c;
+            case 'k'
+                k = v;
             case 'power1'
                 power1 = v;
             case 'power2'
@@ -48,7 +51,6 @@ else
 end
 
 %% Calculate intermediate values
-k = 2*pi*f/const.c;
 recoil = const.hbar*k^2/(2*const.mRb*2*pi);
 numPulses = numel(power);
 fwhm = width/(2*sqrt(log(2)));
