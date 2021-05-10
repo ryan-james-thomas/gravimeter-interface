@@ -133,16 +133,17 @@ function varargout = makeSequence(varargin)
     sq.ddsTrigDelay = timeAtDrop;   
     k = 2*pi*384.224e12/const.c;
     vrel = 2*const.hbar*k/const.mRb;
-    T = 5e-3;
-    Tasym = 500e-6;
-    dsep = 1.5e-3;
+    T = [150e-3,0.5e-3];
+    Tasym = 000e-6;
+    dsep = 1.25e-3;
 %     Tsep = dsep/vrel;
-    Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym)*0 + varargin{5};
-    t0 = varargin{2} - 2*T - Tsep;
-    t0 = max(t0,30e-3);
+    Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*T(end));
+    t0 = varargin{2} - sum(T) - Tsep;
+    t0 = max(t0,20e-3);
+    fprintf(1,'t0 = %.3f, Tsep = %.1f\n',t0*1e3,Tsep*1e3);
     makeBraggSequence(sq.dds,'f',384.223e12,'dt',1e-6,'t0',t0,'T',T,...
-        'width',30e-6,'Tasym',Tasym,'phase',[0,0,45],'chirp',25.105e6-0.015e6,...
-        'power',varargin{4}*[1,2,1]);
+        'width',30e-6,'Tasym',Tasym,'phase',[0,0,0,0],'chirp',25.105e6-0.015e6,...
+        'power',varargin{4}*[1,1,1]);
 
 %     %% Raman
 %     
