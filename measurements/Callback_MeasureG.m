@@ -16,7 +16,7 @@ elseif r.isAnalyze()
     i2 = r.c(2);
     pause(0.5);
     c = Abs_Analysis_NClouds('last');
-    if ~isempty(c(1).raw.msg) && ~strcmpi(c(1).raw.msg.status,'ok')
+    if ~c(1).raw.status.ok()
         %
         % Checks for an error in loading the files (caused by a missed
         % image) and reruns the last sequence
