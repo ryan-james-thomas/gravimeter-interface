@@ -4,14 +4,14 @@ function makeBraggSequence(dds,varargin)
 f = 384.224e12;
 k = 2*pi*f/const.c;
 t0 = 10e-3;
-width = 50e-6;
+width = 30e-6;
 T = 1e-3;
 Tasym = 0;
-dt = 1e-6;
 appliedPhase = 0;
 power = 0.05*[1,2,1];
 power1 = [];power2 = [];
 chirp = 2*k*9.795/(2*pi);
+order = 1;
 
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
@@ -33,6 +33,13 @@ else
                 appliedPhase = v;
             case 'power'
                 power = v;
+                if any(power < 0)
+                    error('Power needs a value between 0 and 1.');
+                elseif power > 1
+                    error('Power needs a value between 0 and 1.');
+                else
+                    power = v;
+                end
             case 'chirp'
                 chirp = v;
             case 'f'
@@ -44,12 +51,29 @@ else
                 power1 = v;
             case 'power2'
                 power2 = v;
+            case 'order'
+                order = v;
+                if order == 0
+                    error('Bragg order needs to be different from 0!');
+                elseif floor(order) == ceil(order)
+                    order = v;
+                else
+                    error('Bragg order needs to be an integer');
+                end
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
     end
 end
 
+%% Conditions on the time step and the Bragg order
+if width<50e-6
+    dt = 1e-6;
+else
+    intermediatewidth = width*1e6;
+    dt = ceil(intermediatewidth/50)*1e-6;
+end
+     
 %% Calculate intermediate values
 recoil = const.hbar*k^2/(2*const.mRb*2*pi);
 numPulses = numel(power);
@@ -94,8 +118,8 @@ for nn = 1:numPulses
 end
 % ph(:,2) = appliedPhase*(t > (t0 + 1.5*T));
 
-freq(:,1) = dds(1).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*recoil/1e6;
-freq(:,2) = dds(2).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*recoil/1e6;
+freq(:,1) = dds(1).DEFAULT_FREQ - order*0.25/1e6*(chirp*t + 4*recoil);
+freq(:,2) = dds(2).DEFAULT_FREQ + order*0.25/1e6*(chirp*t + 4*recoil);
 
 %% Populate DDS values
 for nn = 1:numel(dds)
