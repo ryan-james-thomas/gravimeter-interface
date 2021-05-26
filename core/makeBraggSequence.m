@@ -53,13 +53,13 @@ else
                 power2 = v;
             case 'order'
                 order = v;
-                if order == 0
-                    error('Bragg order needs to be different from 0!');
-                elseif floor(order) == ceil(order)
-                    order = v;
-                else
-                    error('Bragg order needs to be an integer');
-                end
+%                 if order == 0
+%                     error('Bragg order needs to be different from 0!');
+%                 elseif floor(order) == ceil(order)
+%                     order = v;
+%                 else
+%                     error('Bragg order needs to be an integer');
+%                 end
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
