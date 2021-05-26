@@ -1,18 +1,14 @@
-function makeBraggSequence(dds,varargin)
+function makeVelocitySelectionpulse(dds,varargin)
 
 %% Set up variables and parse inputs
 f = 384.224e12;
+t0 = 0e-3;
+tvs=0e-3;
 k = 2*pi*f/const.c;
-t0 = 10e-3;
-width = 30e-6;
-T = 1e-3;
-Tasym = 0;
-appliedPhase = 0;
-power = 0.05*[1,2,1];
-power1 = [];power2 = [];
+width = 300e-6;
+power = 0.03;
 chirp = 2*k*9.795/(2*pi);
-order=1;
-
+order=-1;
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
 else
@@ -21,16 +17,17 @@ else
         switch lower(varargin{nn})
             case 't0'
                 t0 = v;
-            case 't'
-                T = v;
             case 'dt'
                 dt = v;
-            case 'tasym'
-                Tasym = v;
             case 'width'
-                width = v;
-            case {'appliedphase','phase'}
-                appliedPhase = v;
+                 width = v;
+                 if width<0
+                     error('width requires a positive value');
+                 elseif width>10e-3
+                     error('width requires a smaller value')
+                 else
+                     width = v;
+                 end
             case 'power'
                 power = v;
                 if power<0
@@ -47,12 +44,8 @@ else
                 k = 2*pi*f/const.c;
             case 'k'
                 k = v;
-            case 'power1'
-                power1 = v;
-            case 'power2'
-                power2 = v;
             case 'order'
-                  order = v;
+                order = v;
                 if order==0
                     error('Bragg order needs to be different from 0!');
                 elseif floor(order)==ceil(order)
@@ -60,13 +53,15 @@ else
                 else
                     error('Bragg order needs to be an integer');
                 end
+            case 'tvs'
+                tvs = v;
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
     end
 end
 
-%% Conditions on the time step and the Bragg order
+%% Conditions on the time step
 if width<50e-6
     dt=1e-6;
 else
@@ -75,54 +70,24 @@ else
 end
 
 
-    
-    
 %% Calculate intermediate values
 recoil = order*const.hbar*k^2/(2*const.mRb*2*pi);
-numPulses = numel(power);
+detuning=recoil/2.8;
 fwhm = width/(2*sqrt(log(2)));
 
-if isempty(power1)
-    power1 = power;
-end
-if isempty(power2)
-    power2 = power;
-end
-
-if numel(appliedPhase) == 0
-    tmp = zeros(1,numPulses);
-    tmp(end) = appliedPhase;
-    appliedPhase = tmp;
-end
+tc=tvs;
 
 %% Create vectors
-% min_t = t0 - 5*width;
-% max_t = t0 + (numPulses-1)*T + Tasym + 5*width;
-% t = (min_t:dt:max_t)';
-tPulse = (-5*width:dt:5*width)';
-t = repmat(tPulse,1,numPulses);
-for  nn = 1:numPulses
-    t(:,nn) = t(:,nn) + t0 + (nn-1)*T + max((nn-2),0)*Tasym;
-end
-t = t(:);
+min_t = tc - 5*width;
+max_t = tc + 5*width;
+t = (min_t:dt:max_t)';
 
-P = zeros(numel(t),2);
-for nn = 1:numPulses
-    tc = t0 + (nn-1)*T + max((nn-2),0)*Tasym;
-    P(:,1) = P(:,1) + power1(nn)*exp(-(t - tc).^2/fwhm.^2);
-    P(:,2) = P(:,2) + power2(nn)*exp(-(t - tc).^2/fwhm.^2);
-end
+P = power*exp(-(t - tc).^2/fwhm.^2);
+P(:,2) = P(:,1);
 
+freq(:,1) = dds(1).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*(recoil+detuning)/1e6;
+freq(:,2) = dds(2).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*(recoil+detuning)/1e6;
 ph = zeros(numel(t),2);
-for nn = 1:numPulses
-%     idx = (t > (nn-1)*t0) & (t < ((nn-1)*t0 + (nn/2-1)*T));
-    idx = (t - t0) > (nn-1-0.5)*T;
-    ph(idx,2) = appliedPhase(nn);
-end
-% ph(:,2) = appliedPhase*(t > (t0 + 1.5*T));
-
-freq(:,1) = dds(1).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*recoil/1e6;
-freq(:,2) = dds(2).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*recoil/1e6;
 
 %% Populate DDS values
 for nn = 1:numel(dds)

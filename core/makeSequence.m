@@ -25,7 +25,7 @@ function varargout = makeSequence(varargin)
     sq.find('bias e/w').set(0);
     sq.find('bias n/s').set(0);
     
-    Tmot = 5;                           %6 s MOT loading time
+    Tmot = 6;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
     %% Compressed MOT stage
     %Turn off the 2D MOT and push beam 10 ms before the CMOT stage
@@ -99,7 +99,7 @@ function varargout = makeSequence(varargin)
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
     
-    %At the same time, start optical evaporation
+%     %At the same time, start optical evaporation
     sq.delay(30e-3);
     Tevap = 1.97;
     t = linspace(0,Tevap,300);
@@ -119,8 +119,8 @@ function varargout = makeSequence(varargin)
     sq.find('3D Coils').set(-0.05);
     sq.find('25w ttl').set(0);
     sq.find('50w ttl').set(0);
-    
-
+%     
+% 
     %% Interferometry
     % Issue falling-edge trigger for MOGLabs DDS box
     sq.find('dds trig').before(10e-3,1);
@@ -134,14 +134,36 @@ function varargout = makeSequence(varargin)
     k = 2*pi*384.224e12/const.c;
     vrel = 2*const.hbar*k/const.mRb;
     T = 5e-3;
-    Tasym = 500e-6;
-    dsep = 1.5e-3;
+%    Tasym = 0;
+    Tasym=varargin{5};
+%     dsep = 1.5e-3;
 %     Tsep = dsep/vrel;
-    Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym)*0 + varargin{5};
-    t0 = varargin{2} - 2*T - Tsep;
+
+%     Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym)
+    Tsep = 7.5e-3
+    if Tasym == 500e-6
+        Tsupp=0;
+    else
+        Tsupp=500e-6;
+    end
+
+    t0 = varargin{2} - 2*T - Tsep + Tsupp;
+
+% t0=15e-3;
+    if t0 <= 30e-3
+        warning('Initial pulse time of %.2f ms is smaller than 30 ms!',t0*1e3);
+    end
+    
     t0 = max(t0,30e-3);
-    makeBraggSequence(sq.dds,'f',384.223e12,'dt',1e-6,'t0',t0,'T',T,...
-        'width',30e-6,'Tasym',Tasym,'phase',[0,0,45],'chirp',25.105e6-0.015e6,...
+    tvs=t0-50e-3;
+%% %Velocity selection pulse
+ makeVelocitySelectionpulse(sq.dds,'k',k,'tvs',tvs,'chirp',25.105e6-0.015e6,...
+    'width',600e-6,'power',0.015,'order',-1);sq.dds.anchor(timeAtDrop);
+
+
+%%% %Bragg pulse
+    makeBraggSequence(sq.dds,'k',k,'t0',t0,'T',T,'width',30e-6,...
+        'Tasym',Tasym,'phase',[0,0,45],'order',1,'chirp',25.105e6-0.015e6,...
         'power',varargin{4}*[1,2,1]);
 
 %     %% Raman
@@ -183,16 +205,16 @@ function varargout = makeSequence(varargin)
     
 
     %% Imaging stage
-    %
-    % Image the atoms.  Reset the pointer for the whole sequence to when
-    % the atoms are dropped from the trap.  This means that the
-    % time-of-flight (tof) used in makeImagingSequence is now the delay
-    % from the time at which the atoms are dropped to when the first
-    % imaging pulse occurs
-    %
+%     %
+%     % Image the atoms.  Reset the pointer for the whole sequence to when
+%     % the atoms are dropped from the trap.  This means that the
+%     % time-of-flight (tof) used in makeImagingSequence is now the delay
+%     % from the time at which the atoms are dropped to when the first
+%     % imaging pulse occurs
+
     sq.anchor(timeAtDrop);
     makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
+        'repump Time',100e-6,'pulse Delay',00e-6,...
         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
@@ -268,9 +290,11 @@ function makeImagingSequence(sq,varargin)
     switch lower(imgType)
         case {'in trap','in-trap','trap','drop 1'}
             camChannel = 'cam trig';
+             pulseTime = 30e-6;
             imgType = 0;
         case {'drop 2'}
             camChannel = 'drop 1 camera trig';
+             pulseTime = 15e-6;
             imgType = 1;
         otherwise
             error('Unsupported imaging type %s',imgType);

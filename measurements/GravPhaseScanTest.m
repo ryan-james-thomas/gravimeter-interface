@@ -4,7 +4,9 @@ if r.isInit()
     r.data.param = 0:2:180;
     r.c.setup('var',r.data.param);
 elseif r.isSet()
-    r.make(8.5,35e-3,1.05,0.108,r.data.param(r.c(1)));
+    
+%     r.make(8.5,35e-3,1.05,0.108,r.data.param(r.c(1)));
+    r.make(0,216.5e-3,1.075,0.17,r.data.param(r.c(1)),0);
     r.upload;
     fprintf(1,'Run %d/%d, Phase: %.2f\n',r.c(1),r.c.total,r.data.param(r.c(1)));
     
