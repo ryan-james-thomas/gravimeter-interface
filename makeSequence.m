@@ -133,15 +133,21 @@ function varargout = makeSequence(varargin)
     sq.ddsTrigDelay = timeAtDrop;   
     k = 2*pi*384.224e12/const.c;
     vrel = 2*const.hbar*k/const.mRb;
-    T = 5e-3;
-    Tasym = 500e-6;
-    dsep = 1.5e-3;
-%     Tsep = dsep/vrel;
-    Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym)*0 + varargin{5};
+    T = varargin{6};
+    Tasym = 0;
+    if Tasym == 0
+        dsep = 1.5e-3;
+        Tsep = dsep/vrel;
+    else  
+        Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym);
+    end
     t0 = varargin{2} - 2*T - Tsep;
+    if t0 < 30e-3
+        warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
+    end
     t0 = max(t0,30e-3);
-    makeBraggSequence(sq.dds,'f',384.223e12,'dt',1e-6,'t0',t0,'T',T,...
-        'width',30e-6,'Tasym',Tasym,'phase',[0,0,45],'chirp',25.105e6-0.015e6,...
+    makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
+        'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',25.105e6-0.015e6,...
         'power',varargin{4}*[1,2,1]);
 
 %     %% Raman
@@ -192,7 +198,7 @@ function varargout = makeSequence(varargin)
     %
     sq.anchor(timeAtDrop);
     makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
-        'repump Time',100e-6,'pulse Time',15e-6,'pulse Delay',00e-6,...
+        'repump Time',100e-6,'pulse Delay',00e-6,...
         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
 
@@ -218,7 +224,7 @@ end
 
 function makeImagingSequence(sq,varargin)
     imgType = 'in-trap';
-    pulseTime = 30e-6;
+    pulseTime = [];
     repumpTime = 100e-6;
     repumpDelay = 00e-6;
     fibreSwitchDelay = 20e-3;
@@ -269,9 +275,15 @@ function makeImagingSequence(sq,varargin)
         case {'in trap','in-trap','trap','drop 1'}
             camChannel = 'cam trig';
             imgType = 0;
+            if isempty(pulseTime)
+                pulseTime = 30e-6;
+            end
         case {'drop 2'}
             camChannel = 'drop 1 camera trig';
             imgType = 1;
+            if isempty(pulseTime)
+                pulseTime = 15e-6;
+            end
         otherwise
             error('Unsupported imaging type %s',imgType);
     end
