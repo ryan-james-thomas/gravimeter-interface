@@ -118,8 +118,8 @@ for nn = 1:numPulses
 end
 % ph(:,2) = appliedPhase*(t > (t0 + 1.5*T));
 
-freq(:,1) = dds(1).DEFAULT_FREQ - order*0.25/1e6*(chirp*t + 4*recoil);
-freq(:,2) = dds(2).DEFAULT_FREQ + order*0.25/1e6*(chirp*t + 4*recoil);
+freq(:,1) = dds(1).DEFAULT_FREQ + 0.25/1e6*(chirp*t + order*4*recoil);
+freq(:,2) = dds(2).DEFAULT_FREQ - 0.25/1e6*(chirp*t + order*4*recoil);
 
 %% Populate DDS values
 for nn = 1:numel(dds)

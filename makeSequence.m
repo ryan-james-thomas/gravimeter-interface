@@ -131,15 +131,16 @@ function varargout = makeSequence(varargin)
     % in compiling the DDS instructions and making sure that they start at
     % the correct time.
     sq.ddsTrigDelay = timeAtDrop;   
+    braggOrder = 1;
     k = 2*pi*384.224e12/const.c;
-    vrel = 2*const.hbar*k/const.mRb;
+    vrel = abs(2*const.hbar*braggOrder*k/const.mRb);
     T = varargin{6};
     Tasym = 0;
     if Tasym == 0
         dsep = 1.5e-3;
         Tsep = dsep/vrel;
     else  
-        Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym);
+        Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
     end
     t0 = varargin{2} - 2*T - Tsep;
     if t0 < 30e-3
@@ -147,8 +148,8 @@ function varargout = makeSequence(varargin)
     end
     t0 = max(t0,30e-3);
     makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-        'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',25.105e6-0.015e6,...
-        'power',varargin{4}*[1,2,1]);
+        'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',25.105e6+0*0.015e6,...
+        'power',varargin{4}*[1,2,1],'order',braggOrder);
 
 %     %% Raman
 %     
@@ -230,7 +231,7 @@ function makeImagingSequence(sq,varargin)
     fibreSwitchDelay = 20e-3;
     camTime = 100e-6;
     pulseDelay = 0;
-    cycleTime = 100e-3;
+    cycleTime = 40e-3;
     repumpFreq = 4.3;
     imgFreq = 8.5;
     manifold = 1;
