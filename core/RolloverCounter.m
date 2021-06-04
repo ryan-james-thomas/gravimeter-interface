@@ -128,13 +128,39 @@ classdef RolloverCounter < handle
                     
             end
         end
+
+        function self = decrement(self)
+            %DECREMENT Decrements the counter by 1
+            %
+            %   COUNTER = COUNTER.DECREMENT() decrements the counter by 1,
+            %   handling roll-over as necessary
+            for nn = 1:self.N
+                if nn == 1
+                    self.i(nn) = self.i(nn) - 1;
+                end
+
+                if self.i(nn) < self.initial(nn)
+                    self.i(nn) = self.final(nn);
+                    if nn < self.N
+                        self.i(nn+1) = self.i(nn+1) - 1;
+                    end
+                end
+            end
+        end
         
-        function r = done(self)
+        function r = done(self,idx)
             %DONE Indicates if counter is done
             %
             %   R = COUNTER.done() returns true if COUNTER is on its last
             %   value, false otherwise
-            r = (self.current() == self.total());
+            %
+            %   R = COUNTER.done(IDX) returns true if the counter for index
+            %   IDX is on its last value
+            if nargin < 2
+                r = (self.current() == self.total());
+            else
+                r = self.i(idx) == self.final(idx);
+            end
         end
         
         function varargout = print(self)
