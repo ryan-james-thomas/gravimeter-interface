@@ -95,7 +95,7 @@ function varargout = makeSequence(varargin)
     %Ramp down magnetic trap in 1.01 s
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);
-    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-50e-3));
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-0.1));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
     
@@ -111,83 +111,98 @@ function varargout = makeSequence(varargin)
 %     sq.delay(3.2);
     timeAtDrop = sq.time; %Store the time when the atoms are dropped for later
     sq.anchor(timeAtDrop);
-    sq.find('bias e/w').before(200e-3,0);
+    sq.find('bias e/w').before(200e-3,10);
     sq.find('bias n/s').before(200e-3,0);
     sq.find('bias u/d').before(200e-3,0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
-    sq.find('3D Coils').set(-0.05);
+    sq.find('3D Coils').set(-0.1);
     sq.find('25w ttl').set(0);
     sq.find('50w ttl').set(0);
     
 
     %% Interferometry
-    % Issue falling-edge trigger for MOGLabs DDS box
-    sq.find('dds trig').before(10e-3,1);
-    sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
-    sq.find('dds trig').after(10e-3,1);
-    
-    % Create a sequence of Bragg pulses. The property ddsTrigDelay is used
-    % in compiling the DDS instructions and making sure that they start at
-    % the correct time.
-    sq.ddsTrigDelay = timeAtDrop;   
-    braggOrder = 1;
-    k = 2*pi*384.224e12/const.c;
-    vrel = abs(2*const.hbar*braggOrder*k/const.mRb);
-    T = varargin{6};
-    Tasym = 0;
-    if Tasym == 0
-        dsep = 1.5e-3;
-        Tsep = dsep/vrel;
-    else  
-        Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
+    enableDDS = 1;      %Enable DDS and DDS trigger
+    enableBragg = 0;    %Enable Bragg diffraction
+    enableRaman = 1;    %Enable Raman transition
+    enableSG = 1;       %Enable Stern-Gerlach separation
+    if enableDDS
+        % 
+        % Issue falling-edge trigger for MOGLabs DDS box when DDS is
+        % enabled
+        %
+        sq.find('dds trig').before(10e-3,1);
+        sq.find('dds trig').after(10e-3,0); %MOGLabs DDS triggers on falling edge
+        sq.find('dds trig').after(10e-3,1);
+        sq.ddsTrigDelay = timeAtDrop; 
     end
-    t0 = varargin{2} - 2*T - Tsep;
-    if t0 < 30e-3
-        warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
-    end
-    t0 = max(t0,30e-3);
-    makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-        'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',25.105e6+0*0.015e6,...
-        'power',varargin{4}*[1,2,1],'order',braggOrder);
-
-%     %% Raman
-%     
-% %     Start by re-anchoring the internal pointer for the DDS channels at the
-% %     drop time.  I do this to make referencing the time at which the Raman
-% %     pulse occurs easier to calculate
-%     
-%     sq.dds.anchor(timeAtDrop);
-%     %
-%     %This makes a Gaussian pulse with the specified parameters: centered at
-%     %'t0' with FWHM of 'width', a maximum power of 'power', and the channel
-%     %2 frequency 'df' higher than channel 1.
-%     %
-%     makeGaussianPulse(sq.dds,'t0',10e-3,'width',250e-6,'dt',5e-6,'power',0.08,...
-%         'df',153.5e-3);
-%     %
-%     % Turn on the amplifier for the Raman AOM. Keep in mind that the
-%     % internal pointer for Raman Amp is still at timeAtDrop
-%     %
-%     sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
-%     sq.delay(6e-3);
-%     sq.find('raman amp').set(0);
-% 
-%     % SG
-%     
-% %     Apply a Stern-Gerlach pulse to separate states based on magnetic
-% %     moment.  A ramp is used to ensure that the magnetic states
-% %     adiabatically follow the magnetic field
-% %     
-%     sq.delay(1e-3);
-%     Tsg = 15e-3;
-%     sq.find('mot coil ttl').set(1);
-%     t = linspace(0,Tsg,20);
-%     sq.find('3d coils').after(t,sq.linramp(t,-50e-3,0.01));
-%     sq.delay(Tsg);
-%     sq.find('mot coil ttl').set(0);
-%     sq.find('3d coils').set(-50e-3);
     
+    if enableDDS && enableBragg
+        %
+        % Create a sequence of Bragg pulses. The property ddsTrigDelay is used
+        % in compiling the DDS instructions and making sure that they start at
+        % the correct time.
+        %
+        braggOrder = 1;
+        k = 2*pi*384.224e12/const.c;
+        vrel = abs(2*const.hbar*braggOrder*k/const.mRb);
+        T = 5e-3;
+        Tasym = 0;
+        if Tasym == 0
+            dsep = 1.5e-3;
+            Tsep = dsep/vrel;
+        else  
+            Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
+        end
+        t0 = varargin{2} - 2*T - Tsep;
+        if t0 < 30e-3
+            warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
+        end
+        t0 = max(t0,30e-3);
+        makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
+            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',25.105e6+0*0.015e6,...
+            'power',varargin{4}*[1,2,1],'order',braggOrder);
+    end
+    
+    if enableDDS && enableRaman
+        %
+        % Start by re-anchoring the internal pointer for the DDS channels at the
+        % drop time.  I do this to make referencing the time at which the Raman
+        % pulse occurs easier to calculate
+        %
+        sq.dds.anchor(timeAtDrop);
+        %
+        % This makes a Gaussian pulse with the specified parameters: centered at
+        % 't0' with FWHM of 'width', a maximum power of 'power', and the channel
+        % 2 frequency 'df' higher than channel 1.
+        %
+        makeGaussianPulse(sq.dds,'t0',5e-3,'width',4*250e-6,'dt',5e-6,'power',0.8,...
+            'df',153.5e-3);
+        %
+        % Turn on the amplifier for the Raman AOM. Keep in mind that the
+        % internal pointer for Raman Amp is still at timeAtDrop
+        %
+        sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
+        sq.delay(6e-3);
+        sq.find('raman amp').set(0);
+        sq.find('Bias E/W').set(0);
+    end
+    
+    if enableSG
+        %
+        % Apply a Stern-Gerlach pulse to separate states based on magnetic
+        % moment.  A ramp is used to ensure that the magnetic states
+        % adiabatically follow the magnetic field
+        %     
+        sq.delay(1e-3);
+        Tsg = 10e-3;
+        sq.find('mot coil ttl').set(1);
+        t = linspace(0,Tsg,20);
+        sq.find('3d coils').after(t,sq.linramp(t,-0.1,0.5));
+        sq.delay(Tsg);
+        sq.find('mot coil ttl').set(0);
+        sq.find('3d coils').set(-0.1);
+    end
 
     %% Imaging stage
     %
@@ -198,7 +213,7 @@ function varargout = makeSequence(varargin)
     % imaging pulse occurs
     %
     sq.anchor(timeAtDrop);
-    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
+    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
         'repump Time',100e-6,'pulse Delay',00e-6,...
         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
