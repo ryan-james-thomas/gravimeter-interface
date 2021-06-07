@@ -106,12 +106,17 @@ function varargout = makeSequence(varargin)
     sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
     sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
     sq.delay(Tevap);
+    Tramp = 0.1;
+    t = linspace(0,Tramp,100);
+    sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50w amp').values(end),P50(varargin{3}+0.05)));
+    sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25w amp').values(end),P25(varargin{3}+0.05)));
+    sq.delay(Tramp);
     
     %% Drop atoms
 %     sq.delay(3.2);
     timeAtDrop = sq.time; %Store the time when the atoms are dropped for later
     sq.anchor(timeAtDrop);
-    sq.find('bias e/w').before(200e-3,10);
+    sq.find('bias e/w').before(200e-3,0);
     sq.find('bias n/s').before(200e-3,0);
     sq.find('bias u/d').before(200e-3,0);
     sq.find('mw amp ttl').set(0);
@@ -123,7 +128,7 @@ function varargout = makeSequence(varargin)
 
     %% Interferometry
     enableDDS = 1;      %Enable DDS and DDS trigger
-    enableBragg = 0;    %Enable Bragg diffraction
+    enableBragg = 1;    %Enable Bragg diffraction
     enableRaman = 1;    %Enable Raman transition
     enableSG = 1;       %Enable Stern-Gerlach separation
     if enableDDS
@@ -160,8 +165,8 @@ function varargout = makeSequence(varargin)
         end
         t0 = max(t0,30e-3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',25.105e6+0*0.015e6,...
-            'power',varargin{4}*[1,2,1],'order',braggOrder);
+            'width',30e-6,'Tasym',Tasym,'phase',[0,0,0],'chirp',varargin{5},...
+            'power',varargin{4}*[0,0,1],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -171,13 +176,14 @@ function varargout = makeSequence(varargin)
         % pulse occurs easier to calculate
         %
         sq.dds.anchor(timeAtDrop);
+        sq.find('Bias E/W').at(timeAtDrop-200e-3,10);
         %
         % This makes a Gaussian pulse with the specified parameters: centered at
         % 't0' with FWHM of 'width', a maximum power of 'power', and the channel
         % 2 frequency 'df' higher than channel 1.
         %
-        makeGaussianPulse(sq.dds,'t0',5e-3,'width',4*250e-6,'dt',5e-6,'power',0.8,...
-            'df',153.5e-3);
+        makeGaussianPulse(sq.dds,'t0',5e-3,'width',100e-6,'dt',5e-6,'power',0.375,...
+            'df',150.34e-3);
         %
         % Turn on the amplifier for the Raman AOM. Keep in mind that the
         % internal pointer for Raman Amp is still at timeAtDrop
@@ -195,11 +201,12 @@ function varargout = makeSequence(varargin)
         % adiabatically follow the magnetic field
         %     
         sq.delay(1e-3);
-        Tsg = 10e-3;
+        Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
         sq.find('3d coils').after(t,sq.linramp(t,-0.1,0.5));
-        sq.delay(Tsg);
+        sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-0.1));
+        sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);
         sq.find('3d coils').set(-0.1);
     end
@@ -213,7 +220,7 @@ function varargout = makeSequence(varargin)
     % imaging pulse occurs
     %
     sq.anchor(timeAtDrop);
-    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
+    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
         'repump Time',100e-6,'pulse Delay',00e-6,...
         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
