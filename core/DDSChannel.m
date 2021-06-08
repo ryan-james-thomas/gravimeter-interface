@@ -5,7 +5,7 @@ classdef DDSChannel < TimingControllerChannel
     
     properties
         channel
-        rfscale
+        calibrationData
     end
     
     properties(Constant)
@@ -77,15 +77,20 @@ classdef DDSChannel < TimingControllerChannel
             end
             data.t = t;
             data.freq = v(:,1);
-            data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
+            data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),ch.calibrationData));
             data.phase = v(:,3);
         end
 
     end
     
     methods(Static)
-        function rf = opticalToRF(P,Pmax,rfmax)
-            rf = (asin((P/Pmax).^0.25)*2/pi).^2*rfmax;
+%         function rf = opticalToRF(P,Pmax,rfmax)
+%             rf = (asin((P/Pmax).^0.25)*2/pi).^2*rfmax;
+%         end
+
+        function rf = opticalToRF(P,data)
+            P = P*data.Pmax;
+            rf = interp1(data.Popt,data.Prf,P,'pchip');
         end
     end
     
