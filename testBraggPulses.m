@@ -16,12 +16,12 @@ function varargout = testBraggPulses(varargin)
     % the correct time.
     sq.ddsTrigDelay = timeAtDrop;   
     k = 2*pi*384.224e12/const.c;
-    T = 1e-3;
+    T = 5e-3;
     t0 = 2e-3;
 
     makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-        'width',30e-6,'Tasym',0,'phase',[180,90,90],'chirp',0,...
-        'power',0.1*[1,1,1],'order',1);
+        'width',30e-6,'Tasym',0,'phase',[0,0,0],'chirp',0,...
+        'power',0.3*[0,2,0],'order',1);
     
     %% Automatic start
     %If no output argument is requested, then compile and run the above

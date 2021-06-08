@@ -102,24 +102,47 @@ for  nn = 1:numPulses
     t(:,nn) = t(:,nn) + t0 + (nn-1)*T + max((nn-2),0)*Tasym;
 end
 t = t(:);
-
-P = zeros(numel(t),2);
+%
+% Set powers, phases, and frequencies
+%
+[P,ph,freq] = deal(zeros(numel(t),2));
 for nn = 1:numPulses
     tc = t0 + (nn-1)*T + max((nn-2),0)*Tasym;
+    idx = (t - t0) > (nn-1-0.5)*T;
+    %
+    % Set powers
+    %
     P(:,1) = P(:,1) + power1(nn)*exp(-(t - tc).^2/fwhm.^2);
     P(:,2) = P(:,2) + power2(nn)*exp(-(t - tc).^2/fwhm.^2);
-end
-
-ph = zeros(numel(t),2);
-for nn = 1:numPulses
-%     idx = (t > (nn-1)*t0) & (t < ((nn-1)*t0 + (nn/2-1)*T));
-    idx = (t - t0) > (nn-1-0.5)*T;
+    %
+    % Set phases
+    %
     ph(idx,2) = appliedPhase(nn);
+    %
+    % Set frequencies.  Need channel 1 frequency to be larger than channel
+    % 2 frequency so that we use the lattice formed from retroreflecting
+    % from the vibrationally isolated mirror
+    %
+    freq(idx,1) = DDSChannel.DEFAULT_FREQ + 0.25/1e6*(chirp*tc + order*4*recoil);
+    freq(idx,2) = DDSChannel.DEFAULT_FREQ - 0.25/1e6*(chirp*tc + order*4*recoil);
 end
+%
+% Set phases for each pulse
+%
+% ph = zeros(numel(t),2);
+% for nn = 1:numPulses
+% %     idx = (t > (nn-1)*t0) & (t < ((nn-1)*t0 + (nn/2-1)*T));
+%     idx = (t - t0) > (nn-1-0.5)*T;
+%     ph(idx,2) = appliedPhase(nn);
+% end
 % ph(:,2) = appliedPhase*(t > (t0 + 1.5*T));
 
-freq(:,1) = dds(1).DEFAULT_FREQ + 0.25/1e6*(chirp*t + order*4*recoil);
-freq(:,2) = dds(2).DEFAULT_FREQ - 0.25/1e6*(chirp*t + order*4*recoil);
+%
+% Set frequencies
+%
+% freq(:,1) = dds(1).DEFAULT_FREQ + 0.25/1e6*(chirp*t + order*4*recoil);
+% freq(:,2) = dds(2).DEFAULT_FREQ - 0.25/1e6*(chirp*t + order*4*recoil);
+
 
 %% Populate DDS values
 for nn = 1:numel(dds)

@@ -8,9 +8,15 @@ function varargout = makeSequence(varargin)
     % voltage for powers in W
     P25 = @(x) (x+2.6412)/2.8305;
     P50 = @(x) (x+3.7580)/5.5445;
+    %
     % Imaging detuning. Gives voltage for detuning in MHz
+    %
     imageVoltage = -varargin{1}*0.4231/6.065 + 8.6214;
 %     imageVoltage = varargin{1};
+    %
+    % Voltage value that guarantees that the MOT coils are off
+    %
+    motCoilOff = -0.2;
 
     sq.find('Imaging Freq').set(imageVoltage);
     sq.find('3D MOT Freq').set(6.85);
@@ -95,7 +101,7 @@ function varargout = makeSequence(varargin)
     %Ramp down magnetic trap in 1.01 s
     Trampcoils = 1.01;
     t = linspace(0,Trampcoils,100);
-    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-0.1));
+    sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
     sq.find('mw amp ttl').anchor(sq.find('3d coils').last).before(100e-3,0);
     sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
     
@@ -106,12 +112,12 @@ function varargout = makeSequence(varargin)
     sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.5));
     sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.5));
     sq.delay(Tevap);
-    Tramp = 0.1;
-    t = linspace(0,Tramp,100);
-    sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50w amp').values(end),P50(varargin{3}+0.05)));
-    sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25w amp').values(end),P25(varargin{3}+0.05)));
-    sq.delay(Tramp);
-    
+%     Tramp = 0.1;
+%     t = linspace(0,Tramp,100);
+%     sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50w amp').values(end),P50(varargin{3}+0.05)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25w amp').values(end),P25(varargin{3}+0.05)));
+%     sq.delay(Tramp);
+
     %% Drop atoms
 %     sq.delay(3.2);
     timeAtDrop = sq.time; %Store the time when the atoms are dropped for later
@@ -121,16 +127,16 @@ function varargout = makeSequence(varargin)
     sq.find('bias u/d').before(200e-3,0);
     sq.find('mw amp ttl').set(0);
     sq.find('mot coil ttl').set(0);
-    sq.find('3D Coils').set(-0.1);
+    sq.find('3D Coils').set(motCoilOff);
     sq.find('25w ttl').set(0);
     sq.find('50w ttl').set(0);
     
 
     %% Interferometry
     enableDDS = 1;      %Enable DDS and DDS trigger
-    enableBragg = 1;    %Enable Bragg diffraction
-    enableRaman = 1;    %Enable Raman transition
-    enableSG = 1;       %Enable Stern-Gerlach separation
+    enableBragg = 0;    %Enable Bragg diffraction
+    enableRaman = 0;    %Enable Raman transition
+    enableSG = 0;       %Enable Stern-Gerlach separation
     if enableDDS
         % 
         % Issue falling-edge trigger for MOGLabs DDS box when DDS is
@@ -154,7 +160,7 @@ function varargout = makeSequence(varargin)
         T = 5e-3;
         Tasym = 0;
         if Tasym == 0
-            dsep = 1.5e-3;
+            dsep = 2e-3;
             Tsep = dsep/vrel;
         else  
             Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
@@ -166,7 +172,7 @@ function varargout = makeSequence(varargin)
         t0 = max(t0,30e-3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
             'width',30e-6,'Tasym',Tasym,'phase',[0,0,0],'chirp',varargin{5},...
-            'power',varargin{4}*[0,0,1],'order',braggOrder);
+            'power',varargin{4}*[2,0,0],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -182,7 +188,7 @@ function varargout = makeSequence(varargin)
         % 't0' with FWHM of 'width', a maximum power of 'power', and the channel
         % 2 frequency 'df' higher than channel 1.
         %
-        makeGaussianPulse(sq.dds,'t0',5e-3,'width',100e-6,'dt',5e-6,'power',0.375,...
+        makeGaussianPulse(sq.dds,'t0',5e-3,'width',100e-6,'dt',5e-6,'power',0.4,...
             'df',150.34e-3);
         %
         % Turn on the amplifier for the Raman AOM. Keep in mind that the
@@ -204,8 +210,8 @@ function varargout = makeSequence(varargin)
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
-        sq.find('3d coils').after(t,sq.linramp(t,-0.1,0.5));
-        sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),-0.1));
+        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.1));
+        sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
         sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);
         sq.find('3d coils').set(-0.1);
