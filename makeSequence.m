@@ -134,7 +134,7 @@ function varargout = makeSequence(varargin)
 
     %% Interferometry
     enableDDS = 1;      %Enable DDS and DDS trigger
-    enableBragg = 0;    %Enable Bragg diffraction
+    enableBragg = 1;    %Enable Bragg diffraction
     enableRaman = 0;    %Enable Raman transition
     enableSG = 0;       %Enable Stern-Gerlach separation
     if enableDDS
@@ -171,8 +171,8 @@ function varargout = makeSequence(varargin)
         end
         t0 = max(t0,30e-3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',30e-6,'Tasym',Tasym,'phase',[0,0,0],'chirp',varargin{5},...
-            'power',varargin{4}*[2,0,0],'order',braggOrder);
+            'width',50e-6,'Tasym',Tasym,'phase',[0,0,0],'chirp',varargin{5},...
+            'power',varargin{4}*[1,0,0],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -188,7 +188,7 @@ function varargout = makeSequence(varargin)
         % 't0' with FWHM of 'width', a maximum power of 'power', and the channel
         % 2 frequency 'df' higher than channel 1.
         %
-        makeGaussianPulse(sq.dds,'t0',5e-3,'width',100e-6,'dt',5e-6,'power',0.4,...
+        makeGaussianPulse(sq.dds,'t0',5e-3,'width',100e-6,'dt',5e-6,'power',0.3,...
             'df',150.34e-3);
         %
         % Turn on the amplifier for the Raman AOM. Keep in mind that the
@@ -210,11 +210,11 @@ function varargout = makeSequence(varargin)
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
-        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.1));
+        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.5));
         sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
         sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);
-        sq.find('3d coils').set(-0.1);
+        sq.find('3d coils').set(motCoilOff);
     end
 
     %% Imaging stage
