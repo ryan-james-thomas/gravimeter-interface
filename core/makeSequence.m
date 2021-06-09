@@ -140,7 +140,7 @@ function varargout = makeSequence(varargin)
 %     Tsep = dsep/vrel;
 
 %     Tsep = const.mRb*pi*varargin{2}/(4*k^2*const.hbar*Tasym)
-    Tsep = 7.5e-3
+    Tsep = 7.5e-3;
     if Tasym == 500e-6
         Tsupp=0;
     else
@@ -154,17 +154,17 @@ function varargout = makeSequence(varargin)
         warning('Initial pulse time of %.2f ms is smaller than 30 ms!',t0*1e3);
     end
     
-    t0 = max(t0,30e-3);
+%     t0 = max(t0,30e-3);
     tvs=t0-50e-3;
-%% %Velocity selection pulse
- makeVelocitySelectionpulse(sq.dds,'k',k,'tvs',tvs,'chirp',25.105e6-0.015e6,...
-    'width',600e-6,'power',0.015,'order',-1);sq.dds.anchor(timeAtDrop);
+% %% %Velocity selection pulse
+%  makeVelocitySelectionpulse(sq.dds,'k',k,'tvs',tvs,'chirp',25.105e6-0.015e6,...
+%     'width',600e-6,'power',0.015,'order',-1);sq.dds.anchor(timeAtDrop);
 
 
 %%% %Bragg pulse
     makeBraggSequence(sq.dds,'k',k,'t0',t0,'T',T,'width',30e-6,...
         'Tasym',Tasym,'phase',[0,0,45],'order',1,'chirp',25.105e6-0.015e6,...
-        'power',varargin{4}*[1,2,1]);
+        'power',varargin{4}*[2,0,0]);
 
 %     %% Raman
 %     
