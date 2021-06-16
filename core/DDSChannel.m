@@ -5,6 +5,7 @@ classdef DDSChannel < TimingControllerChannel
     
     properties
         channel
+        calibrationData
         rfscale
     end
     
@@ -77,15 +78,29 @@ classdef DDSChannel < TimingControllerChannel
             end
             data.t = t;
             data.freq = v(:,1);
-            data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
+            if isempty(ch.calibrationData) && ~isempty(ch.rfscale)
+                data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
+            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale)
+                data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),ch.calibrationData));
+            else
+                error('Need to supply only one of calibration data or RF scale to convert optical power to RF power!');
+            end
             data.phase = v(:,3);
         end
 
     end
     
     methods(Static)
-        function rf = opticalToRF(P,Pmax,rfmax)
-            rf = (asin((P/Pmax).^0.25)*2/pi).^2*rfmax;
+        function rf = opticalToRF(P,varargin)
+            if numel(varargin) == 1 && isstruct(varargin{1})
+                data = varargin{1};
+                P = P*data.Pmax;
+                rf = interp1(data.Popt,data.Prf,P,'pchip');
+            elseif numel(varargin) == 2
+                Pmax = varargin{1};
+                rfmax = varargin{2};
+                rf = (asin((P/Pmax).^0.25)*2/pi).^2*rfmax;
+            end
         end
     end
     

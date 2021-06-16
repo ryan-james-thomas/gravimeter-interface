@@ -124,7 +124,7 @@ end
 %
 % As of 01/06/2021, channel 1 of the DDS controls light with the same
 % polarization as the MOT beam.  Therefore, the frequency of channel 1 MUST
-% be less than that of channel 2 so that the beam retroreflected from the
+% be more than that of channel 2 so that the beam retroreflected from the
 % isolated mirror is the one that participates in the interferometer
 %
 freq(:,1) = dds(1).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*recoil/1e6;
