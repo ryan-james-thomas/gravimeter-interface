@@ -6,9 +6,9 @@ if r.isInit()
     r.c.setup('var',r.data.chirp);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.08,0.15,r.data.chirp(r.c(1)));
+    r.make(0,216.5e-3,1.15,0.3,0,0,r.data.chirp(r.c(1)));
     r.upload;
-    fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
+    fprintf(1,'Run %d/%d, Chirp = %.3f MHz/s\n',r.c.now,r.c.total,...
         r.data.chirp(r.c(1))/1e6);
     
 elseif r.isAnalyze()
@@ -20,13 +20,18 @@ elseif r.isAnalyze()
         % Checks for an error in loading the files (caused by a missed
         % image) and reruns the last sequence
         %
-        r.c.decrement;
-        return;
+        pause(0.25);
+        if ~c(1).raw.load.status.ok()
+            r.c.decrement;
+            return;
+        else
+            c = Abs_Analysis_NClouds('last');
+        end
     end
     %
     % Store raw data
     %
-    r.data.c{i1,1} = c;
+%     r.data.c{i1,1} = c;
     r.data.files{i1,1} = {c(1).raw.files(1).name,c(1).raw.files(2).name};
     %
     % Get processed data
