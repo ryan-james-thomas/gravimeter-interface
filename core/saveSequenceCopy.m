@@ -12,7 +12,7 @@ s2 = s((r(1)+2):end);
 %Create new string to insert
 sinsert = ['    %% These were the input arguments',sprintf('\r\n')];
 for nn = 1:numel(args)
-    sinsert = [sinsert,sprintf('    varargin{%d} = %.3g;\r\n',nn,args{nn})]; %#ok<*AGROW>
+    sinsert = [sinsert,sprintf('    varargin{%d} = %.6g;\r\n',nn,args{nn})]; %#ok<*AGROW>
 end
 %Insert string into file
 snew = [s1,sinsert,s2];

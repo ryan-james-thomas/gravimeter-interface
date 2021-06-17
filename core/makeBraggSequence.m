@@ -12,6 +12,7 @@ power = 0.05*[1,2,1];
 power1 = [];power2 = [];
 chirp = 2*k*9.795/(2*pi);
 order = 1;
+dt = 1e-6;
 
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
@@ -53,13 +54,6 @@ else
                 power2 = v;
             case 'order'
                 order = v;
-%                 if order == 0
-%                     error('Bragg order needs to be different from 0!');
-%                 elseif floor(order) == ceil(order)
-%                     order = v;
-%                 else
-%                     error('Bragg order needs to be an integer');
-%                 end
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
@@ -67,11 +61,8 @@ else
 end
 
 %% Conditions on the time step and the Bragg order
-if width<50e-6
-    dt = 1e-6;
-else
-    intermediatewidth = width*1e6;
-    dt = ceil(intermediatewidth/50)*1e-6;
+if width > 50e-6
+    dt = ceil(width/50e-6)*1e-6;
 end
      
 %% Calculate intermediate values
@@ -119,7 +110,7 @@ for nn = 1:numPulses
     %
     ph(idx,2) = appliedPhase(nn);
     %
-    % Set frequencies.  Need channel 1 frequency to be larger than channel
+    % Set frequencies.  Need channel 1 frequency to be higher than channel
     % 2 frequency so that we use the lattice formed from retroreflecting
     % from the vibrationally isolated mirror
     %
