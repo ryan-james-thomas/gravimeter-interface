@@ -1,15 +1,15 @@
-function Callback_MeasureBraggChirp(r)
+function Callback_MeasureBraggPower(r)
 
 if r.isInit()
-    r.data.chirp = const.randomize(25.1e6 + (-0.2:0.02:0.2)*1e6);
+    r.data.power = const.randomize(0:0.025:0.85);
     
-    r.c.setup('var',r.data.chirp);
+    r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.12,0.15,0,r.data.chirp(r.c(1)));
+    r.make(0,216.5e-3,1.12,r.data.power(r.c(1)),0,25.1e6);
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
-        r.data.chirp(r.c(1))/1e6);
+        r.data.power(r.c(1)));
     
 elseif r.isAnalyze()
     i1 = r.c(1);
@@ -43,16 +43,15 @@ elseif r.isAnalyze()
     r.data.Rsum(i1,:) = r.data.Nsum(i1,:)./sum(r.data.Nsum(i1,:));
     
     figure(98);
-%     plot(r.data.chirp(1:i1),r.data.R(1:i1,:),'o-');
-%     hold on;
-    h = plot(r.data.chirp(1:i1)/1e6,r.data.Rsum(1:i1,:),'o');
+    h = plot(r.data.power(1:i1),r.data.Rsum(1:i1,:),'o');
     for nn = 1:numel(h)
         set(h(nn),'MarkerFaceColor',h(nn).Color);
     end
 %     hold off;
-    plot_format('Chirp [MHz/s]','Population','',12);
+    plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 30 us FWHM',12);
     grid on;
-    h = legend('Slow','Fast');
-%     set(h,'Location','North');
+%     h = legend('Slow','Fast');
+    h = legend('-2k','0k','2k','4k');
+    set(h,'Location','West');
     
 end

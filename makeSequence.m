@@ -156,11 +156,14 @@ function varargout = makeSequence(varargin)
         %
         braggOrder = 1;
         k = 2*pi*384.224e12/const.c;
-        vrel = abs(2*const.hbar*braggOrder*k/const.mRb);
-        T = 5e-3;
+        vrel = abs(2*const.hbar*k/const.mRb);
+        g = 9.795;
+        chirp = 25.087e6;
+%         chirp = varargin{6};
+        T = varargin{6};
         Tasym = 0;
         if Tasym == 0
-            dsep = 2e-3;
+            dsep = 1.5e-3;
             Tsep = dsep/vrel;
         else  
             Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
@@ -170,9 +173,10 @@ function varargout = makeSequence(varargin)
             warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
         end
         t0 = max(t0,30e-3);
+        fprintf(1,'t0 = %0.6f ms\n',t0*1e3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',50e-6,'Tasym',Tasym,'phase',[0,0,0],'chirp',varargin{5},...
-            'power',varargin{4}*[1,0,0],'order',braggOrder);
+            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',chirp,...
+            'power',varargin{4}*[1,2,1],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -188,15 +192,17 @@ function varargout = makeSequence(varargin)
         % 't0' with FWHM of 'width', a maximum power of 'power', and the channel
         % 2 frequency 'df' higher than channel 1.
         %
-        makeGaussianPulse(sq.dds,'t0',5e-3,'width',100e-6,'dt',5e-6,'power',0.3,...
+        t0 = 5e-3;
+        makeGaussianPulse(sq.dds,'t0',t0,'width',100e-6,'dt',5e-6,'power',0.45,...
             'df',150.34e-3);
         %
         % Turn on the amplifier for the Raman AOM. Keep in mind that the
         % internal pointer for Raman Amp is still at timeAtDrop
         %
+        sq.delay(t0 - 1e-3);
         sq.find('raman amp').set(5);    %This is an analog value, so set to 5 V to turn on
-        sq.delay(6e-3);
-        sq.find('raman amp').set(0);
+        sq.delay(2e-3);
+        sq.find('Raman amp').set(0);
         sq.find('Bias E/W').set(0);
     end
     
@@ -210,7 +216,7 @@ function varargout = makeSequence(varargin)
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
-        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.5));
+        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.1));
         sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
         sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);
@@ -263,6 +269,7 @@ function makeImagingSequence(sq,varargin)
     repumpFreq = 4.3;
     imgFreq = 8.5;
     manifold = 1;
+    includeDarkImage = false;
     if mod(numel(varargin),2) ~= 0
         error('Input arguments must be in name/value pairs');
     else
@@ -294,6 +301,8 @@ function makeImagingSequence(sq,varargin)
                     fibreSwitchDelay = v;
                 case 'manifold'
                     manifold = v;
+                case 'includedarkimage'
+                    includeDarkImage = v;
                 otherwise
                     error('Unsupported option %s',p);
             end
@@ -311,7 +320,7 @@ function makeImagingSequence(sq,varargin)
             camChannel = 'drop 1 camera trig';
             imgType = 1;
             if isempty(pulseTime)
-                pulseTime = 15e-6;
+                pulseTime = 14e-6;
             end
         otherwise
             error('Unsupported imaging type %s',imgType);
@@ -355,5 +364,16 @@ function makeImagingSequence(sq,varargin)
     sq.find(camChannel).after(camTime,0);
     sq.anchor(sq.latest);
     sq.find('fiber switch repump').set(0);
+    
+    if includeDarkImage
+        %Take dark image
+        sq.delay(cycleTime);
+        sq.find('Imaging amp ttl').after(pulseDelay,0);
+        sq.find(camChannel).set(1);
+        sq.find('imaging amp ttl').after(pulseTime,0);
+        sq.find(camChannel).after(camTime,0);
+        sq.anchor(sq.latest);
+        sq.find('fiber switch repump').set(0);
+    end
     
 end
