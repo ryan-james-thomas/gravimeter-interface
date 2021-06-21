@@ -1,14 +1,14 @@
 function Callback_MeasureBraggChirp(r)
 
 if r.isInit()
-    r.data.chirp = 25.1e6 + (-0.2:0.02:0.2)*1e6;
+    r.data.chirp = const.randomize(25.1e6 + (-0.2:0.02:0.2)*1e6);
     
     r.c.setup('var',r.data.chirp);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.15,0.3,0,0,r.data.chirp(r.c(1)));
+    r.make(0,216.5e-3,1.12,0.15,0,r.data.chirp(r.c(1)));
     r.upload;
-    fprintf(1,'Run %d/%d, Chirp = %.3f MHz/s\n',r.c.now,r.c.total,...
+    fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.chirp(r.c(1))/1e6);
     
 elseif r.isAnalyze()
@@ -20,8 +20,9 @@ elseif r.isAnalyze()
         % Checks for an error in loading the files (caused by a missed
         % image) and reruns the last sequence
         %
-        pause(0.25);
-        if ~c(1).raw.load.status.ok()
+        pause(1);
+        c(1).raw.load('files','last','index',1);
+        if ~c(1).raw.status.ok()
             r.c.decrement;
             return;
         else
@@ -31,7 +32,7 @@ elseif r.isAnalyze()
     %
     % Store raw data
     %
-%     r.data.c{i1,1} = c;
+    r.data.c{i1,1} = c;
     r.data.files{i1,1} = {c(1).raw.files(1).name,c(1).raw.files(2).name};
     %
     % Get processed data
@@ -44,7 +45,10 @@ elseif r.isAnalyze()
     figure(98);
 %     plot(r.data.chirp(1:i1),r.data.R(1:i1,:),'o-');
 %     hold on;
-    plot(r.data.chirp(1:i1)/1e6,r.data.Rsum(1:i1,:),'sq-');
+    h = plot(r.data.chirp(1:i1)/1e6,r.data.Rsum(1:i1,:),'o');
+    for nn = 1:numel(h)
+        set(h(nn),'MarkerFaceColor',h(nn).Color);
+    end
 %     hold off;
     plot_format('Chirp [MHz/s]','Population','',12);
     grid on;

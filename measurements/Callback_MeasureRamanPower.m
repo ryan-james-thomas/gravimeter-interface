@@ -6,7 +6,7 @@ if r.isInit()
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-    r.make(0,216.75e-3,1.08,r.data.power(r.c(1)),150.34e-3);
+     r.make(0,216.65e-3,1.175,0.29,0,5e-3,r.data.power(r.c(1)));
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));
@@ -26,7 +26,7 @@ elseif r.isAnalyze()
     %
     % Store raw data
     %
-    r.data.c{i1,1} = c;
+%     r.data.c{i1,1} = c;
     r.data.files{i1,1} = {c(1).raw.files(1).name,c(1).raw.files(2).name};
     %
     % Get processed data
@@ -44,6 +44,6 @@ elseif r.isAnalyze()
     plot_format('Power [arb]','Population','',12);
     grid on;
     h = legend('m = 1','m = 0','m = -1');
-    set(h,'Location','North');
+    set(h,'Location','West');
     
 end

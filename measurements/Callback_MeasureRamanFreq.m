@@ -6,7 +6,7 @@ if r.isInit()
     r.c.setup('var',r.data.freq);
 elseif r.isSet()
     
-    r.make(0,33.5e-3,1.025,0.1,1e-3*r.data.freq(r.c(1)));
+    r.make(0,216.65e-3,1.175,0.29,0,5e-3,1e-3*r.data.freq(r.c(1)));
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f kHz\n',r.c.now,r.c.total,...
         r.data.freq(r.c(1)));
