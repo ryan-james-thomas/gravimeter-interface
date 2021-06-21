@@ -63,8 +63,8 @@ function sq = initSequence
     %% DDS default
     sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
     sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
-    sq.dds(1).rfscale = 2.155;
-    sq.dds(2).rfscale = 1.857;
+    sq.dds(1).rfscale = 2.164;
+    sq.dds(2).rfscale = 1.925;
 %     calibData = load('aom-rf-power-10db-ch1-13db-ch2');
 %     sq.dds(1).calibrationData = calibData.data(1);
 %     sq.dds(2).calibrationData = calibData.data(2);

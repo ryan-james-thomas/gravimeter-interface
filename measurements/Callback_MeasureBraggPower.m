@@ -6,7 +6,7 @@ if r.isInit()
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.12,r.data.power(r.c(1)),0,25.1e6);
+    r.make(0,216.5e-3,1.2,r.data.power(r.c(1)),0,5e-3);
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));
@@ -20,19 +20,13 @@ elseif r.isAnalyze()
         % Checks for an error in loading the files (caused by a missed
         % image) and reruns the last sequence
         %
-        pause(1);
-        c(1).raw.load('files','last','index',1);
-        if ~c(1).raw.status.ok()
-            r.c.decrement;
-            return;
-        else
-            c = Abs_Analysis_NClouds('last');
-        end
+        r.c.decrement;
+        return;
     end
     %
     % Store raw data
     %
-    r.data.c{i1,1} = c;
+%     r.data.c{i1,1} = c;
     r.data.files{i1,1} = {c(1).raw.files(1).name,c(1).raw.files(2).name};
     %
     % Get processed data
@@ -50,8 +44,9 @@ elseif r.isAnalyze()
 %     hold off;
     plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 30 us FWHM',12);
     grid on;
-%     h = legend('Slow','Fast');
-    h = legend('-2k','0k','2k','4k');
+    h = legend('Slow','Fast');
+%     h = legend('-2k','0k','2k','4k');
     set(h,'Location','West');
+    ylim([0,1]);
     
 end
