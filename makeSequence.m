@@ -76,6 +76,7 @@ function varargout = makeSequence(varargin)
     sq.find('MOT coil ttl').set(1);
     sq.find('3D coils').set(2);
     sq.find('mw amp ttl').set(1);   %Turn on MW once bias fields have reached their final values
+    sq.find('3d trap shutter').set(1);
 
     %% Microwave evaporation
     sq.delay(20e-3);
@@ -130,13 +131,12 @@ function varargout = makeSequence(varargin)
     sq.find('3D Coils').set(motCoilOff);
     sq.find('25w ttl').set(0);
     sq.find('50w ttl').set(0);
-    
 
     %% Interferometry
     enableDDS = 1;      %Enable DDS and DDS trigger
     enableBragg = 1;    %Enable Bragg diffraction
-    enableRaman = 1;    %Enable Raman transition
-    enableSG = 1;       %Enable Stern-Gerlach separation
+    enableRaman = 0;    %Enable Raman transition
+    enableSG = 0;       %Enable Stern-Gerlach separation
     if enableDDS
         % 
         % Issue falling-edge trigger for MOGLabs DDS box when DDS is
@@ -160,23 +160,30 @@ function varargout = makeSequence(varargin)
         g = 9.795;
         chirp = 25.1e6;
 %         chirp = varargin{6};
-        T = varargin{6};
+%         T = varargin{6};
         Tasym = 0;
-        if Tasym == 0
-            dsep = 1.5e-3;
-            Tsep = dsep/vrel;
-        else  
-            Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
-        end
-        t0 = varargin{2} - 2*T - Tsep;
-        if t0 < 30e-3
-            warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
-        end
-        t0 = max(t0,30e-3);
+%         if Tasym == 0
+%             dsep = 1.5e-3;
+%             Tsep = dsep/vrel;
+%         else  
+%             Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
+%         end
+%         t0 = varargin{2} - 2*T - Tsep;
+%         if t0 < 30e-3
+%             warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
+%         end
+%         t0 = max(t0,30e-3);
+
+        t0 = 10e-3;
+        T = 1e-3;
+        sq.find('Raman Amp').at(timeAtDrop,5).after(t0-0.15e-3,0).after(0.15e-3*2,5);
+%         sq.find('Liquid crystal Bragg').after(t0+0.1e-3,3);
+        sq.find('3d trap shutter').after(t0-5e-3,0).after(5e-3,1);
+        
         fprintf(1,'t0 = %0.6f ms\n',t0*1e3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',chirp,...
-            'power',varargin{4}*[1,2,1],'order',braggOrder);
+            'width',40e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',chirp,...
+            'power',varargin{4}*[1,0,0],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -212,11 +219,11 @@ function varargout = makeSequence(varargin)
         % moment.  A ramp is used to ensure that the magnetic states
         % adiabatically follow the magnetic field
         %     
-        sq.delay(1e-3);
+        sq.delay(15e-3);
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
-        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.5));
+        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,1));
         sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
         sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);
@@ -232,7 +239,7 @@ function varargout = makeSequence(varargin)
     % imaging pulse occurs
     %
     sq.anchor(timeAtDrop);
-    makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
+    makeImagingSequence(sq,'type','drop 1','tof',varargin{2},...
         'repump Time',100e-6,'pulse Delay',00e-6,...
         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
         'manifold',1);
