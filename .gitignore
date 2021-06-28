@@ -1,5 +1,4 @@
 *.asv
-*.log
 *.mat
-*.code*
-run-archive/
+*~
+
