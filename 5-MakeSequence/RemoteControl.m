@@ -59,7 +59,8 @@ classdef RemoteControl < handle
             if isempty(self.conn) || ~isvalid(self.conn)
                 self.conn = tcpip(self.remoteAddress,self.remotePort,'networkrole','client');
                 self.conn.Terminator = 'CR/LF';
-                self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
+%                 self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
+                self.conn.BytesAvailableFcn = @(~,~) Abs_Analysis('last',1);
                 self.connected = false;
                 self.conn.OutputBufferSize = 2^24;
             end
@@ -103,7 +104,19 @@ classdef RemoteControl < handle
         end %end waitForReady
         
         function stop(self)
-            %STOP Releases client from remote control and closes TCP conn
+            %STOP Changes status
+            self.status = self.STOPPED;
+%             self.conn.BytesAvailableFcn = @(~,~) Abs_Analysis('last',1);
+        end %end fclose
+        
+%         function delete(self)
+%             %DELETE Stop TCP/IP client when deleting function
+%             self.stop;
+%         end
+        
+        function close(self)
+            %CLOSE Releases client from remote control and closes TCP conn
+            self.stop;
             if strcmpi(self.conn.Status,'open')
 %                 fprintf(self.conn,'%s',self.endWord);
                 fclose(self.conn);
@@ -111,8 +124,7 @@ classdef RemoteControl < handle
             delete(self.conn);
             fprintf(1,'Remote control session terminated\n');
             self.connected = false;
-            self.status = self.STOPPED;
-        end %end fclose
+        end
 
         function self = make(self,varargin)
             %MAKE Makes the sequence to be uploaded

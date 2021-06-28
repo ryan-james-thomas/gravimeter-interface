@@ -268,7 +268,7 @@ classdef TimingSequence < handle
             self.data.a = buf(:,1+((self.numDigitalChannels+1):self.numChannels));
             
             for nn = 1:numel(self.dds)
-                % self.dds(nn).expand(self.data.t);
+%                 self.dds(nn).expand(self.data.t);
                 self.data.dds(nn) = self.dds(nn).compile(self.ddsTrigDelay);
             end
             
@@ -375,7 +375,12 @@ classdef TimingSequence < handle
             e = exp(-(t-t(1))/T);
             v = vi*e+(vf-vi*e(end))./(1-e(end)).*(1-e);
         end
-
+        
+        function v = gauspulse(t,A,t0,s)
+            %e = exp(-(t-t(1))/T);
+            v = A*exp(-(t-t0).^2/(2*s.^2));
+        end
+        
         function sq = buildFromCompiledData(data)
             sq = TimingSequence(32,size(data.a,2));
             sq.loadCompiledData(data);

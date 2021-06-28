@@ -1,10 +1,14 @@
 function GravTest(r)
 
 if r.isInit()
-    r.data.param = 5:0.1:6;
+    r.data.param = (0:0.05:0.2);
     r.numRuns = numel(r.data.param);
-elseif r.isSet()
     
+    
+    r.makerCallback = @makeSequence;
+    
+elseif r.isSet()
+  
     r.make(r.data.param(r.currentRun));
     r.upload;
 %     pause(5);
