@@ -21,7 +21,7 @@ function sq = initSequence
     sq.channels(16).setName('Fiber Switch Repump','B7').setDefault(0);
     sq.channels(17).setName('MOT Coil TTL','C0').setDefault(1);
     sq.channels(18).setName('Stern-Gerlach Trigger','C1').setDefault(0);
-    sq.channels(19).setName('C2 - N/C','C2').setDefault(0);
+    sq.channels(19).setName('3D Trap Shutter','C2').setDefault(0);
     sq.channels(20).setName('C3 - N/C','C3').setDefault(0);
     sq.channels(21).setName('C4 - N/C','C4').setDefault(0);
     sq.channels(22).setName('C5 - N/C','C5').setDefault(0);

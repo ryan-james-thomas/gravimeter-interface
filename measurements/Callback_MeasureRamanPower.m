@@ -1,12 +1,12 @@
 function Callback_MeasureRamanPower(r)
 
 if r.isInit()
-    r.data.power = 0:0.025:0.75;
+    r.data.power = 0.18:0.025:0.45;
     
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-     r.make(0,216.65e-3,1.175,0.29,0,5e-3,r.data.power(r.c(1)));
+     r.make(0,217e-3,1.175,0.29,0,5e-3,r.data.power(r.c(1)));
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));

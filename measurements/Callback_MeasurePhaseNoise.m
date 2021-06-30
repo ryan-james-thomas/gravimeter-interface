@@ -2,12 +2,12 @@ function Callback_MeasurePhaseNoise(r)
 
 if r.isInit()
     r.data.run = 1:50;
-    r.data.T = [1,2,5]*1e-3;
-    r.data.phase = [45,45,45];
+    r.data.T = [1 5 10 15 20 25]*1e-3;
+    r.data.phase = [40.5 , 48.4 ,42.5, 44.1, 29.2, 32.9];
     r.c.setup('var',r.data.run,r.data.T);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.17,0.2,r.data.phase(r.c(2)),r.data.T(r.c(2)));
+    r.make(0,216.5e-3,1.25,0.18,r.data.phase(r.c(2)),0,r.data.T(r.c(2)));
     r.upload;
     fprintf(1,'Run %d/%d, T = %.2f ms\n',r.c.now,r.c.total,...
         r.data.T(r.c(2))*1e3);
@@ -28,7 +28,7 @@ elseif r.isAnalyze()
     %
     % Store raw data
     %
-    r.data.c{i1,i2} = c;
+%     r.data.c{i1,i2} = c;
     r.data.files{i1,i2} = {c(1).raw.files(1).name,c(1).raw.files(2).name};
     %
     % Get processed data
