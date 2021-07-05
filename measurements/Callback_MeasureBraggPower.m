@@ -1,12 +1,12 @@
 function Callback_MeasureBraggPower(r)
 
 if r.isInit()
-    r.data.power = const.randomize(0:0.025:0.85);
+    r.data.power = const.randomize(0:0.01:0.4);
     
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.05,r.data.power(r.c(1)),0,5e-3);
+    r.make(0,216.65e-3,1.35,r.data.power(r.c(1)),0);
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));
@@ -42,11 +42,12 @@ elseif r.isAnalyze()
         set(h(nn),'MarkerFaceColor',h(nn).Color);
     end
 %     hold off;
-    plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 30 us FWHM',12);
+    plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 40 us FWHM',12);
     grid on;
     h = legend('Slow','Fast');
 %     h = legend('-2k','0k','2k','4k');
     set(h,'Location','West');
     ylim([0,1]);
+    xlim([0,Inf]);
     
 end
