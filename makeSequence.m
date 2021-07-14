@@ -65,9 +65,9 @@ function varargout = makeSequence(varargin)
     T = 2e-3;
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
-%     sq.find('bias u/d').set(.9);
-%     sq.find('bias e/w').set(0);
-%     sq.find('bias n/s').set(7.5);
+    sq.find('bias u/d').set(.9);
+    sq.find('bias e/w').set(0);
+    sq.find('bias n/s').set(7.5);
     sq.delay(T);
     
     %% Load into magnetic trap
@@ -135,8 +135,8 @@ function varargout = makeSequence(varargin)
     %% Interferometry
     enableDDS = 1;      %Enable DDS and DDS trigger
     enableBragg = 1;    %Enable Bragg diffraction
-    enableRaman = 1;    %Enable Raman transition
-    enableSG = 1;       %Enable Stern-Gerlach separation
+    enableRaman = 0;    %Enable Raman transition
+    enableSG = 0;       %Enable Stern-Gerlach separation
     if enableDDS
         % 
         % Issue falling-edge trigger for MOGLabs DDS box when DDS is
@@ -160,30 +160,30 @@ function varargout = makeSequence(varargin)
         g = 9.795;
         chirp = 25.1e6;
 %         chirp = varargin{6};
-%         T = varargin{6};
-        Tasym = 0;
+        T = 10e-3;
+        Tasym = 000e-6;
         if Tasym == 0
             dsep = 1.5e-3;
             Tsep = dsep/vrel;
         else  
-            Tsep = abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
+            Tsep = 1*abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
         end
         t0 = varargin{2} - 2*T - Tsep;
         if t0 < 30e-3
-            warning('Initial Bragg pulse occurs at %.1f and will be clamped to 30 ms!',t0*1e3);
+            warning('Initial Bragg pulse occurs at %.1f ms and will be clamped to 30 ms!',t0*1e3);
         end
         t0 = max(t0,30e-3);
 
-%         t0 = 10e-3;
-        T = 1e-3;
+        t0 = 50e-3;
+%         T = 1e-3;
 %         sq.find('Raman Amp').at(timeAtDrop,5).after(t0-0.15e-3,0).after(0.15e-3*2,5);
 %         sq.find('Liquid crystal Bragg').after(t0+0.1e-3,3);
 %         sq.find('3d trap shutter').after(t0-5e-3,0).after(5e-3,1);
         
         fprintf(1,'t0 = %0.6f ms\n',t0*1e3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',chirp,...
-            'power',varargin{4}*[1,0,0],'order',braggOrder);
+            'width',30e-6,'Tasym',Tasym,'phase',[45,90,135],'chirp',chirp,...
+            'power',varargin{4}*[1,2,1],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -200,7 +200,7 @@ function varargout = makeSequence(varargin)
         % 2 frequency 'df' higher than channel 1.
         %
         t0 = 5e-3;
-        makeGaussianPulse(sq.dds,'t0',t0,'width',100e-6,'dt',5e-6,'power',0.4,...
+        makeGaussianPulse(sq.dds,'t0',t0,'width',100e-6,'dt',5e-6,'power',0.3,...
             'df',151e-3);
         %
         % Turn on the amplifier for the Raman AOM. Keep in mind that the
@@ -223,7 +223,7 @@ function varargout = makeSequence(varargin)
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
-        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.5));
+        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.175));
         sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
         sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);

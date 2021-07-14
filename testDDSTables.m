@@ -1,8 +1,8 @@
-function varargout = testBraggPulses(varargin)
+function varargout = testDDSTables(varargin)
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
     sq.dds(1).set(110,0,0);
-    sq.delay(1);
+    sq.delay(50e-3);
     timeAtDrop = sq.time;
 
     %% Interferometry
@@ -15,10 +15,15 @@ function varargout = testBraggPulses(varargin)
     % in compiling the DDS instructions and making sure that they start at
     % the correct time.
     sq.ddsTrigDelay = timeAtDrop;   
-    sq.dds(1).set(110,0.2,0);
-    sq.delay(5e-3);
-    sq.dds(1).set(110,0,0);
-    sq.delay(5e-3);
+    t = 0:1e-6:1000e-6;
+%     P = 1e-3*exp(-(t-25e-6).^2/10e-6^2);
+    P = 1e-3*ones(size(t));
+    freq = 110*ones(size(t));
+    ph = 0*ones(size(t));
+    
+    sq.dds(1).at(t+1,freq,P,ph);
+    sq.dds(2).at(t+1,freq,P,ph);
+    
     
     %% Automatic start
     %If no output argument is requested, then compile and run the above

@@ -13,6 +13,7 @@ power1 = [];power2 = [];
 chirp = 2*k*9.795/(2*pi);
 order = 1;
 dt = 1e-6;
+mirrorSwitch = 1;
 
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
@@ -54,6 +55,15 @@ else
                 power2 = v;
             case 'order'
                 order = v;
+            case 'mirror'
+                switch lower(v)
+                    case 'isolated'
+                        mirrorSwitch = 1;
+                    case {'mot','rigid'}
+                        mirrorSwitch = -1;
+                    otherwise
+                        error('''Mirror'' option can only be either ''isolated'' or ''mot''');
+                end
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
@@ -84,9 +94,6 @@ if numel(appliedPhase) == 0
 end
 
 %% Create vectors
-% min_t = t0 - 5*width;
-% max_t = t0 + (numPulses-1)*T + Tasym + 5*width;
-% t = (min_t:dt:max_t)';
 tPulse = (-5*width:dt:5*width)';
 t = repmat(tPulse,1,numPulses);
 for  nn = 1:numPulses
@@ -114,25 +121,9 @@ for nn = 1:numPulses
     % 2 frequency so that we use the lattice formed from retroreflecting
     % from the vibrationally isolated mirror
     %
-    freq(idx,1) = DDSChannel.DEFAULT_FREQ + 0.25/1e6*(chirp*tc + order*4*recoil);
-    freq(idx,2) = DDSChannel.DEFAULT_FREQ - 0.25/1e6*(chirp*tc + order*4*recoil);
+    freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
+    freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
 end
-%
-% Set phases for each pulse
-%
-% ph = zeros(numel(t),2);
-% for nn = 1:numPulses
-% %     idx = (t > (nn-1)*t0) & (t < ((nn-1)*t0 + (nn/2-1)*T));
-%     idx = (t - t0) > (nn-1-0.5)*T;
-%     ph(idx,2) = appliedPhase(nn);
-% end
-% ph(:,2) = appliedPhase*(t > (t0 + 1.5*T));
-
-%
-% Set frequencies
-%
-% freq(:,1) = dds(1).DEFAULT_FREQ + 0.25/1e6*(chirp*t + order*4*recoil);
-% freq(:,2) = dds(2).DEFAULT_FREQ - 0.25/1e6*(chirp*t + order*4*recoil);
 
 
 %% Populate DDS values
