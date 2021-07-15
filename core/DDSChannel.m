@@ -19,7 +19,7 @@ classdef DDSChannel < TimingControllerChannel
             ch = ch@TimingControllerChannel;
             ch.default = [110,0,0];
             ch.bounds = [80,    0,  0;
-                         150,   1,  360];
+                         150,   1,  1200];
             ch.IS_DDS = true;
         end
         

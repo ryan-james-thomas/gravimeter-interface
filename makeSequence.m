@@ -155,7 +155,7 @@ function varargout = makeSequence(varargin)
     end
     
 %     t0 = max(t0,30e-3);
-    tvs=t0-50e-3;
+%     tvs=t0-50e-3;
 % %% %Velocity selection pulse
 %  makeVelocitySelectionpulse(sq.dds,'k',k,'tvs',tvs,'chirp',25.105e6-0.015e6,...
 %     'width',600e-6,'power',0.015,'order',-1);sq.dds.anchor(timeAtDrop);

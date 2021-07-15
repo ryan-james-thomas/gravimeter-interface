@@ -1,12 +1,12 @@
 function Callback_MeasureRamanPower(r)
 
 if r.isInit()
-    r.data.power = 0.18:0.025:0.45;
+    r.data.power = 0.15:0.025:0.75;
     
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-     r.make(0,217e-3,1.175,0.29,0,5e-3,r.data.power(r.c(1)));
+     r.make(0,217e-3,1.16,0,0,5e-3,r.data.power(r.c(1)));
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));
@@ -43,7 +43,7 @@ elseif r.isAnalyze()
 %     hold off;
     plot_format('Power [arb]','Population','',12);
     grid on;
-    h = legend('m = 1','m = 0','m = -1');
+    h = legend('m = -1','m = 0','m = 1');
     set(h,'Location','West');
     
 end

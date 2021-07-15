@@ -72,7 +72,8 @@ end
 
 %% Calculate intermediate values
 recoil = order*const.hbar*k^2/(2*const.mRb*2*pi);
-detuning=recoil/2.8;
+% detuning=recoil/2.8;
+detuning=0;
 fwhm = width/(2*sqrt(log(2)));
 
 tc=tvs;
