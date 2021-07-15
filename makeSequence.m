@@ -182,8 +182,8 @@ function varargout = makeSequence(varargin)
         
         fprintf(1,'t0 = %0.6f ms\n',t0*1e3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',30e-6,'Tasym',Tasym,'phase',[45,90,135],'chirp',chirp,...
-            'power',varargin{4}*[1,2,1],'order',braggOrder);
+            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',chirp,...
+            'power',varargin{4}*[1,0,0],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
