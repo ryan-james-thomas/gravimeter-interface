@@ -1,12 +1,12 @@
 function Callback_MeasureBraggPower(r)
 
 if r.isInit()
-    r.data.power = const.randomize(0:0.01:0.4);
+    r.data.power = const.randomize(0:0.01:0.8);
     
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-    r.make(0,216.65e-3,1.35,r.data.power(r.c(1)),0);
+    r.make(0,216.5e-3,1.175,r.data.power(r.c(1)),0);
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));
@@ -42,12 +42,26 @@ elseif r.isAnalyze()
         set(h(nn),'MarkerFaceColor',h(nn).Color);
     end
 %     hold off;
-    plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 40 us FWHM',12);
+    plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 30 us FWHM',12);
     grid on;
     h = legend('Slow','Fast');
 %     h = legend('-2k','0k','2k','4k');
     set(h,'Location','West');
     ylim([0,1]);
     xlim([0,Inf]);
+    
+    %
+    % Get device data
+    %
+    if isfield(r.devices,'dv')
+        r.devices.dv.getData(r.devices.dv.numSamples.value);
+        r.data.meas.t(:,i1) = r.devices.dv.t;
+        r.data.meas.v(:,i1) = r.devices.dv.data(:,1);
+        figure(99);
+        plot(r.data.meas.t(:,i1),r.data.meas.v(:,i1),'.-');
+        hold on
+        grid on;
+        plot_format('Time [s]','Measured power','',12);
+    end
     
 end
