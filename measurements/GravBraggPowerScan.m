@@ -1,11 +1,11 @@
 function GravBraggPowerScan(r)
 
 if r.isInit()
-    r.data.param = const.randomize(0:0.025:0.5);
+    r.data.param = const.randomize(0:0.001:0.015);
     r.c.setup('var',r.data.param);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1,r.data.param(r.c(1)));
+    r.make(0,217.35e-3,1.35,r.data.param(r.c(1)),0,0,0);
     r.upload;
 %     pause(5);
     fprintf(1,'Run %d/%d, Param = %.3f\n',r.c.now,r.c.total,r.data.param(r.c(1)));

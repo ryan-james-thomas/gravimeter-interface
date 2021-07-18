@@ -54,7 +54,13 @@ else
             case 'power2'
                 power2 = v;
             case 'order'
-                order = v;
+                if v == 0
+                    error('Bragg order should be non-zero!');
+                elseif round(v) ~= v
+                    error('Bragg order must be an integer!');
+                else
+                    order = v;
+                end
             case 'mirror'
                 switch lower(v)
                     case 'isolated'
@@ -76,7 +82,7 @@ if width > 50e-6
 end
      
 %% Calculate intermediate values
-recoil = const.hbar*k^2/(2*const.mRb*2*pi);
+recoil = order*const.hbar*k^2/(2*const.mRb*2*pi);
 numPulses = numel(power);
 fwhm = width/(2*sqrt(log(2)));
 
@@ -124,7 +130,6 @@ for nn = 1:numPulses
     freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
     freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
 end
-
 
 %% Populate DDS values
 for nn = 1:numel(dds)

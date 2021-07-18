@@ -43,7 +43,7 @@ elseif r.isAnalyze()
 %     hold off;
     plot_format('Power [arb]','Population','',12);
     grid on;
-    h = legend('m = 1','m = 0','m = -1');
+    h = legend('m = -1','m = 0','m = 1');
     set(h,'Location','West');
     
 end
