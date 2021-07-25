@@ -1,12 +1,12 @@
 function Callback_MeasureBraggPower(r)
 
 if r.isInit()
-    r.data.power = const.randomize(0:0.01:0.8);
+    r.data.power = const.randomize(0:0.02:0.8);
     
     r.c.setup('var',r.data.power);
 elseif r.isSet()
     
-    r.make(0,216.5e-3,1.175,r.data.power(r.c(1)),0);
+    r.make(0,216.6e-3,1.5,r.data.power(r.c(1)),0);
     r.upload;
     fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
         r.data.power(r.c(1)));

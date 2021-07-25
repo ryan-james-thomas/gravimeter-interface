@@ -1,13 +1,13 @@
 function Callback_MeasureFringes(r)
 
 if r.isInit()
-    r.data.T = [1,2,5,10,20]*1e-3;
-%     r.data.T = 1e-3;
+%     r.data.T = [1,2,5,10,20]*1e-3;
+    r.data.T = 20e-3;
     r.data.phase = 0:10:180;
     r.c.setup('var',r.data.phase,r.data.T);
 elseif r.isSet()
     
-    r.make(0,216.6e-3,1.175,0.235,r.data.phase(r.c(1)),r.data.T(r.c(2)));
+    r.make(0,216.6e-3,1.5,0.215,r.data.phase(r.c(1)),r.data.T(r.c(2)));
     r.upload;
     fprintf(1,'Run %d/%d, Phase = %.2f, T = %.2f ms\n',r.c.now,r.c.total,...
         r.data.phase(r.c(1)),r.data.T(r.c(2))*1e3);
@@ -50,7 +50,7 @@ elseif r.isAnalyze()
     subplot(1,2,2);
     if r.c.done(1)
         nlf = nonlinfit(r.data.phase,r.data.R(:,i2),0.02);
-        nlf.setFitFunc(@(y0,C,phi,x) y0 + C/2*cosd(2*x+phi));
+        nlf.setFitFunc(@(y0,C,phi,x) y0 + C/2*cosd(2*x+2*phi));
         nlf.bounds([0.4,0.2,-180],[0.6,1,180],[0.5,0.8,0]);
         r.data.p{i2} = nlf.fit;
         
