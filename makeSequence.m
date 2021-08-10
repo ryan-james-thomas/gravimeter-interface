@@ -6,8 +6,10 @@ function varargout = makeSequence(varargin)
     %
     % Dipole trap powers for 25 W (P25) and 50 W (P50) lasers. Gives
     % voltage for powers in W
-    P25 = @(x) (x+2.6412)/2.8305;
-    P50 = @(x) (x+3.7580)/5.5445;
+%     P25 = @(x) (x+2.6412)/2.8305;
+%     P50 = @(x) (x+3.7580)/5.5445;
+    P25 = @(x) x/2.56;
+    P50 = @(x) (x + 3.844)/4.017;
     %
     % Imaging detuning. Gives voltage for detuning in MHz
     %
