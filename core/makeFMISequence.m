@@ -6,8 +6,8 @@ manifold = 1;
 imgFreq = 8.5;
 repumpFreq = 4.3;
 fibreSwitchDelay = 20e-3;
-repumpTime = 100e-6;
-repumpDelay = 00e-6;
+repumpTime = 1000e-6;
+repumpDelay = 1000e-6;
 duration = 100e-3;
 offset = 30e-3;
 
@@ -48,14 +48,25 @@ end
 sq.delay(tof - offset);
 sq.find('F MOD Imaging Trigger').set(1).after(1e-3,0);
 sq.find('imaging freq').set(imgFreq);
-if manifold == 1
-    sq.find('liquid crystal repump').set(7);
-    sq.find('fiber switch repump').before(fibreSwitchDelay,1); 
-    sq.find('drop repump freq').set(repumpFreq);
-    sq.find('drop repump').set(1);
-end
 sq.find('Imaging Amp TTL').set(1);
+sq.find('liquid crystal repump').set(7);
+sq.find('fiber switch repump').before(fibreSwitchDelay,1); 
+sq.find('drop repump freq').set(repumpFreq);
+sq.find('drop repump').set(1);
 sq.delay(duration);
+% if manifold == 1
+%     sq.delay(offset - repumpDelay - repumpTime);
+%     sq.find('liquid crystal repump').set(7);
+%     sq.find('fiber switch repump').before(fibreSwitchDelay,1); 
+%     sq.find('drop repump freq').set(repumpFreq);
+%     sq.find('drop repump').set(1);
+%     sq.delay(repumpTime);
+%     sq.find('drop repump').set(0);
+%     sq.delay(repumpDelay);
+%     sq.delay(duration - offset);
+% else
+%     sq.delay(duration);
+% end
 sq.find('fiber switch repump').set(0); 
 sq.find('drop repump').set(0);
 sq.find('Imaging Amp TTL').set(0);

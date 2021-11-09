@@ -82,7 +82,7 @@ if width > 50e-6
 end
      
 %% Calculate intermediate values
-recoil = order*const.hbar*k^2/(2*const.mRb*2*pi);
+recoil = const.hbar*k^2/(2*const.mRb*2*pi);
 numPulses = numel(power);
 fwhm = width/(2*sqrt(log(2)));
 

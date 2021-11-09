@@ -2,13 +2,15 @@ function GravTempMeas(r)
 
 if r.isInit()
     %Initialize run
-    r.data.tof = 10e-3:5e-3:25e-3; 
-    r.data.param = const.randomize(1:0.25:3);
+    r.data.tof = 216.2e-3:.4e-3:217.8e-3; 
+%      r.data.tof = 10e-3:5e-3:25e-3; 
+    r.data.param = const.randomize(1);
     r.c.setup('var',r.data.tof,r.data.param);
 
 elseif r.isSet()
-
-    r.make(8,r.data.tof(r.c(1)),2,3.5,4,r.data.param(r.c(2)));
+    
+    r.make(0,r.data.tof(r.c(1)),1.58,0,0,0,0);
+%     r.make(8,r.data.tof(r.c(1)),2,0,0,0,0);
     r.upload;
 
     %Print information about current run
@@ -19,7 +21,7 @@ elseif r.isAnalyze()
     i1 = r.c(1);
     i2 = r.c(2);
     img = Abs_Analysis('last');
-    if ~img(1).raw.status.ok()
+    if ~img(1).raw.status.ok() 
         %
         % Checks for an error in loading the files (caused by a missed
         % image) and reruns the last sequence

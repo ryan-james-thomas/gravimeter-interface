@@ -42,7 +42,7 @@ function sq = initSequence
     sq.analog(5).setName('Repump Freq','AO/4').setDefault(4.3);
     sq.analog(6).setName('50W Amp','AO/5').setDefault(5);
     sq.analog(7).setName('25W Amp','AO/6').setDefault(5);
-    sq.analog(8).setName('AO7 - N/C','AO/7').setDefault(0);
+    sq.analog(8).setName('Fiber laser power','AO/7').setDefault(0);
     sq.analog(9).setName('Liquid crystal Bragg','B0/0').setDefault(3);
     sq.analog(10).setName('3D MOT Amp','BO/1').setDefault(5);
     sq.analog(11).setName('MW Freq','BO/2').setDefault(6.8);
@@ -57,14 +57,14 @@ function sq = initSequence
     sq.analog(20).setName('Bias E/W','CO/3').setDefault(0);
     sq.analog(21).setName('Bias N/S','CO/4').setDefault(0);
     sq.analog(22).setName('Bias U/D','CO/5').setDefault(0);
-    sq.analog(23).setName('Raman Freq','CO/6').setDefault(9);
+    sq.analog(23).setName('Raman Freq','CO/6').setDefault(10);
     sq.analog(24).setName('3D Coils Loop','CO/7').setDefault(0);
 
     %% DDS default
     sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
     sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
-    sq.dds(1).rfscale = 2.12;
-    sq.dds(2).rfscale = 2.00;
+    sq.dds(1).rfscale = 3.1;
+    sq.dds(2).rfscale = 2.15;
 %     calibData = load('aom-rf-power-10db-ch1-13db-ch2');
 %     sq.dds(1).calibrationData = calibData.data(1);
 %     sq.dds(2).calibrationData = calibData.data(2);

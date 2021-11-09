@@ -9,7 +9,7 @@ function varargout = makeSequence(varargin)
 %     P25 = @(x) (x+2.6412)/2.8305;
 %     P50 = @(x) (x+3.7580)/5.5445;
     P25 = @(x) x/2.56;
-    P50 = @(x) (x + 3.844)/4.017;
+    P50 = @(x) (x + 0.1414)/6.4484;
     %
     % Imaging detuning. Gives voltage for detuning in MHz
     %
@@ -26,13 +26,13 @@ function varargout = makeSequence(varargin)
     sq.find('50w ttl').set(1);
     sq.find('25w ttl').set(1);
     sq.find('50w amp').set(P50(15));
-    sq.find('25w amp').set(P25(7.5));    
+    sq.find('25w amp').set(P25(12.5));    
     %% Set up the MOT loading values                
     sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
-    sq.find('3d coils').set(0.42);
-    sq.find('bias u/d').set(0);
+    sq.find('3d coils').set(0.38);
+    sq.find('bias u/d').set(-0.02);
     sq.find('bias e/w').set(0);
-    sq.find('bias n/s').set(0);
+    sq.find('bias n/s').set(10);
     
     Tmot = 5;                           %6 s MOT loading time
     sq.delay(Tmot);                     %Wait for Tmot
@@ -45,7 +45,7 @@ function varargout = makeSequence(varargin)
     %pressure, and weaken the trap
     sq.find('3D MOT freq').set(6);
     sq.find('repump freq').set(2.7);
-    sq.find('3D coils').set(0.15);
+    sq.find('3D coils').set(0.18);
     sq.find('bias e/w').set(5);
     sq.find('bias n/s').set(7);
     sq.find('bias u/d').set(1.75);
@@ -53,26 +53,24 @@ function varargout = makeSequence(varargin)
     Tcmot = 10e-3;                      %10 ms CMOT stage
     sq.delay(Tcmot);                    %Wait for time Tcmot
     %% PGC stage
-    Tpgc = 25e-3;
+    Tpgc = 15e-3;
     %Define a function giving a 100 point smoothly varying curve
     t = linspace(0,Tpgc,100);
     f = @(vi,vf) sq.minjerk(t,vi,vf);
 
     %Smooth ramps for these parameters
-%     sq.find('3D MOT Amp').after(t,f(5,3.25));
-%     sq.find('3D MOT Freq').after(t,f(sq.find('3D MOT Freq').values(end),4.25));
-    sq.find('3D MOT Amp').after(t,f(5,4));
+    sq.find('3D MOT Amp').after(t,f(5,3.8));
     sq.find('3D MOT Freq').after(t,f(sq.find('3D MOT Freq').values(end),3.5));
-    sq.find('3D coils').after(t,f(0.15,-0.1));
+    sq.find('3D coils').after(t,f(0.15,0.025));
 
     sq.delay(Tpgc);
     %Turn off the repump field for optical pumping - 1 ms
     T = 1e-3;
     sq.find('repump amp ttl').set(0);
     sq.find('liquid crystal repump').set(7);
-%     sq.find('bias u/d').set(2);
-%     sq.find('bias e/w').set(4);
-%     sq.find('bias n/s').set(6);
+    sq.find('bias u/d').set(-0.1);
+    sq.find('bias e/w').set(0);
+    sq.find('bias n/s').set(7.5);
     sq.delay(T);
     
     %% Load into magnetic trap
@@ -86,8 +84,8 @@ function varargout = makeSequence(varargin)
     %% Microwave evaporation
     sq.delay(20e-3);
     evapRate = 0.2;
-    evapStart = 7.3;
-    evapEnd = 7.95;
+    evapStart = 7.25;
+    evapEnd = 7.9;
     Tevap = (evapEnd-evapStart)/evapRate;
 %     Tevap = 3.2;
     t = linspace(0,Tevap,100);
@@ -97,10 +95,10 @@ function varargout = makeSequence(varargin)
     %% Weaken trap while MW frequency fixed
     Trampcoils = 180e-3;
     t = linspace(0,Trampcoils,100);
-    sq.find('3d coils').after(t,sq.minjerk(t,sq.find('3d coils').values(end),0.708));
+    sq.find('3d coils').after(t,sq.minjerk(t,sq.find('3d coils').values(end),1));
     sq.find('bias e/w').after(t,sq.minjerk(t,sq.find('bias e/w').values(end),0));
     sq.find('bias n/s').after(t,sq.minjerk(t,sq.find('bias n/s').values(end),0));
-    sq.find('bias u/d').after(t,sq.minjerk(t,sq.find('bias u/d').values(end),0));
+    sq.find('bias u/d').after(t,sq.minjerk(t,sq.find('bias u/d').values(end),-0.12));
     sq.delay(Trampcoils);
     
     %% Optical evaporation
@@ -121,6 +119,14 @@ function varargout = makeSequence(varargin)
     sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.8));
     sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.8));
     sq.delay(Tevap);
+    T = 200e-3;
+    t = linspace(0,T,100);
+%     sq.find('50W amp').after(t,sq.minjerk(t,P50(varargin{3}),P50(varargin{3} + 0.05)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,P25(varargin{3}),P25(varargin{3} + 0.05)));
+
+    sq.find('50W amp').after(t,sq.minjerk(t,P50(varargin{3}),P50(varargin{3} - 1.44)));
+    sq.find('25W amp').after(t,sq.minjerk(t,P25(varargin{3}),P25(varargin{3} + 1.50)));
+    sq.delay(T);
 
     %% Drop atoms
 %     sq.delay(3.2);
@@ -159,10 +165,10 @@ function varargout = makeSequence(varargin)
         % the correct time.
         %
         braggOrder = 1;
-        k = 2*pi*384.229e12/const.c;
+        k = 2*pi*384.229241689e12/const.c;  %Frequency of Rb-85 F=3 -> F'=4 transition
         vrel = abs(2*const.hbar*k/const.mRb);
         g = 9.795;
-        chirp = 25.1e6;
+        chirp = 25.1075e6;
 %         chirp = varargin{6};
         T = varargin{6};
         Tasym = 000e-6;
@@ -176,6 +182,7 @@ function varargout = makeSequence(varargin)
             t0 = varargin{2} - 2*T - Tsep;
         end
         t0 = varargin{2} - 2*T - Tsep;
+%         t0 = 300e-3;
         
         if numel(t0) > 1
             error('Unable to determine t0!');
@@ -184,7 +191,6 @@ function varargout = makeSequence(varargin)
         end
         t0 = max(t0,30e-3);
 
-%         t0 = 50e-3;
 %         T = 1e-3;
 %         sq.find('Raman Amp').at(timeAtDrop,5).after(t0-0.15e-3,0).after(0.15e-3*2,5);
 %         sq.find('Liquid crystal Bragg').after(t0+0.1e-3,3);

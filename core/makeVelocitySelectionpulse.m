@@ -2,6 +2,7 @@ function makeVelocitySelectionpulse(dds,varargin)
 
 %% Set up variables and parse inputs
 f = 384.224e12;
+Pulse_Detuning=5e9;
 t0 = 0e-3;
 tvs=0e-3;
 k = 2*pi*f/const.c;
