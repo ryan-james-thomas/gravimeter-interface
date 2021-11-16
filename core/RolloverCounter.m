@@ -4,7 +4,6 @@ classdef RolloverCounter < handle
     properties
         N           %Number of indices
         i           %Array of current indices
-        imax        %Maximum value for each index
         
         initial     %Inital value of each index
         final       %Final value of each index
@@ -81,7 +80,14 @@ classdef RolloverCounter < handle
             %
             %   COUNTER = COUNTER.reset() Resets the COUNTER object
             self.i = self.initial;
-            self.imax = self.final - self.initial + 1;
+        end
+        
+        function im = imax(self)
+            %IMAX Returns the number of runs for each index
+            %
+            %   IM = COUNTER.IMAX()
+            %
+            im = self.final - self.initial + 1;
         end
         
         function r = total(self)
@@ -100,7 +106,8 @@ classdef RolloverCounter < handle
             %   completion rate of the counter
             c = 1;
             for nn = 1:self.N
-                c = c + (self.i(nn)-1)*prod(self.imax((nn-1):-1:1));
+                im = self.imax;
+                c = c + (self.i(nn)-1)*prod(im((nn-1):-1:1));
             end
         end
         

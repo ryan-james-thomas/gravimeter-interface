@@ -3,7 +3,7 @@ function makeFMISequence(sq,varargin)
 %% Parse parameters
 tof = 730e-3;
 manifold = 1;
-imgFreq = 8.5;
+imgFreq = 25.5;
 repumpFreq = 4.3;
 fibreSwitchDelay = 20e-3;
 repumpTime = 1000e-6;

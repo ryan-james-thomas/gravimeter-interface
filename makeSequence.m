@@ -1,4 +1,48 @@
 function varargout = makeSequence(varargin)
+    %% Parse input arguments
+    opt = GravimeterOptions('detuning',0,'dipole',1.5,'tof',216.5e-3,'imaging_type','drop 2',...
+            'Tint',1e-3,'t0',30e-3,'final_phase',0,'bragg_power',0.15,'Tasym',0,'Tsep',[]);
+        
+    if nargin == 1
+        %
+        % If first argument is of type GravimeterOptions, use that
+        %
+        if ~isa(varargin{1},'GravimeterOptions')
+            error('If using one argument it must be of type GravimeterOptions');
+        end
+        opt = opt.replace(varargin{1}); 
+        
+    elseif mod(nargin,2) ~= 0
+        error('Arguments must be in name/value pairs');
+    else 
+        for nn = 1:2:nargin
+            v = varargin{nn+1};
+            switch lower(varargin{nn})
+                case 'detuning'
+                    opt.detuning = v;
+                case {'dipole','final_dipole_power'}
+                    opt.final_dipole_power = v;
+                case 'tof'
+                    opt.tof = v;
+                case {'imaging_type','camera'}
+                    opt.imaging_type = v;
+                case 't0'
+                    opt.t0 = v;
+                case {'tint','t'}
+                    opt.Tint = v;
+                case {'final_phase','phase'}
+                    opt.final_phase = v;
+                case {'bragg_power','power'}
+                    opt.bragg_power = v;
+                case {'tasym','asym'}
+                    opt.Tasym = v;
+                case {'tsep','separation'}
+                    opt.Tsep = v;
+                otherwise
+                    warning('Option ''%s'' not supported',varargin{nn})
+            end
+        end
+    end
     %% Initialize sequence - defaults should be handled here
     sq = initSequence;
     %
@@ -14,7 +58,7 @@ function varargout = makeSequence(varargin)
     % Imaging detuning. Gives voltage for detuning in MHz
     %
 %     imageVoltage = -varargin{1}*0.4231/6.065 + 8.6214;    %At second drop?
-    imageVoltage = -varargin{1}*0.472/6.065 + 8.533;
+    imageVoltage = -opt.detuning*0.472/6.065 + 8.533;
 %     imageVoltage = varargin{1};
     %
     % Voltage value that guarantees that the MOT coils are off
@@ -116,17 +160,25 @@ function varargout = makeSequence(varargin)
     sq.delay(30e-3);
     Tevap = 1.97;
     t = linspace(0,Tevap,300);
-    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(varargin{3}),0.8));
-    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(varargin{3}),0.8));
+    sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(opt.final_dipole_power),0.8));
+    sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(opt.final_dipole_power),0.8));
     sq.delay(Tevap);
-    T = 200e-3;
-    t = linspace(0,T,100);
-%     sq.find('50W amp').after(t,sq.minjerk(t,P50(varargin{3}),P50(varargin{3} + 0.05)));
-%     sq.find('25W amp').after(t,sq.minjerk(t,P25(varargin{3}),P25(varargin{3} + 0.05)));
-
-    sq.find('50W amp').after(t,sq.minjerk(t,P50(varargin{3}),P50(varargin{3} - 1.44)));
-    sq.find('25W amp').after(t,sq.minjerk(t,P25(varargin{3}),P25(varargin{3} + 1.50)));
-    sq.delay(T);
+    
+    %% Trap manipulation to get smaller momentum width
+%     T = 50e-3;
+%     t = linspace(0,T,51);
+%     sq.find('50W amp').after(t,sq.minjerk(t,P50(varargin{3}),P50(varargin{3} + 0.15)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,P25(varargin{3}),P25(varargin{3} + 0.15)));
+%     sq.delay(T);
+%     sq.find('50W amp').set(P50(varargin{3} + 0.05));
+%     sq.find('25W amp').set(P25(varargin{3} + 0.05));
+%     sq.delay(varargin{4});
+%     
+%     T = 200e-3;
+%     t = linspace(0,T,100);
+%     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(opt.final_dipole_power - 1.44)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(opt.final_dipole_power + 1.50)));
+%     sq.delay(T);
 
     %% Drop atoms
 %     sq.delay(3.2);
@@ -143,7 +195,7 @@ function varargout = makeSequence(varargin)
     sq.find('50w ttl').set(0);
 
     %% Interferometry
-    enableDDS = 1;      %Enable DDS and DDS trigger
+    enableDDS = 0;      %Enable DDS and DDS trigger
     enableBragg = 1;    %Enable Bragg diffraction
     enableRaman = 0;    %Enable Raman transition
     enableSG = 0;       %Enable Stern-Gerlach separation
@@ -167,22 +219,24 @@ function varargout = makeSequence(varargin)
         braggOrder = 1;
         k = 2*pi*384.229241689e12/const.c;  %Frequency of Rb-85 F=3 -> F'=4 transition
         vrel = abs(2*const.hbar*k/const.mRb);
+        dv = 750e-6/216.5e-3;
         g = 9.795;
-        chirp = 25.1075e6;
-%         chirp = varargin{6};
-        T = varargin{6};
-        Tasym = 000e-6;
+        chirp = 25.1042e6;
+        T = opt.Tint;
+%         T = 1e-3;
+        Tasym = opt.Tasym;
         if Tasym == 0
-            dsep = 5e-3;
+            dsep = 2*dv*opt.tof;
             Tsep = dsep/vrel;
-            tmp = roots([1,2*(2*T+Tsep),(2*T+Tsep)^2-varargin{2}^2+2/g*vrel*T]);
-%             t0 = tmp(tmp > 0);
         else  
-            Tsep = 1*abs(const.mRb*pi*varargin{2}/(4*braggOrder*k^2*const.hbar*Tasym));
-            t0 = varargin{2} - 2*T - Tsep;
+            Tsep = abs(const.mRb*pi*opt.tof/(4*braggOrder*k^2*const.hbar*Tasym));
         end
-        t0 = varargin{2} - 2*T - Tsep;
-%         t0 = 300e-3;
+        if ~isempty(opt.Tsep)
+            Tsep = opt.Tsep;
+        end
+        t0 = opt.tof - 2*T - Tsep;
+%         t0 = 30e-3;
+        Tasym = 200e-6;
         
         if numel(t0) > 1
             error('Unable to determine t0!');
@@ -198,8 +252,8 @@ function varargout = makeSequence(varargin)
         
         fprintf(1,'t0 = %0.6f ms\n',t0*1e3);
         makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-            'width',30e-6,'Tasym',Tasym,'phase',[0,0,varargin{5}],'chirp',chirp,...
-            'power',varargin{4}*[1,2,1],'order',braggOrder);
+            'width',30e-6,'Tasym',Tasym,'phase',[0,0,opt.final_phase],'chirp',chirp,...
+            'power',opt.bragg_power*[1,2,1],'order',braggOrder);
     end
     
     if enableDDS && enableRaman
@@ -255,13 +309,15 @@ function varargout = makeSequence(varargin)
     % imaging pulse occurs
     %
     sq.anchor(timeAtDrop);
-%     makeImagingSequence(sq,'type','drop 2','tof',varargin{2},...
-%         'repump Time',100e-6,'pulse Delay',00e-6,...
-%         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
-%         'manifold',1);
-
-    makeFMISequence(sq,'tof',varargin{2},'offset',30e-3,'duration',100e-3,...
-        'imaging freq',imageVoltage,'manifold',1);
+    if strcmpi(opt.imaging_type,'drop 1') || strcmpi(opt.imaging_type,'drop 2')
+        makeImagingSequence(sq,'type',opt.imaging_type,'tof',opt.tof,...
+            'repump Time',100e-6,'pulse Delay',00e-6,...
+            'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
+            'manifold',1);
+    elseif strcmpi(opt.imaging_type,'drop 3') || strcmpi(opt.imaging_type,'drop 4')
+        makeFMISequence(sq,'tof',opt.tof,'offset',30e-3,'duration',100e-3,...
+            'imaging freq',imageVoltage,'manifold',1);
+    end
 
     %% Automatic save of run
     %
