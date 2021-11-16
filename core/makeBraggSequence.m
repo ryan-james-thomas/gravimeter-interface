@@ -131,6 +131,8 @@ for nn = 1:numPulses
     freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
 end
 
+freq(freq == 0) = DDSChannel.DEFAULT_FREQ;
+
 %% Populate DDS values
 for nn = 1:numel(dds)
     dds(nn).after(t,freq(:,nn),P(:,nn),ph(:,nn));
