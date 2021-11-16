@@ -11,8 +11,12 @@ s1 = s(1:(r(1)+1));
 s2 = s((r(1)+2):end);
 %Create new string to insert
 sinsert = ['    %% These were the input arguments',sprintf('\r\n')];
-for nn = 1:numel(args)
-    sinsert = [sinsert,sprintf('    varargin{%d} = %.6g;\r\n',nn,args{nn})]; %#ok<*AGROW>
+if numel(args) == 1 && isa(args{1},'GravimeterOptions')
+    sinsert = [sinsert,sprintf('    varargin{1} = %s\r\n',args{1}.print)];
+else
+    for nn = 1:numel(args)
+        sinsert = [sinsert,sprintf('    varargin{%d} = %.6g;\r\n',nn,args{nn})]; %#ok<*AGROW>
+    end
 end
 %Insert string into file
 snew = [s1,sinsert,s2];
