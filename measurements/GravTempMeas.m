@@ -2,14 +2,15 @@ function GravTempMeas(r)
 
 if r.isInit()
     %Initialize run
-    r.data.tof = 216.2e-3:.4e-3:217.8e-3; 
-%      r.data.tof = 10e-3:5e-3:25e-3; 
-    r.data.param = const.randomize(1);
+%     r.data.tof = 216.2e-3:.4e-3:217.8e-3; 
+     r.data.tof = 25e-3:5e-3:35e-3; 
+%     r.data.param = const.randomize(1);
+    r.data.param= 1:50;
     r.c.setup('var',r.data.tof,r.data.param);
-
-elseif r.isSet()
     
-    r.make(0,r.data.tof(r.c(1)),1.58,0,0,0,0);
+elseif r.isSet()
+    r.make('detuning',0,'tof',r.data.tof(r.c(1)),'dipole',2.25,'power',0.,'T',10e-3,'camera','drop 1');
+%     r.make(0,r.data.tof(r.c(1)),1.58,0,0,0,0);
 %     r.make(8,r.data.tof(r.c(1)),2,0,0,0,0);
     r.upload;
 
@@ -18,10 +19,23 @@ elseif r.isSet()
         r.data.tof(r.c(1))*1e3,r.data.param(r.c(2)));
     
 elseif r.isAnalyze()
-    i1 = r.c(1);
-    i2 = r.c(2);
-    img = Abs_Analysis('last');
-    if ~img(1).raw.status.ok() 
+  
+
+    i1=r.c(1);
+    i2=r.c(2);
+    
+    pause(0.5);
+    
+    c = Abs_Analysis('last',1,'tof',r.data.tof(r.c(1)));
+%     r.data.N(i1,i2,:) = reshape(c.get('N'),[1,1,2]);
+%     r.data.Nsum(i1,i2,:) = reshape(c.get('Nsum'),[1,1,2]);
+    r.data.N(i1,i2) = c.get('N');
+    r.data.T(i1,i2,:) = reshape(c.clouds.T,[1,1,2]);
+    r.data.w(i1,i2,:) = reshape(c.clouds.gaussWidth,[1,1,2]);
+    r.data.OD(i1,i2) = c.clouds.peakOD;
+
+    
+        if ~c(1).raw.status.ok() 
         %
         % Checks for an error in loading the files (caused by a missed
         % image) and reruns the last sequence
@@ -29,12 +43,6 @@ elseif r.isAnalyze()
         r.c.decrement;
         return;
     end
-    r.data.files{i1,i2} = {img.raw.files(1).name,img.raw.files(2).name};
-    r.data.N(i1,i2) = img.get('N');
-    r.data.T(i1,i2,:) = reshape(img.clouds.T,[1,1,2]);
-    r.data.w(i1,i2,:) = reshape(img.clouds.gaussWidth,[1,1,2]);
-    r.data.OD(i1,i2) = img.clouds.peakOD;
-
     figure(10);
     subplot(1,3,1);
     w = squeeze(r.data.w(1:i1,i2,:));
@@ -71,3 +79,4 @@ end
 
 
 end
+
