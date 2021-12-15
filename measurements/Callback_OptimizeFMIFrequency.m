@@ -2,13 +2,13 @@ function Callback_OptimizeFMIFrequency(r)
 
 if r.isInit()
     %Initialize run
-    r.data.param = const.randomize(20:0.25:35);
+    r.data.param = const.randomize(20:0.25:25);
     r.c.setup('var',r.data.param);
     
     r.makerCallback = @makeSequence;
 elseif r.isSet()
     %Build/upload/run sequence
-    r.make(r.data.param(r.c(1)),730e-3,1.55,0.135,0,1e-3);
+    r.make(r.devices.opt.set('detuning',r.data.param(r.c(1))));
     r.upload;
     %Print information about current run
     fprintf(1,'Run %d/%d, Param = %.3f\n',r.c.now,r.c.total,...
@@ -18,21 +18,17 @@ elseif r.isAnalyze()
     i1 = r.c(1);
     
     [nlf,N] = FMI_Analysis;
-    r.data.Nsum(i1,1) = N.sum;
-    r.data.Ntotal(i1,1) = N.total;
-    r.data.amp(i1,1) = nlf.c(1,1) + nlf.c(2,1);
+    r.data.amp(i1,1) = nlf.c(1,1);
+    r.data.contrast(i1,1) = nlf.c(5,1);
     
     figure(10);clf;
     subplot(1,2,1);
-    errorbar(r.data.param(1:i1),r.data.Nsum(1:i1,1),0.025*r.data.Nsum(1:i1,1),'o');
-    hold on
-    errorbar(r.data.param(1:i1),r.data.Ntotal(1:i1,1),0.025*r.data.Ntotal(1:i1,1),'sq');
-    plot_format('Detuning [MHz]','Integrated signal','',12);
-    grid on;
-    legend('Sum','Fit');
-    subplot(1,2,2);
-    errorbar(r.data.param(1:i1),r.data.amp(1:i1,1),0.025*r.data.amp(1:i1,1),'d');
+    errorbar(r.data.param(1:i1),r.data.amp(1:i1,1),0.025*r.data.amp(1:i1,1),'o');
     plot_format('Detuning [MHz]','Amplitude','',12);
+    grid on;
+    subplot(1,2,2);
+    plot(r.data.param(1:i1),r.data.contrast,'o');
+    plot_format('Detuning [MHz]','Contrast','',12);
     grid on;
 
 end

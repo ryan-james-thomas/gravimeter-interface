@@ -10,6 +10,9 @@ classdef GravimeterOptions
         final_dipole_power
         tof
         imaging_type
+        P25
+        P50
+        motCoilOff
         %
         % Raman settings
         %
@@ -21,6 +24,7 @@ classdef GravimeterOptions
         %
         Tint
         t0
+        ti
         final_phase
         bragg_power
         Tasym
@@ -52,6 +56,12 @@ classdef GravimeterOptions
                             self.tof = v;
                         case {'imaging_type','camera'}
                             self.imaging_type = v;
+                        case 'p25'
+                            self.P25 = v;
+                        case 'p50'
+                            self.P50 = v;
+                        case 'motcoiloff'
+                            self.motCoilOff = v;
                         case 'raman_power'
                             self.raman_power = v;
                         case 'raman_width'
@@ -60,6 +70,8 @@ classdef GravimeterOptions
                             self.raman_df = v;
                         case 't0'
                             self.t0 = v;
+                        case 'ti'
+                            self.ti = v;
                         case {'tint','t'}
                             self.Tint = v;
                         case {'final_phase','phase'}

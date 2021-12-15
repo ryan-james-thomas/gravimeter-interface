@@ -2,8 +2,9 @@ function Callback_MeasureFringes(r)
 
 if r.isInit()
 %     r.data.T = [1,2,5,10,20]*1e-3;
-    r.data.T = 5e-3;
-    r.data.phase = 0:10:180;
+%     r.data.T = 10e-3:10e-3:50e-3;
+    r.data.T = const.randomize(10e-3:10e-3:130e-3);
+    r.data.phase = const.randomize(0:1:180);
     r.c.setup('var',r.data.phase,r.data.T);
 elseif r.isSet()
     
@@ -42,11 +43,11 @@ elseif r.isAnalyze()
     [~,N,dout] = FMI_Analysis;
     r.data.N(i1,i2,:) = [N.N1,N.N2];
     r.data.R(i1,i2) = N.R;
-    r.data.d{i1,i2} = dout;
+%     r.data.d{i1,i2} = dout;
     
     figure(97);
     subplot(1,2,1);
-    plot(r.data.phase(1:i1),r.data.R(1:i1,i2),'o-');
+    plot(r.data.phase(1:i1),r.data.R(1:i1,i2),'o');
 %     hold on;
 %     plot(r.data.phase(1:i1),r.data.Rsum(1:i1,i2),'sq-');
 %     hold off;
@@ -58,8 +59,9 @@ elseif r.isAnalyze()
     if r.c.done(1)
         nlf = nonlinfit(r.data.phase,r.data.R(:,i2),0.02);
         nlf.setFitFunc(@(y0,C,phi,x) y0 + C/2*cosd(2*x+2*phi));
-        nlf.bounds2('y0',[0.4,0.6,0.5],'C',[0.6,1,0.8],'phi',[-180,180,0]);
+        nlf.bounds2('y0',[0.4,0.6,0.5],'C',[0,1,0.8],'phi',[-180,180,0]);
         r.data.p{i2} = nlf.fit;
+        r.data.nlf{i2} = nlf.struct;
         
         h = errorbar(nlf.x,nlf.y,nlf.dy,'o');
         hold on
@@ -72,6 +74,7 @@ elseif r.isAnalyze()
         plot_format('Phase [deg]','N_{rel}','',12);
         legend(str);
         grid on;
+        ylim([0,1]);
 %         data = r.data;
 %         save('E:\data\21-07-15\fringe-measurements-5GHz','data');
     end
