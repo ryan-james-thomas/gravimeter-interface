@@ -10,7 +10,12 @@ classdef GravimeterOptions
         final_dipole_power
         tof
         imaging_type
-        
+        %
+        % Raman settings
+        %
+        raman_width
+        raman_power
+        raman_df
         %
         % Interferometer properties
         %
@@ -20,6 +25,11 @@ classdef GravimeterOptions
         bragg_power
         Tasym
         Tsep
+        chirp
+        %
+        % Other properties
+        %
+        params
     end
     
     methods
@@ -42,6 +52,12 @@ classdef GravimeterOptions
                             self.tof = v;
                         case {'imaging_type','camera'}
                             self.imaging_type = v;
+                        case 'raman_power'
+                            self.raman_power = v;
+                        case 'raman_width'
+                            self.raman_width = v;
+                        case 'raman_df'
+                            self.raman_df = v;
                         case 't0'
                             self.t0 = v;
                         case {'tint','t'}
@@ -54,6 +70,10 @@ classdef GravimeterOptions
                             self.Tasym = v;
                         case {'tsep','separation'}
                             self.Tsep = v;
+                        case 'chirp'
+                            self.chirp = v;
+                        case 'params'
+                            self.params = v;
                         otherwise
                             warning('Option ''%s'' not supported',varargin{nn})
                     end
@@ -64,7 +84,9 @@ classdef GravimeterOptions
         function self = replace(self,opt)
             p = properties(opt);
             for nn = 1:numel(p)
-                self.(p{nn}) = opt.(p{nn});
+                if ~isempty(opt.(p{nn}))
+                    self.(p{nn}) = opt.(p{nn});
+                end
             end
         end
         

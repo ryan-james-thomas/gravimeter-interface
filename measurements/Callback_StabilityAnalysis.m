@@ -32,6 +32,7 @@ elseif r.isAnalyze()
     %
     r.data.N(i1,:) = img.get('N');
     r.data.Nsum(i1,:) = img.get('Nsum');
+    r.data.width(i1,:) = img.clouds(1).becWidth;
 %     r.data.R(i1,:) = r.data.N(i1,:)./sum(r.data.N(i1,:));
 %     r.data.Rsum(i1,:) = r.data.Nsum(i1,:)./sum(r.data.Nsum(i1,:));
 
@@ -61,30 +62,29 @@ elseif r.isAnalyze()
 %         r.data.pd.v(:,i1) = nlf.y;
 %     end
 
-    d = DataAcquisition('192.168.1.21');
-    d.fetch;
-    d.getRAM;
-    r.data.t{i1,1} = d.t;
-    r.data.v{i1,1} = d.data;
+%     d = DataAcquisition('192.168.1.21');
+%     d.fetch;
+%     d.getRAM;
+%     r.data.t{i1,1} = d.t;
+%     r.data.v{i1,1} = d.data;
     
     figure(98);clf;
-%     subplot(1,2,1);
+    subplot(1,2,1);
     h = plot(1:i1,r.data.N(1:i1),'o');
     for nn = 1:numel(h)
         set(h(nn),'MarkerFaceColor',h(nn).Color);
     end
 %     hold off;
-    plot_format('Run','Number','Stability',12);
+    plot_format('Run','Number','',12);
     grid on;
 %     h = legend('Slow','Fast');
 %     h = legend('-2k','0k','2k','4k');
 %     set(h,'Location','West');
-%     ylim([0,1]);
+    ylim([0,3e6]);
 %     xlim([0,Inf]);
-%     subplot(1,2,2);
-%     plot(1:i1,r.data.c(1,1:i1),'o-');
-%     hold on
-%     plot(1:i1,r.data.c(2,1:i1),'sq-');
+    subplot(1,2,2);
+    plot(1:i1,r.data.width(1:i1,:)*1e6,'o');
+    plot_format('Run','Width [um]','',12);
     
     
 end
