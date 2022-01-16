@@ -82,12 +82,15 @@ classdef RolloverCounter < handle
             self.i = self.initial;
         end
         
-        function im = imax(self)
+        function im = imax(self,idx)
             %IMAX Returns the number of runs for each index
             %
             %   IM = COUNTER.IMAX()
             %
-            im = self.final - self.initial + 1;
+            if nargin == 1
+                idx = 1;
+            end
+            im = self.final(idx) - self.initial(idx) + 1;
         end
         
         function r = total(self)
@@ -95,7 +98,7 @@ classdef RolloverCounter < handle
             %
             %   R = COUNTER.total() returns the total number of runs for
             %   COUNTER in R
-            r = prod(self.imax);
+            r = prod(self.imax(1:self.N));
         end
         
         function c = current(self)

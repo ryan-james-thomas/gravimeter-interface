@@ -1,17 +1,15 @@
-function Callback_MeasureBraggPower(r)
+function Callback_MeasureBraggStability(r)
 
 if r.isInit()
-    r.data.power = const.randomize(0:0.025:0.4);
     
-    r.c.setup('var',r.data.power);
+    r.c.setup(Inf);
 elseif r.isSet()
     
 %     r.make(25.5,730e-3,1.48,r.data.power(r.c(1)),0,130e-3);
 
-    r.make(r.devices.opt.set('power',r.data.power(r.c(1))));
+%     r.make(r.devices.opt.set('power',r.data.power(r.c(1))));
     r.upload;
-    fprintf(1,'Run %d/%d, P = %.3f\n',r.c.now,r.c.total,...
-        r.data.power(r.c(1)));
+    fprintf(1,'Run %d/%d\n',r.c.now,r.c.total);
     
 elseif r.isAnalyze()
     i1 = r.c(1);
@@ -41,19 +39,23 @@ elseif r.isAnalyze()
     [~,N] = FMI_Analysis;
     r.data.N(i1,:) = [N.N1,N.N2];
     r.data.R(i1,1) = N.R;
+    r.data.Nsum(i1,:) = N.sum;
+    r.data.Rsum(i1,1) = N.Rsum;
+    
+    r.devices.rp.getRAM;
+    r.data.pulse(i1,1) = analyze_bragg_pulses(r.devices.rp.t,r.devices.rp.data(:,1),struct('width',24e-6));
     
     figure(98);clf;
-    h = plot(r.data.power(1:i1),r.data.R(1:i1,:),'o');
-    for nn = 1:numel(h)
-        set(h(nn),'MarkerFaceColor',h(nn).Color);
-    end
-%     hold off;
-    plot_format('Power [arb units]','Population','Bragg power scan at pulse width of 30 us FWHM',12);
+    subplot(1,2,1);
+    plot(1:i1,r.data.R(1:i1,:),'o');
+    plot_format('Run','Population','',12);
     grid on;
-%     h = legend('Slow','Fast');
-%     h = legend('-2k','0k','2k','4k');
-%     set(h,'Location','West');
     ylim([0,1]);
-    xlim([0,1]);
+    
+    subplot(1,2,2);
+    plot(1:i1,[r.data.pulse.pulse_area],'o-');
+    plot_format('Run','Pulse area','',12);
+    grid on;
+    
     
 end

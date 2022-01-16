@@ -10,6 +10,7 @@ width = 300e-6;
 power = 0.03;
 chirp = 2*k*9.795/(2*pi);
 order=-1;
+start_order = 0;
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
 else
@@ -87,8 +88,8 @@ t = (min_t:dt:max_t)';
 P = power*exp(-(t - tc).^2/fwhm.^2);
 P(:,2) = P(:,1);
 
-freq(:,1) = dds(1).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*(recoil+detuning)/1e6;
-freq(:,2) = dds(2).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*(recoil+detuning)/1e6;
+freq(:,1) = dds(1).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*(recoil+detuning)/1e6;
+freq(:,2) = dds(2).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*(recoil+detuning)/1e6;
 ph = zeros(numel(t),2);
 
 %% Populate DDS values
