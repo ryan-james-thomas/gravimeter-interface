@@ -175,6 +175,11 @@ classdef RemoteControl < handle
             %% Upload DDS data
             self.uploadDDSData(data.dds);
             
+            %% Upload R&S synthesizer list data if present
+            if isfield(self.devices,'rs') && isfield(self.devices.rs,'list') && ~isempty(self.devices.rs.list.freq)
+                self.devices.rs.writeList;
+            end
+            
             %% Open connection with LabVIEW VI
             self.open;
             

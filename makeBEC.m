@@ -56,7 +56,7 @@ sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
 sq.find('3d coils').set(0.38);
 sq.find('bias u/d').set(-0.02);
 sq.find('bias e/w').set(0);
-sq.find('bias n/s').set(10);
+sq.find('bias n/s').set(10*0);
 
 Tmot = 4;                           %6 s MOT loading time
 sq.delay(Tmot);                     %Wait for Tmot
@@ -109,9 +109,8 @@ sq.find('mw amp ttl').set(1);   %Turn on MW once bias fields have reached their 
 sq.delay(20e-3);
 evapRate = 0.2;
 evapStart = 7.25;
-evapEnd = 7.85;
+evapEnd = 7.775;
 Tevap = (evapEnd-evapStart)/evapRate;
-%     Tevap = 3.2;
 t = linspace(0,Tevap,100);
 sq.find('mw freq').after(t,sq.linramp(t,evapStart,evapEnd));
 sq.delay(Tevap);

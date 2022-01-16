@@ -2,8 +2,9 @@ function Callback_MeasureMWFreq(r)
 
 if r.isInit()
     
-    r.data.df = const.randomize(-10:0.5:0);
-    r.data.freq1 = const.f_Rb_groundHFS/1e6 - 310e-3 + r.data.df*1e-3;
+    r.data.df = const.randomize(-5:0.5:5); %in kHz
+    r.data.freq1 = const.f_Rb_groundHFS/1e6 - 315e-3 + r.data.df*1e-3;
+%     r.data.freq1 = const.f_Rb_groundHFS/1e6 - 315e-3;
     r.data.freq2 = const.f_Rb_groundHFS/1e6;
     
     r.c.setup('var',r.data.df);
@@ -11,7 +12,7 @@ elseif r.isSet()
     
     r.make(r.devices.opt);
     
-%     r.make(0,217.25e-3,1.3,0.13850,0,0e-3,1250e-6);
+%     r.make(0,217.5e-3,1.3,0.13850,0,0e-3,1250e-6);
     r.upload;
     %
     % These commands are for list-mode operation
@@ -33,13 +34,13 @@ elseif r.isAnalyze()
 %         r.c.decrement;
 %         return;
 %     end
-%     %
-%     % Store raw data
-%     %
+    %
+    % Store raw data
+    %
 %     r.data.files{i1,1} = img.raw.files;
-%     %
-%     % Get processed data
-%     %
+    %
+    % Get processed data
+    %
 %     r.data.N(i1,:) = img.get('N');
 %     r.data.Nsum(i1,:) = img.get('Nsum');
 %     r.data.R(i1,:) = r.data.N(i1,:)./sum(r.data.N(i1,:));
@@ -47,8 +48,8 @@ elseif r.isAnalyze()
 
     [~,N,dout] = FMI_Analysis;
     r.data.N(i1,:) = [N.N1,N.N2];
-    r.data.R(i1,1) = N.R;
-    r.data.d{i1,1} = dout;
+    r.data.R(i1,1) = 1 - N.R;
+%     r.data.d{i1,1} = dout;
     
     
     figure(98);clf;
@@ -78,7 +79,7 @@ elseif r.isAnalyze()
     
     subplot(1,2,2)
     plot(r.data.df(1:i1),r.data.N(1:i1,:),'o');
-    plot_format('Freq [kHz]','Population','',12);
+    plot_format('Freq [kHz]','Number','',12);
     h = legend('m = -1','m = 0');
     set(h,'Location','West');
     title(' Raman frequency using fit over OD')
@@ -86,8 +87,8 @@ elseif r.isAnalyze()
     hold on;
     
     if r.c.done(1)
-        nlf = nonlinfit(r.data.df*1e-3,r.data.R);
-        nlf.setFitFunc(@(A,R,x0,x) A*(1 - 4*R.^2./(4*R^2+(x-x0).^2).*sin(2*pi*sqrt(4*R^2+(x-x0).^2).*320/2).^2));
+        nlf = nonlinfit(r.data.df*1e-3,r.data.R,1e-2,sum(r.data.N,2) < 0.1);
+        nlf.setFitFunc(@(A,R,x0,x) A*(1 - 4*R.^2./(4*R^2+(x-x0).^2).*sin(2*pi*sqrt(4*R^2+(x-x0).^2).*325/2).^2));
         [~,idx] = min(nlf.y);
         nlf.bounds2('A',[0.9,1,0.95],'R',[0,10,0.8]*1e-3,'x0',[min(nlf.x),max(nlf.x),nlf.x(idx)]);
         nlf.fit;
@@ -99,7 +100,7 @@ elseif r.isAnalyze()
         hold off;
 
 %         nlf = nonlinfit(r.data.freq2 - const.f_Rb_groundHFS/1e6,r.data.N/max(r.data.N));
-%         nlf.setFitFunc(@(A,R,x0,x) A*4*R.^2./(4*R^2+(x-x0).^2).*sin(2*pi*sqrt(4*R^2+(x-x0).^2).*232/2).^2);
+%         nlf.setFitFunc(@(A,R,x0,x) A*4*R.^2./(4*R^2+(x-x0).^2).*sin(2*pi*sqrt(4*R^2+(x-x0).^2).*215/2).^2);
 %         [~,idx] = max(nlf.y);
 %         nlf.bounds2('A',[0.9,1,0.95],'R',[0,10,0.8]*1e-3,'x0',[-0.003,0.003,nlf.x(idx)]);
 %         nlf.fit;

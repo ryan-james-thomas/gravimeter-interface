@@ -34,16 +34,16 @@ function varargout = makeSequence(varargin)
     sq = makeBEC(opt);
     
     %% Trap manipulation to get smaller momentum width 
-%     T = 200e-3;
-%     t = linspace(0,T,100);
+    T = 200e-3;
+    t = linspace(0,T,100);
 %     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.08)));
 %     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(2.98-0.05)));
-% %     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.00)));
-% %     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(3.005)));
-%     sq.delay(T);  
+    sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.00)));
+    sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(3.005)));
+    sq.delay(T);  
     
     %% Drop atoms
-%     sq.delay(2e-3);
+%     sq.delay(200e-3);
     timeAtDrop = sq.time; %Store the time when the atoms are dropped for later
     sq.anchor(timeAtDrop);
     sq.find('3D mot amp ttl').set(0);
@@ -80,7 +80,8 @@ function varargout = makeSequence(varargin)
         % in compiling the DDS instructions and making sure that they start at
         % the correct time.
         %
-        braggOrder = 2;
+%         sq.find('liquid crystal bragg').at(sq.find('Liquid crystal Bragg').last,-2); %Use this to get a little more light on the phase lock PD
+        braggOrder = 1;
         k = 2*pi*384229441689483/const.c;  %Frequency of Rb-85 F=3 -> F'=4 transition
         vrel = abs(2*const.hbar*k/const.mRb);
         dv = 700e-6/216.5e-3;
@@ -126,12 +127,12 @@ function varargout = makeSequence(varargin)
             end
         end
         
-        if numel(t0) > 1
-            error('Unable to determine t0!');
-        elseif t0 < 30e-3
-            warning('Initial Bragg pulse occurs at %.1f ms and will be clamped to 30 ms!',t0*1e3);
-        end
-        t0 = max(t0,30e-3);
+%         if numel(t0) > 1
+%             error('Unable to determine t0!');
+%         elseif t0 < 30e-3
+%             warning('Initial Bragg pulse occurs at %.1f ms and will be clamped to 30 ms!',t0*1e3);
+%         end
+%         t0 = max(t0,30e-3);
         if enableGrad
             fprintf(1,'t0 = %0.3f ms, ti = %0.3f ms, Tsep = %0.3f ms\n',t0*1e3,ti*1e3,Tsep*1e3);
         else
@@ -150,7 +151,21 @@ function varargout = makeSequence(varargin)
         else
             makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
                 'width',40e-6,'Tasym',Tasym,'phase',[0,0,opt.final_phase],'chirp',chirp,...
-                'power',opt.bragg_power*[1,sqrt(2),1],'order',braggOrder);
+                'power',opt.bragg_power*[1,2,1],'order',braggOrder);
+            
+%             [amp,ph,freq,flags,t] = makeBraggSequence_pl('t0',t0,'T',T,'fwhm',40e-6,...
+%                 'power',opt.bragg_power*[1,0,0],'phase',2*[0,0,opt.final_phase]*pi/180,...
+%                 'usehold',0,'holdfreq',2,'holdamp',0.04);
+%             pl = PhaseLock('192.168.1.38');
+%             pl.setDefaults;
+%             pl.amp(1).set(0);
+%             pl.amp(2).set(0);
+%             pl.useManual.set(0);
+%             pl.disableExtTrig.set(0);
+%             pl.shift.set(3);
+%             pl.upload;
+%             pl.uploadTiming(t,ph,amp,freq,flags);
+            
         end
         
         
@@ -200,7 +215,7 @@ function varargout = makeSequence(varargin)
         %
         sq.anchor(timeAtDrop);
         sq.find('bias e/w').set(10);
-        sq.delay(10e-3);
+        sq.delay(20e-3);
         sq.find('state prep ttl').set(1);
         sq.delay(325e-6);
         sq.find('state prep ttl').set(0);
@@ -208,7 +223,7 @@ function varargout = makeSequence(varargin)
         sq.find('Repump Amp TTL').set(1).after(1e-3,0);
         sq.find('Liquid Crystal Repump').set(-2.22).after(1e-3,7);
         sq.find('repump freq').set(4.3);
-% 
+
         sq.find('R&S list step trig').set(1);
         sq.delay(5e-3);
         sq.find('state prep ttl').set(1);
@@ -221,6 +236,8 @@ function varargout = makeSequence(varargin)
         % Remove any remaining atoms in the F = 2 manifold
         %
         sq.find('3D MOT Amp TTL').set(1).after(10e-6,0);
+    else
+        sq.find('bias e/w').at(timeAtDrop,0);
     end
     
     if enableSG

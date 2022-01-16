@@ -98,7 +98,7 @@ classdef RolloverCounter < handle
             %
             %   R = COUNTER.total() returns the total number of runs for
             %   COUNTER in R
-            r = prod(self.imax);
+            r = prod(self.imax(1:self.N));
         end
         
         function c = current(self)
