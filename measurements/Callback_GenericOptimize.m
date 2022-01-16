@@ -27,7 +27,7 @@ elseif r.isAnalyze()
         r.c.decrement;
         return;
     end
-    r.data.files{i1,i2} = {img.raw.files(1).name,img.raw.files(2).name};
+    r.data.files{i1,i2} = img.raw.files;
     r.data.N(i1,i2) = img.get('N');
     r.data.T(i1,i2) = sqrt(prod(img.clouds.T));
     r.data.OD(i1,i2) = img.clouds.peakOD;

@@ -12,6 +12,7 @@ power = 0.05*[1,2,1];
 power1 = [];power2 = [];
 chirp = 2*k*9.795/(2*pi);
 order = 1;
+start_order = 0;
 dt = 1e-6;
 mirrorSwitch = 1;
 
@@ -61,6 +62,12 @@ else
                 else
                     order = v;
                 end
+            case 'start_order'
+                 if round(v) ~= v
+                     error('Bragg start order must be an integer!');
+                else
+                    start_order = v;
+                end
             case 'mirror'
                 switch lower(v)
                     case 'isolated'
@@ -85,6 +92,7 @@ end
 recoil = const.hbar*k^2/(2*const.mRb*2*pi);
 numPulses = numel(power);
 fwhm = width/(2*sqrt(log(2)));
+detuning=start_order*const.hbar*k^2/const.mRb;
 
 if isempty(power1)
     power1 = power;
@@ -127,8 +135,18 @@ for nn = 1:numPulses
     % 2 frequency so that we use the lattice formed from retroreflecting
     % from the vibrationally isolated mirror
     %
-    freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
-    freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
+%     freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
+%     freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + order*4*recoil);
+    
+    freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + (2*start_order+order)*4*recoil);
+    freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + (2*start_order+order)*4*recoil);
+ 
+%     freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + (order+detuning/recoil)*4*recoil);
+%     freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + (order+detuning/recoil)*4*recoil);
+
+%     freq(idx,1) = DDSChannel.DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + (2*start_order+order+detuning/recoil)*4*recoil);
+%     freq(idx,2) = DDSChannel.DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + (2*start_order+order+detuning/recoil)*4*recoil);
+
 end
 
 %% Populate DDS values
