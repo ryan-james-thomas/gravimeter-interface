@@ -318,10 +318,10 @@ function MeasureTemperature(r)
     %Print something to the command line so that we know how far along we are
     fprintf(1,'Run %d/%d, TOF: %.1f ms\n',r.c.now,r.c.total,r.data.tof(r.c.now)*1e3);
   elseif r.isAnalyze
-    nn = r.c.now;                           %Make a shorter variable name
-    c = Abs_Analysis;                       %Analyze the absorption image, return structure c
-    r.data.xw(nn,1) = c.xwidth;             %Store the x width
-    r.data.yw(nn,1) = c.ywidth;             %Store the y width
+    nn = r.c.now;                                   %Make a shorter variable name
+    img = Abs_Analysis;                             %Analyze the absorption image, return structure c
+    r.data.xw(nn,1) = img.clouds(1).gaussWidth(1);  %Store the x width
+    r.data.yw(nn,1) = img.clouds(1).gaussWidth(2);  %Store the y width
 
     %Plot the results
     figure(1);clf;
@@ -362,13 +362,22 @@ function TemperatureMeasurement(r)
     fprintf(1,'Run %d/%d, Freq: %.3f V, TOF: %.1f ms\n',r.c.now,r.total,...
         r.data.freq(r.c(1)),r.data.tof(r.c(2))*1e3);
   elseif r.isAnalyze()
-    c = Abs_Analysis;
-    r.data.N(r.c(1),r.c(2)) = c.N;
-    r.data.xw(r.c(1),r.c(2)) = c.xwidth;
-    r.data.yw(r.c(1),r.c(2)) = c.ywidth;
+    pause(0.1);
+    img = Abs_Analysis;
+    if ~img.raw.status.ok()
+        %
+        % Checks for an error in loading the files (caused by a missed
+        % image) and reruns the last sequence
+        %
+        r.c.decrement;
+        return;
+    end
+    r.data.N(r.c(1),r.c(2)) = img.get('N');
+    r.data.xw(r.c(1),r.c(2)) = img.clouds(1).gaussWidth(1);
+    r.data.yw(r.c(1),r.c(2)) = img.clouds(1).gaussWidth(2);
 
     Ntof = numel(r.data.tof);
-    if r.c(1) == r.c.imax(1)
+    if r.c(1) == r.c.done(1)
       %After recording the desired times-of-flight, analyze data according to ballistic expansion model
       xfit = r.data.xw(:,r.c(2));
       yfit = r.data.yw(:,r.c(2));
@@ -390,7 +399,9 @@ r = RemoteControl;
 r.callback = @TemperatureMeasurement;
 r.reset;r.start;
 ```
-and go get yourself a coffee as it automatically runs through 156 different sequences.  
+and go get yourself a coffee as it automatically runs through 156 different sequences.
+
+This sequence also has an error checking section (the 'if' statement) which uses the imaging-analysis error RawImageData error checking to detect when an absorption image has not been taken properly.  If an error has occurred, the method uses the ''RolloverCounter.decrement()' function to go back one step, and then immediately returns from the callback function.  This re-runs the current iteration when an error occurs.  For long runs where lots of time might be wasted if an error occurs and is unchecked, it is suggested that you add error checking functionality.
 
 
 
