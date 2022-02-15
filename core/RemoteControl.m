@@ -52,7 +52,7 @@ classdef RemoteControl < handle
             self.connected = false;
             self.mode = self.INIT;
             self.status = self.STOPPED;
-            self.makerCallback = @makeSequenceLive;
+            self.makerCallback = @SequenceBuilder;
             self.c = RolloverCounter();
             self.reset;
         end %end constructor

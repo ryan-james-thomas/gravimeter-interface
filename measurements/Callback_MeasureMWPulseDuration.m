@@ -7,7 +7,7 @@ if r.isInit()
     r.c.setup('var',r.data.pulse);
 elseif r.isSet()
     
-    r.make(r.devices.opt.set('params',[325e-6,r.data.pulse(r.c(1))]));
+    r.make(r.devices.opt.set('params',r.data.pulse(r.c(1))));
 %     r.make(r.devices.opt.set('params',r.data.pulse(r.c(1))));
     
 %     r.make(0,217.25e-3,1.3,0.13850,0,0e-3,1250e-6);

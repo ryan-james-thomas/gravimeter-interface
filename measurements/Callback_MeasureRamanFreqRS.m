@@ -6,17 +6,20 @@ if r.isInit()
 %      r.data.freq = 6834.6826 - 612e-3 + 1e-3*[-100:1:50];
 %     r.data.freq = 6834.6826 - 0.275 + 1e-3*[-50:2:50];
 %     r.data.freq = 6834.4396 + 1e-3*[-10:0.5:10];
-    
+
     r.c.setup('var',r.data.freq);
 elseif r.isSet()
     
 %     r.make('tof',217.25e-3,'dipole',1.56,'camera','drop 2','raman_power',0.3,...
 %         'raman_df',0,'raman_width',5000e-6);
     
-    r.make(0,217.25e-3,1.3,0.13850,0,0e-3,1250e-6);
+    r.make(0,217.25e-3,1.3,0.13850,166.5,0e-3,1250e-6);
     r.upload;
+%    rs = RS_Synthesiser;
+% r.devices.rs = rs; 
 %     dev = visa('rs','TCPIP::192.168.1.11::INSTR');
 %     fopen(dev);
+% rs.writeList((const.f_Rb_groundHFS/1e6 + [-315e-3 + 0.673e-3,0.403e-3])/2,[6,6]);
     fprintf(r.devices.dev,'source:freq %.6fMHz\n',r.data.freq(r.c(1))/2);
     fprintf(r.devices.dev,'source:power:power %.6f\n',-6);
     fprintf(r.devices.dev,'output:state on\n');

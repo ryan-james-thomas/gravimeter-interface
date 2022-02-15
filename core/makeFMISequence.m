@@ -45,6 +45,7 @@ else
 end
 
 %% Create sequence
+
 sq.delay(tof - offset);
 sq.find('F MOD Imaging Trigger').set(1).after(1e-3,0);
 sq.find('imaging freq').set(imgFreq);
@@ -70,8 +71,6 @@ sq.delay(duration);
 sq.find('fiber switch repump').set(0); 
 sq.find('drop repump').set(0);
 sq.find('Imaging Amp TTL').set(0);
-
-
 
 
 end

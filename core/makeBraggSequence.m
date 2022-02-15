@@ -84,8 +84,11 @@ else
 end
 
 %% Conditions on the time step and the Bragg order
-if width > 50e-6
-    dt = ceil(width/50e-6)*1e-6;
+if width<50e-6
+    dt=1e-6;
+else
+    intermediatewidth=width*10^6;
+    dt = ceil(intermediatewidth/50)*10^-6;
 end
      
 %% Calculate intermediate values

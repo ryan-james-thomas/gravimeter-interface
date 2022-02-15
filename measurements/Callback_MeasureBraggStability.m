@@ -36,24 +36,30 @@ elseif r.isAnalyze()
 %     r.data.R(i1,:) = r.data.N(i1,:)./sum(r.data.N(i1,:));
 %     r.data.Rsum(i1,:) = r.data.Nsum(i1,:)./sum(r.data.Nsum(i1,:));
 
-    [~,N] = FMI_Analysis;
+    [~,N,dout] = FMI_Analysis;
     r.data.N(i1,:) = [N.N1,N.N2];
     r.data.R(i1,1) = N.R;
     r.data.Nsum(i1,:) = N.sum;
     r.data.Rsum(i1,1) = N.Rsum;
+    r.data.dout(i1,1) = dout;
     
     r.devices.rp.getRAM;
     r.data.pulse(i1,1) = analyze_bragg_pulses(r.devices.rp.t,r.devices.rp.data(:,1),struct('width',24e-6));
+    r.data.pulse(i1,2) = analyze_bragg_pulses(r.devices.rp.t,r.devices.rp.data(:,2),struct('width',24e-6));
     
     figure(98);clf;
     subplot(1,2,1);
-    plot(1:i1,r.data.R(1:i1,:),'o');
+    plot(1:i1,r.data.R(1:i1,:),'o-');
+    hold on
+    plot(1:i1,r.data.Rsum(1:i1,:),'sq-');
     plot_format('Run','Population','',12);
     grid on;
     ylim([0,1]);
     
     subplot(1,2,2);
-    plot(1:i1,[r.data.pulse.pulse_area],'o-');
+    plot(1:i1,[r.data.pulse(:,1).pulse_area],'o-');
+    hold on
+    plot(1:i1,[r.data.pulse(:,2).pulse_area],'sq-');
     plot_format('Run','Pulse area','',12);
     grid on;
     

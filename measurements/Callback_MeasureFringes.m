@@ -3,11 +3,11 @@ function Callback_MeasureFringes(r)
 if r.isInit()
 %     r.data.T = [1,2,5,10,20]*1e-3;
 %     r.data.T = 10e-3:10e-3:50e-3;
-    r.data.T = 10e-3:5e-3:80e-3;
-    r.data.phase = const.randomize(0:1:180);
+%     r.data.T = 10e-3:5e-3:80e-3;
+%     r.data.phase = const.randomize(0:1:180);
 %     r.data.T = 15e-3:5e-3:50e-3;
-%     r.data.T = 10e-3;
-%     r.data.phase = const.randomize(-90:10:90);
+    r.data.T = (5:15)*1e-3;
+    r.data.phase = const.randomize(0:20:180);
     r.c.setup('var',r.data.phase,r.data.T);
 elseif r.isSet()
     

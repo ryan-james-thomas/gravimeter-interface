@@ -38,12 +38,13 @@ elseif r.isAnalyze()
 %     r.data.R(i1,:) = r.data.N(i1,:)./sum(r.data.N(i1,:));
 %     r.data.Rsum(i1,:) = r.data.Nsum(i1,:)./sum(r.data.Nsum(i1,:));
 
-    [~,N] = FMI_Analysis;
+    [~,N,dout] = FMI_Analysis;
     r.data.N(i1,:) = [N.N1,N.N2];
     r.data.R(i1,1) = N.R;
     r.data.Nsum(i1,:) = N.sum;
     r.data.Rsum(i1,1) = N.Rsum;
     r.data.date(i1,1) = now;
+    r.data.dout(i1,1) = dout;
     
 %     r.data.fmi.t(:,i1) = nlf.x;
 %     r.data.fmi.v(:,i1) = nlf.y;
@@ -82,7 +83,7 @@ elseif r.isAnalyze()
     hold off;
     plot_format('Time since start [min]','Number','',12);
     grid on;
-    ylim([0,1]);
+%     ylim([0,1]);
 
 
     

@@ -30,7 +30,7 @@ function sq = initSequence
     sq.channels(25).setName('MW Amp TTL','D0').setDefault(0);
     sq.channels(26).setName('F MOD Imaging Trigger','D1').setDefault(0);
     sq.channels(28).setName('State prep ttl','D3').setDefault(0);
-    sq.channels(29).setName('R&S list step trig','D4').setDefault(0);
+    sq.channels(29).setName('R&S list step trig','D4').setDefault(1);
     sq.channels(30).setName('Drop 1 Camera Trig','D5').setDefault(0);
     
     sq.digital(31).setDefault(1);

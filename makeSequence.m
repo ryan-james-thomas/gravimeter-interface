@@ -34,13 +34,36 @@ function varargout = makeSequence(varargin)
     sq = makeBEC(opt);
     
     %% Trap manipulation to get smaller momentum width 
-    T = 200e-3;
-    t = linspace(0,T,100);
-%     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.08)));
-%     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(2.98-0.05)));
-    sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.00)));
-    sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(3.005)));
-    sq.delay(T);  
+%     T = 200e-3;
+%     t = linspace(0,T,100);
+% %     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.08)));
+% %     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(2.98-0.05)));
+%     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.05)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(2.50+0.005)));
+%     sq.delay(T);  
+
+%     T = 50e-3;
+%     t = linspace(0,T,50);
+%     sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50W amp').values(end),P50(1.45)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25W amp').values(end),P25(1.45)));
+%     sq.delay(T);
+%     sq.find('50W amp').set(P50(1.35));
+%     sq.find('25W amp').set(P25(1.35));
+%     sq.delay(opt.params);
+
+%     T = 50e-3;
+%     t = linspace(0,T,50);
+%     sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50W amp').values(end),P50(1.35)));
+%     sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25W amp').values(end),P25(1.35)));
+%     sq.delay(T);
+%     f = 53/2;
+%     T = 10/f;
+%     t = linspace(0,T,200);
+%     power = 1.35 + 0.05*sin(2*pi*f*t);
+%     sq.find('50W amp').after(t,P50(power));
+%     sq.find('25W amp').after(t,P25(power));
+%     sq.delay(T);
+%     sq.delay(opt.params);
     
     %% Drop atoms
 %     sq.delay(200e-3);
@@ -57,11 +80,11 @@ function varargout = makeSequence(varargin)
     sq.find('50w ttl').set(0);
 
     %% Interferometry
-    enableDDS = 0;      %Enable DDS and DDS trigger
+    enableDDS = 1;      %Enable DDS and DDS trigger
     enableBragg = 1;    %Enable Bragg diffraction
     enableRaman = 0;    %Enable Raman transition
     enableGrad = 0;     %Enable gradiometry
-    enableMW = 0;       %Enable microwave state preparation
+    enableMW = 1;       %Enable microwave state preparation
     enableSG = 0;       %Enable Stern-Gerlach separation
     if enableDDS
         % 
@@ -117,13 +140,12 @@ function varargout = makeSequence(varargin)
             else
                 ti = opt.ti;
             end
-            
-            
         else
             if isempty(opt.t0)
                 t0 = opt.tof - 2*T - Tsep - Tasym;
             else
                 t0 = opt.t0;
+                Tsep = opt.tof - 2*T - t0;
             end
         end
         
@@ -140,18 +162,30 @@ function varargout = makeSequence(varargin)
         end
 
         if enableGrad
+            %
+            % Initial velocity selection
+            %
             makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-                'width',30e-6,'Tasym',0,'phase',[0,0,0],'chirp',chirp,...
-                'power',opt.bragg_power*[1,0,0],'order',braggOrder);
-            
+                'width',60e-6,'Tasym',0,'phase',[0,0,0],'chirp',chirp,...
+                'power',[0.6,0,0],'order',-4);
+            %
+            % Splitting of the cloud
+            %
             sq.dds.anchor(timeAtDrop);
-            makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',ti + t0,'T',T,...
+            makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',20e-3 + t0,'T',T,...
+                'width',30e-6,'Tasym',Tasym,'phase',0,'chirp',chirp,...
+                'power',0.35.*0,'order',braggOrder,'start_order',-4);
+            %
+            % Interferometry
+            %
+            sq.dds.anchor(timeAtDrop);
+            makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',20e-3 + t0 + ti,'T',T,...
                 'width',30e-6,'Tasym',Tasym,'phase',[0,0,opt.final_phase],'chirp',chirp,...
-                'power',opt.bragg_power*[1,2,1],'order',braggOrder);
+                'power',opt.bragg_power.*[1,1,1]*0,'order',braggOrder,'start_order',-4);
         else
             makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
-                'width',40e-6,'Tasym',Tasym,'phase',[0,0,opt.final_phase],'chirp',chirp,...
-                'power',opt.bragg_power*[1,2,1],'order',braggOrder);
+                'width',30e-6,'Tasym',Tasym,'phase',[0,0,opt.final_phase],'chirp',chirp,...
+                'power',opt.bragg_power*[1,0,0],'order',braggOrder);
             
 %             [amp,ph,freq,flags,t] = makeBraggSequence_pl('t0',t0,'T',T,'fwhm',40e-6,...
 %                 'power',opt.bragg_power*[1,0,0],'phase',2*[0,0,opt.final_phase]*pi/180,...
@@ -215,27 +249,28 @@ function varargout = makeSequence(varargin)
         %
         sq.anchor(timeAtDrop);
         sq.find('bias e/w').set(10);
+        sq.find('R&S list step trig').set(1);
         sq.delay(20e-3);
         sq.find('state prep ttl').set(1);
-        sq.delay(325e-6);
+        sq.delay(372e-6);
         sq.find('state prep ttl').set(0);
         
         sq.find('Repump Amp TTL').set(1).after(1e-3,0);
         sq.find('Liquid Crystal Repump').set(-2.22).after(1e-3,7);
-        sq.find('repump freq').set(4.3);
-
-        sq.find('R&S list step trig').set(1);
-        sq.delay(5e-3);
+        sq.find('repump freq').set(4.3); 
+% 
+        sq.find('R&S list step trig').set(0);
+        sq.delay(20e-3);
         sq.find('state prep ttl').set(1);
-        sq.delay(215e-6);
+        sq.delay(250e-6);
         sq.find('state prep ttl').set(0);
         
-        sq.find('R&S list step trig').set(0);
+        sq.find('R&S list step trig').set(1);
         sq.find('bias e/w').set(0);
         %
         % Remove any remaining atoms in the F = 2 manifold
         %
-        sq.find('3D MOT Amp TTL').set(1).after(10e-6,0);
+        sq.find('3D MOT Amp TTL').set(1).after(100e-6,0);
     else
         sq.find('bias e/w').at(timeAtDrop,0);
     end
@@ -250,7 +285,8 @@ function varargout = makeSequence(varargin)
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
-        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.275));
+%         sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.275));
+        sq.find('3d coils').after(t,sq.linramp(t,motCoilOff,0.225));
         sq.find('3d coils').after(t,sq.linramp(t,sq.find('3d coils').values(end),motCoilOff));
         sq.delay(2*Tsg);
         sq.find('mot coil ttl').set(0);
