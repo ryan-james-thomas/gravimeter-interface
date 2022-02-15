@@ -152,6 +152,8 @@ for nn = 1:numPulses
 
 end
 
+freq(freq == 0) = DDSChannel.DEFAULT_FREQ;
+
 %% Populate DDS values
 for nn = 1:numel(dds)
     dds(nn).after(t,freq(:,nn),P(:,nn),ph(:,nn));

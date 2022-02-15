@@ -116,7 +116,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %EXISTS Indicates if channel sequence is more than just the
             %default value
             
-            r = ~(numel(ch.times) == 1 && ch.times(1) == 0);
+            r = ~( (numel(ch.times) == 1 && ch.times(1) == 0) || isempty(ch.times) );
         end
 
         function ch = setBounds(ch,bounds)

@@ -264,6 +264,21 @@ where the `upload` method called without an input argument uses the compiled dat
 
 Data destined for the National Instruments box is sent the LabVIEW control interface VI over TCP/IP.  Data for the DDS is converted into a series of commands for the MOGLabs ARF box and sent asynchronously.  This is necessary because MOGLabs designed a very stupid controller in the box itself which cannot handle more than one command at a time.  As a result, a set of commands cannot be sent together as a single block of text, which would cut done enormously on I/O time; instead, each command has to be sent separately.  To upload 1000 instructions (total) for two channels takes about 7 s.  If this uploading is done synchronously, in that it blocks the command line and prevents the sequence from running, then the cycle time of the experiment takes an extra 7 s.  Instead, the data is sent asynchronously and a message is printed on the command line when the upload is finished.  The user needs to ensure that the upload is complete before the DDS is triggered.
 
+# Visualizing sequences
+
+The update times and values of each channel can be accessed through the `TimingControllerChannel.times` and `TimingControllerChannel.values` properties, and these can be plotted in whatever way the user wishes.  To simplify matters, the `TimingControllerChannel.plot()` method has been included.  `plot()` takes a variable argument list in name/value pairs with valid names being:
+  * 'offset': plot the channel values plus the given vertical offset.
+  * 'finaltime': plot the channel values up to the given final time.
+  * 'plotidx': plot the channel values corresponding to the given indices.
+
+If the user wants to plot all the channels, they can use the `TimingSequence.plot()` function.  This has a single input argument which is the incremental vertical offset at which to plot each channel's values.
+
+Finally, there is a GUI that can be used to display sequence data.  Given a `RemoteControl` object `r` that has a sequence in the field `sq`, so that `r.sq` is a TimingSequence object: the GUI can be started using
+```
+DisplayGUI(r);
+```
+Multiple channels can be plotted by selecting multiple channels on the right hand pane using either Shift-Click or Ctrl-Click.  The data in the GUI is automatically updated whenever a new sequence is made using the `r.make()` method.
+
 # Executing multiple runs and parameter scans
 
 The true power of this interface is that it allows for easy scanning of parameters in a sequence for optimization and data taking purposes.  This is accomplished by implementing a finite-state machine in the RemoteControl object with states 'initialize', 'set', and 'analyze'.  The actions undertaken in each of these states is governed by a callback function stored in the `RemoteControl.callback` property.  The callback function should have the basic structure:
@@ -286,7 +301,7 @@ function mycallback(r)  %r here is the RemoteControl object
   end
 end
 ```
-To facilitate the automated collection of data there is the property `RemoteControl.data`, and different kinds of data can be stored as fields in this property.  For instance, one could store the number of atoms as `r.data.N` and the temperature as `r.data.T` with both `N` and `T` being vectors.
+To use the above callback, set the callback property using `r.callback = @mycallback`.  To facilitate the automated collection of data there is the property `RemoteControl.data`, and different kinds of data can be stored as fields in this property.  For instance, one could store the number of atoms as `r.data.N` and the temperature as `r.data.T` with both `N` and `T` being vectors.
 
 Keeping track of the total number of runs and the current run is handled by the property `RemoteControl.c` which is an instance of the `RolloverCounter` class.  `RolloverCounter` is a counter with multiple indices that increments using modular arithmetic -- it functions very much like a car odometer.  The first index has a particular maximum value, and when that index exceeds its maximum value it rolls back to its start value and the next index increments by 1.  Supposing that one creates a `RolloverCounter` object `c`, one can define a set of three counters with maximum values 3, 4, and 5, as
 ```
@@ -318,10 +333,10 @@ function MeasureTemperature(r)
     %Print something to the command line so that we know how far along we are
     fprintf(1,'Run %d/%d, TOF: %.1f ms\n',r.c.now,r.c.total,r.data.tof(r.c.now)*1e3);
   elseif r.isAnalyze
-    nn = r.c.now;                           %Make a shorter variable name
-    c = Abs_Analysis;                       %Analyze the absorption image, return structure c
-    r.data.xw(nn,1) = c.xwidth;             %Store the x width
-    r.data.yw(nn,1) = c.ywidth;             %Store the y width
+    nn = r.c.now;                                   %Make a shorter variable name
+    img = Abs_Analysis;                             %Analyze the absorption image, return structure c
+    r.data.xw(nn,1) = img.clouds(1).gaussWidth(1);  %Store the x width
+    r.data.yw(nn,1) = img.clouds(1).gaussWidth(2);  %Store the y width
 
     %Plot the results
     figure(1);clf;
@@ -362,13 +377,22 @@ function TemperatureMeasurement(r)
     fprintf(1,'Run %d/%d, Freq: %.3f V, TOF: %.1f ms\n',r.c.now,r.total,...
         r.data.freq(r.c(1)),r.data.tof(r.c(2))*1e3);
   elseif r.isAnalyze()
-    c = Abs_Analysis;
-    r.data.N(r.c(1),r.c(2)) = c.N;
-    r.data.xw(r.c(1),r.c(2)) = c.xwidth;
-    r.data.yw(r.c(1),r.c(2)) = c.ywidth;
+    pause(0.1);
+    img = Abs_Analysis;
+    if ~img.raw.status.ok()
+        %
+        % Checks for an error in loading the files (caused by a missed
+        % image) and reruns the last sequence
+        %
+        r.c.decrement;
+        return;
+    end
+    r.data.N(r.c(1),r.c(2)) = img.get('N');
+    r.data.xw(r.c(1),r.c(2)) = img.clouds(1).gaussWidth(1);
+    r.data.yw(r.c(1),r.c(2)) = img.clouds(1).gaussWidth(2);
 
     Ntof = numel(r.data.tof);
-    if r.c(1) == r.c.imax(1)
+    if r.c(1) == r.c.done(1)
       %After recording the desired times-of-flight, analyze data according to ballistic expansion model
       xfit = r.data.xw(:,r.c(2));
       yfit = r.data.yw(:,r.c(2));
@@ -390,7 +414,9 @@ r = RemoteControl;
 r.callback = @TemperatureMeasurement;
 r.reset;r.start;
 ```
-and go get yourself a coffee as it automatically runs through 156 different sequences.  
+and go get yourself a coffee as it automatically runs through 156 different sequences.
+
+This sequence also has an error checking section (the 'if' statement) which uses the imaging-analysis error RawImageData error checking to detect when an absorption image has not been taken properly.  If an error has occurred, the method uses the ''RolloverCounter.decrement()' function to go back one step, and then immediately returns from the callback function.  This re-runs the current iteration when an error occurs.  For long runs where lots of time might be wasted if an error occurs and is unchecked, it is suggested that you add error checking functionality.
 
 
 
