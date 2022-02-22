@@ -19,12 +19,11 @@ classdef RemoteControl < handle
     properties(SetAccess = protected)
         remoteAddress = 'localhost';  %Connect to local host
         remotePort = 6666;            %Remote port to use
-        waitTime = 0.1;               %Wait time for querying BytesAvailable and between successive writes
-
     end %end constant properties
     
     properties(SetAccess = immutable)
         c               %Rollover counter object, keeps track of runs
+        err             %RemoteControlErrorHandler object, used for handling errors
     end
     
     properties(Constant, Hidden=true)
@@ -54,6 +53,7 @@ classdef RemoteControl < handle
             self.status = self.STOPPED;
             self.makerCallback = @SequenceBuilder;
             self.c = RolloverCounter();
+            self.err = RemoteControlErrorHandler;
             self.reset;
         end %end constructor
         
@@ -102,14 +102,6 @@ classdef RemoteControl < handle
             %READ Reads available data from TCP connection
             r = fgetl(self.conn);
         end %end read
-        
-        function r = waitForReady(self)
-            %WAITFOREADY Returns true when the readyWord appears
-            while self.conn.BytesAvailable <= length(self.readyWord)
-                pause(self.waitTime); 
-            end
-            r = strcmpi(self.read,self.readyWord);
-        end %end waitForReady
         
         function stop(self)
             %STOP Releases client from remote control and closes TCP conn
@@ -272,7 +264,11 @@ classdef RemoteControl < handle
                 self.connected = true;
                 self.status = self.STOPPED;
             elseif strcmpi(s,self.readyWord) && strcmpi(self.status,self.RUNNING)
-                if self.c.done()
+                if self.err.fail()
+                    % If failure, stop run
+                    self.stop;
+                    error('User defined error has occurred. Run stopping');
+                elseif self.c.done()
                     % Analyze
                     self.analyze;
                     % Stop

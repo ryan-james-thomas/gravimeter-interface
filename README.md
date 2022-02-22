@@ -369,6 +369,7 @@ function TemperatureMeasurement(r)
     r.data.freq = linspace(6.5:0.1:9);
     
     r.c.setup('var',r.data.tof,r.data.freq);
+    r.err.setup(3);
   elseif r.isSet()
     
     r.make(r.data.freq(r.c(1)),r.data.tof(r.c(2)));   %You can also use r.c.i(1) and r.c.i(2). The subscript indexing function has been redefined to allow the behaviour shown here
@@ -390,6 +391,8 @@ function TemperatureMeasurement(r)
     r.data.N(r.c(1),r.c(2)) = img.get('N');
     r.data.xw(r.c(1),r.c(2)) = img.clouds(1).gaussWidth(1);
     r.data.yw(r.c(1),r.c(2)) = img.clouds(1).gaussWidth(2);
+
+    r.err.add(img.get('N') < 1e5);
 
     Ntof = numel(r.data.tof);
     if r.c(1) == r.c.done(1)
@@ -418,7 +421,7 @@ and go get yourself a coffee as it automatically runs through 156 different sequ
 
 This sequence also has an error checking section (the 'if' statement) which uses the imaging-analysis error RawImageData error checking to detect when an absorption image has not been taken properly.  If an error has occurred, the method uses the ''RolloverCounter.decrement()' function to go back one step, and then immediately returns from the callback function.  This re-runs the current iteration when an error occurs.  For long runs where lots of time might be wasted if an error occurs and is unchecked, it is suggested that you add error checking functionality.
 
-
+Finally, this sequence uses the `RemoteControl.err` property, which is an instance of the `RemoteControlErrorHandler` class, to handle repeated errors.  The object is set up in the initialize stage with the maximum number of repeated errors; in this case, the command is `r.err.setup(3)` where the maximum number of consecutive errors is 3.  On each run, an error condition is added using `r.err.add(img.get('N') < 1e5)`, which checks if the number of atoms is less than 10^5 atoms.  If there are 3 runs in a row where the number is less than 10^5, the run will stop automatically.
 
 
 
