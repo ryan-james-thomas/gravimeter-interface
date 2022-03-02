@@ -165,8 +165,7 @@ classdef RemoteControl < handle
             end
             
             %% Upload DDS data
-            self.uploadDDSData(data.dds);
-            
+            self.uploadBinaryDDSData(data.dds);
             %% Upload R&S synthesizer list data if present
             if isfield(self.devices,'rs') && isfield(self.devices.rs,'list') && ~isempty(self.devices.rs.list.freq)
                 self.devices.rs.writeList;
@@ -191,6 +190,15 @@ classdef RemoteControl < handle
         end
         
         function uploadDDSData(self,dds)
+            %UPLOADDDSDATA Uploads compiled DDS data to a connected MOGLabs
+            %ARF device.  The device to upload to must be set as the
+            %RemoteControl.mog property, and you must connect to the
+            %device first.
+            %
+            %   SELF.UPLOADDDSDATA(DDS) Uploads data in the DDS array to
+            %   the MOGLabs ARF box using text-based commands only.  DDS
+            %   must be a 2 element vector of struct with fields t, freq,
+            %   pow, and phase.
             if isempty(self.mog)
                 return
             end
@@ -227,17 +235,87 @@ classdef RemoteControl < handle
             end
             self.mog.cmd('table,sync,1');
             numInstr = tb.upload;
-            estUploadTime = numInstr*11/3280;
+            estUploadTime = numInstr*11/1000;
             if estUploadTime > (7/8*self.sq.ddsTrigDelay)
                 pause(estUploadTime - self.sq.ddsTrigDelay + 1);
             end
         end
         
-        function run(self)
+        function uploadBinaryDDSData(self,dds)
+            %UPLOADBINARYDDSDATA Uploads compiled DDS data to a connected
+            %MOGLabs ARF device using binary tables.  The device to upload
+            %to must be set as the RemoteControl.mog property, and you must
+            %connect to the device first.
+            %
+            %   SELF.UPLOADBINARYDDSDATA(DDS) Uploads data in the DDS array
+            %   to the MOGLabs ARF box using binary tables.  DDS
+            %   must be a 2 element vector of struct with fields t, freq,
+            %   pow, and phase.
+            if isempty(self.mog)
+                return
+            end
+            
+            if isempty(self.mog.cx)
+                error('Connect to MOGLabs ARF box first!');
+            end
+            % Create mogtable objects
+            tb = mogtable(self.mog,1);
+            tb.pow_units = 'hex';
+            tb(2) = mogtable(self.mog,2);
+            tb(2).pow_units = 'hex';
+            
+            % Put data into mogtable objects
+            for nn = 1:numel(tb)
+                tb(nn).t = dds(nn).t;
+                tb(nn).freq = dds(nn).freq;
+                tb(nn).pow = dds(nn).pow;
+                tb(nn).phase = dds(nn).phase;
+            end
+            
+            % Send commands to device
+            for nn = 1:numel(tb)
+                self.mog.cmd('mode,%d,%s',tb(nn).channel,tb(nn).MODE);
+                self.mog.cmd('table,stop,%d',tb(nn).channel);
+            end
+            tb(1).upload_binary_table;
+            tb(2).upload_binary_table;
+            %Re-arm the tables because stopping table 2 also stops table 1,
+            %and stop command is issued in the upload process.
+            for nn = 1:numel(tb)
+                self.mog.cmd('table,arm,%d',tb(nn).channel);
+                self.mog.cmd('table,rearm,%d,on',tb(nn).channel);
+            end
+            self.mog.cmd('table,sync,1');
+        end
+        
+        function run(self,cb)
             %RUN Starts a single client run by sending the start word
+            %
+            %   SELF.RUN() Starts a run.
+            %
+            %   SELF.RUN(CB) Starts a run and sets the BytesAvailableFcn
+            %   callback to the function handle CB()
+            %
             self.open;
+            if nargin > 1
+                self.conn.BytesAvailableFcn = @(src,event) cb;
+            end
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
+        
+        function loop(self,cb)
+            %LOOP Starts a perpetual loop using a supplied callback
+            %function
+            %
+            %   SELF.LOOP(CB) Starts the loop using callback function CB
+            function internal_callback(~,~)
+                self.read;
+                cb();
+                self.run;
+            end
+            self.conn.BytesAvailableFcn = @(src,event) internal_callback;
+            self.run;
+        end
         
         function start(self)
             %START Starts a full run through the sequence of numRuns

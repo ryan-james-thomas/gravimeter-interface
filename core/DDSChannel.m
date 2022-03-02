@@ -80,12 +80,58 @@ classdef DDSChannel < TimingControllerChannel
             data.freq = v(:,1);
             if isempty(ch.calibrationData) && ~isempty(ch.rfscale)
                 data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
-            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale)
+            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale) && isfield(ch.calibrationData,'Prf')
                 data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),ch.calibrationData));
+            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale) && isfield(ch.calibrationData,'amp')
+                data.pow = ch.opticalToHex(v(:,2),ch.calibrationData);
             else
                 error('Need to supply only one of calibration data or RF scale to convert optical power to RF power!');
             end
             data.phase = v(:,3);
+        end
+        
+        function [tplot,vplot] = getPlotValues(ch,varargin)
+            if mod(numel(varargin),2) ~= 0
+                error('Arguments must be in name/value pairs');
+            else
+                offset = 0;
+                finalTime = [];
+                returnHandle = false;
+                plotIdx = 1:size(ch.values,2);
+                for nn = 1:2:numel(varargin)
+                    v = varargin{nn+1};
+                    switch lower(varargin{nn})
+                        case 'offset'
+                            offset = v;
+                        case 'finaltime'
+                            finalTime = v;
+                        case 'returnhandle'
+                            returnHandle = v;
+                        case 'plotidx'
+                            plotIdx = v;
+                    end
+                end
+            end
+            [t,v] = ch.getEvents;
+            if ~ch.exists && ~returnHandle
+                tplot = [];
+                vplot = [];
+                return
+            end
+            
+            if t(end) ~= finalTime
+                t = [t;finalTime];
+                v = [v;v(end,:)];
+            end
+%             tplot = sort([t;t-1/TimingSequence.SAMPLE_CLK]);
+%             tplot = tplot(tplot >= 0);
+%             vplot = zeros(numel(tplot),numel(plotIdx));
+%             for nn = 1:numel(plotIdx)
+%                 vplot(:,nn) = interp1(t,v(:,plotIdx(nn)),tplot,'previous');
+%             end
+            tplot = t;
+            vplot = v(:,plotIdx);
+            vplot = vplot + offset;
         end
 
     end
@@ -101,6 +147,12 @@ classdef DDSChannel < TimingControllerChannel
                 rfmax = varargin{2};
                 rf = (asin((P/Pmax).^0.25)*2/pi).^2*rfmax;
             end
+        end
+        
+        function amp = opticalToHex(P,varargin)
+            data = varargin{1};
+            P = P.*max(data.optical_power);
+            amp = interp1(data.optical_power,data.amp,P,'pchip');
         end
     end
     

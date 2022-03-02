@@ -53,7 +53,7 @@ sq.find('Imaging Amp TTL').set(1);
 sq.find('liquid crystal repump').set(7);
 sq.find('fiber switch repump').before(fibreSwitchDelay,1); 
 sq.find('drop repump freq').set(repumpFreq);
-sq.find('drop repump').set(1);
+sq.find('drop repump').set(0).after(offset - repumpDelay,1);
 sq.delay(duration);
 % if manifold == 1
 %     sq.delay(offset - repumpDelay - repumpTime);
