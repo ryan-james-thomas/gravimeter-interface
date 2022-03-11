@@ -65,8 +65,14 @@ function sq = initSequence
     %% DDS default
     sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
     sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
+    
+%     sq.dds(1).power_conversion_method = DDSChannel.POWER_CONVERSION_MODEL;
+%     sq.dds(2).power_conversion_method = DDSChannel.POWER_CONVERSION_MODEL;
 %     sq.dds(1).rfscale = 3.1;
 %     sq.dds(2).rfscale = 2.15;
+ 
+    sq.dds(1).power_conversion_method = DDSChannel.POWER_CONVERSION_HEX_INTERP;
+    sq.dds(2).power_conversion_method = DDSChannel.POWER_CONVERSION_HEX_INTERP;
     calibData = load('aom-output-power-vs-amplitude');
     sq.dds(1).calibrationData = calibData.data_ch1;
     sq.dds(2).calibrationData = calibData.data_ch2;

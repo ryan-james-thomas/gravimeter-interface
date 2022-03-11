@@ -165,7 +165,11 @@ classdef RemoteControl < handle
             end
             
             %% Upload DDS data
-            self.uploadBinaryDDSData(data.dds);
+            if strcmpi(data.dds(1).power_conversion_method,DDSChannel.POWER_CONVERSION_HEX_INTERP)
+                self.uploadBinaryDDSData(data.dds);
+            else
+                self.uploadDDSData(data.dds);
+            end
             %% Upload R&S synthesizer list data if present
             if isfield(self.devices,'rs') && isfield(self.devices.rs,'list') && ~isempty(self.devices.rs.list.freq)
                 self.devices.rs.writeList;
@@ -342,7 +346,7 @@ classdef RemoteControl < handle
                 self.connected = true;
                 self.status = self.STOPPED;
             elseif strcmpi(s,self.readyWord) && strcmpi(self.status,self.RUNNING)
-                if self.err.fail()
+                if ~isempty(self.err) && self.err.fail()
                     % If failure, stop run
                     self.stop;
                     error('User defined error has occurred. Run stopping');

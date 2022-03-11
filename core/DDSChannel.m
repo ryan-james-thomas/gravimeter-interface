@@ -7,11 +7,15 @@ classdef DDSChannel < TimingControllerChannel
         channel
         calibrationData
         rfscale
+        power_conversion_method
     end
     
     properties(Constant)
         CLK = 1e6;
         DEFAULT_FREQ = 110;
+        POWER_CONVERSION_MODEL = 'model';
+        POWER_CONVERSION_DBM_INTERP = 'dbm_interp';
+        POWER_CONVERSION_HEX_INTERP = 'hex_interp';
     end
     
     methods
@@ -21,6 +25,7 @@ classdef DDSChannel < TimingControllerChannel
             ch.bounds = [80,    0,  0;
                          150,   1,  1200];
             ch.IS_DDS = true;
+            ch.power_conversion_method = 'model';
         end
         
         function ch = setDefault(ch,v)
@@ -57,6 +62,7 @@ classdef DDSChannel < TimingControllerChannel
         end
         
         function data = compile(ch,delay)
+            data.power_conversion_method = ch.power_conversion_method;
             if ch.numValues == 0
                 data.t = 0;
                 data.freq = ch.default(1);
@@ -78,11 +84,11 @@ classdef DDSChannel < TimingControllerChannel
             end
             data.t = t;
             data.freq = v(:,1);
-            if isempty(ch.calibrationData) && ~isempty(ch.rfscale)
+            if strcmpi(ch.power_conversion_method,ch.POWER_CONVERSION_MODEL)
                 data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
-            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale) && isfield(ch.calibrationData,'Prf')
+            elseif strcmpi(ch.power_conversion_method,ch.POWER_CONVERSION_DBM_INTERP)
                 data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),ch.calibrationData));
-            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale) && isfield(ch.calibrationData,'amp')
+            elseif strcmpi(ch.power_conversion_method,ch.POWER_CONVERSION_HEX_INTERP)
                 data.pow = ch.opticalToHex(v(:,2),ch.calibrationData);
             else
                 error('Need to supply only one of calibration data or RF scale to convert optical power to RF power!');

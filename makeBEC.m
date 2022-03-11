@@ -50,7 +50,8 @@ sq.find('3D MOT Freq').set(6.85);
 sq.find('50w ttl').set(1);
 sq.find('25w ttl').set(1);
 sq.find('50w amp').set(P50(15));
-sq.find('25w amp').set(P25(12.5));    
+sq.find('25w amp').set(P25(12.5)); 
+
 %% Set up the MOT loading values                
 sq.find('MOT coil TTL').set(1);     %Turn on the MOT coils
 sq.find('3d coils').set(0.38);
@@ -79,7 +80,7 @@ sq.delay(Tcmot);                    %Wait for time Tcmot
 %% PGC stage
 Tpgc = 15e-3;
 %Define a function giving a 100 point smoothly varying curve
-t = linspace(0,Tpgc,100);
+t = linspace(0,Tpgc,50);
 f = @(vi,vf) sq.minjerk(t,vi,vf);
 
 %Smooth ramps for these parameters
@@ -117,7 +118,7 @@ sq.delay(Tevap);
 
 %% Weaken trap while MW frequency fixed
 Trampcoils = 180e-3;
-t = linspace(0,Trampcoils,100);
+t = linspace(0,Trampcoils,50);
 sq.find('3d coils').after(t,sq.minjerk(t,sq.find('3d coils').values(end),1));
 sq.find('bias e/w').after(t,sq.minjerk(t,sq.find('bias e/w').values(end),0));
 sq.find('bias n/s').after(t,sq.minjerk(t,sq.find('bias n/s').values(end),0));
@@ -138,7 +139,7 @@ sq.find('mot coil ttl').at(sq.find('3d coils').last,0);
 %
 sq.delay(30e-3);
 Tevap = 1.97*1.5;
-t = linspace(0,Tevap,300);
+t = linspace(0,Tevap,200);
 sq.find('50W amp').after(t,sq.expramp(t,sq.find('50w amp').values(end),P50(opt.final_dipole_power),0.8));
 sq.find('25W amp').after(t,sq.expramp(t,sq.find('25w amp').values(end),P25(opt.final_dipole_power),0.8));
 sq.find('bias e/w').after(t(1:end/2),@(x) sq.linramp(x,sq.find('bias e/w').values(end),10));
