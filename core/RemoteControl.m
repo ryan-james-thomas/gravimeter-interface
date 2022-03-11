@@ -52,7 +52,7 @@ classdef RemoteControl < handle
             self.connected = false;
             self.mode = self.INIT;
             self.status = self.STOPPED;
-            self.makerCallback = @makeSequenceLive;
+            self.makerCallback = @makeSequenceRhys;
             self.c = RolloverCounter();
             self.reset;
         end %end constructor
@@ -77,6 +77,7 @@ classdef RemoteControl < handle
                 self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
                 self.connected = false;
                 self.conn.OutputBufferSize = 2^24;
+                self.conn.InputBufferSize = 2^24;
             end
             
             if strcmpi(self.conn.Status,'closed')
@@ -91,6 +92,21 @@ classdef RemoteControl < handle
             %SETFUNC Sets the BytesAvailableFcn to self.resp()
             self.open;
             self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
+        end
+
+        function loop(self,cb)
+            %LOOP Starts a perpetual loop
+            %
+            %   SELF = SELF.LOOP(CB) Creates a perpetual loop that calls
+            %   the function handle CB on every run.
+            self.open;
+            function internal_callback(~,~)
+                self.read;
+                cb();
+                self.run;
+            end
+            self.conn.BytesAvailableFcn = @(src,event) internal_callback;
+            self.run;
         end
         
         function instr = findTCPPort(self)
@@ -236,9 +252,12 @@ classdef RemoteControl < handle
             end
         end
         
-        function run(self)
+        function run(self,cb)
             %RUN Starts a single client run by sending the start word
             self.open;
+            if nargin > 1
+                self.conn.BytesAvailableFcn = cb;
+            end
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
         

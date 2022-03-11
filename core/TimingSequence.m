@@ -192,16 +192,35 @@ classdef TimingSequence < handle
             %   sequence sq
             time = 0;
             for nn = 1:self.numChannels
-                if self.channels(nn).last > time
+                if self.channels(nn).last >= time
                     time = self.channels(nn).last;
                 end
             end
             for nn = 1:numel(self.dds)
-                if self.dds(nn).last > time
+                if self.dds(nn).last >= time
                     time = self.dds(nn).last;
                 end
             end
             
+        end
+
+        function self = check(self)
+            %CHECK Applies checks to the sequence to ensure that it doesn't
+            %cause the machine to catch fire or otherwise suffer a
+            %catastrophic failure
+            for nn = 1:numel(self.find('H-bridge Helm').times)
+                if self.find('H-Bridge Helm').values(nn) == 1 && self.find('H-Bridge Quad').get(self.find('H-Bridge Helm').times(nn)) == 1
+                    error('H-Bridge Helm and H-Bridge Quad CANNOT be on at the same time!');
+                end
+            end
+            
+            ch_fa = self.find('Keopsys FA');
+            ch_mo = self.find('Keopsys MO');
+            for nn = 1:numel(ch_fa.times)
+                if ch_fa.values(nn) > 0 && ch_mo.get(ch_fa.times(nn)) < 3
+                    error('Keopsys MO must be at least 3 V before FA is turned on!');
+                end
+            end
         end
 
         function r = compile(self)
@@ -214,6 +233,8 @@ classdef TimingSequence < handle
             %   represents the 32 digital channels.  a is an NxM array of doubles with M the number
             %   of analog channels
 
+            %Check for errors
+            self.check;
             %Forms two arrays - one is Nx1 of times, and one is NxNUM_CHANNELS and is values
             t = [];
             v = [];

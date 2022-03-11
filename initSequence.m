@@ -37,7 +37,7 @@ function sq = initSequence
     
     %% Name analog channels
     sq.analog(1).setName('RF Frequency','AO/0').setDefault(0);
-    sq.analog(2).setName('3DMOT Freq','AO/1').setDefault(7);
+    sq.analog(2).setName('3DMOT Freq','AO/1').setDefault(7.1);
     sq.analog(3).setName('87 repump freq','AO/2').setDefault(4.565);
     sq.analog(4).setName('Keopsys MO','AO/3','3.9V MAXIMUM').setDefault(0).setBounds([0,3.9]);
     sq.analog(5).setName('87 imag freq','AO/4').setDefault(7.61);
@@ -48,7 +48,7 @@ function sq = initSequence
     sq.analog(10).setName('3DMOT amp','BO/1').setDefault(8);
     sq.analog(11).setName('87 repump amp','BO/2').setDefault(8);
     sq.analog(12).setName('MOT Bias Coil','BO/3').setDefault(2.9);
-    sq.analog(13).setName('BO4 - N/C','BO/4').setDefault(8);
+    sq.analog(13).setName('87 imag amp','BO/4').setDefault(8);
     sq.analog(14).setName('85 repump amp','BO/5').setDefault(8);
     sq.analog(15).setName('BO6 - N/C','BO/6').setDefault(0);
     sq.analog(16).setName('85 imag amp','BO/7').setDefault(3.6);
@@ -56,10 +56,15 @@ function sq = initSequence
     sq.analog(18).setName('CD2','CO/1').setDefault(0.8);
     sq.analog(19).setName('CD1','CO/2').setDefault(0.314);
     sq.analog(20).setName('CD0 Fast','CO/3').setDefault(0);
-    sq.analog(21).setName('CD Fine/Fast','CO/4').setDefault(1);
+    sq.analog(21).setName('CD Fine/Fast','CO/4').setDefault(0);
     sq.analog(22).setName('CO/5 - N/C','CO/5').setDefault(0);
     sq.analog(23).setName('CO/6 - N/C','CO/6').setDefault(0);
     sq.analog(24).setName('CO/7 - N/C','CO/7').setDefault(0);
 
-
+    %% Fake DDS channels
+    sq.dds(1).rfscale = 3;
+    sq.dds(2).rfscale = 3;
+    sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
+    sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
+        
 end
