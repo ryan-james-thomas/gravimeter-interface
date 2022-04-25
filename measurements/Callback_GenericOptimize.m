@@ -1,79 +1,130 @@
 function Callback_GenericOptimize(r)
+xAxis = 'Load (s)';
+title = 'MOT Load Rate';
+% For Temperature scans, param must be the time of flight
 
 if r.isInit()
     %Initialize run
-    r.data.param = const.randomize(1.25:0.25:4);
-    r.data.param2 = 0.2:0.1:1;
-    r.c.setup('var',r.data.param,r.data.param2);
-    
-    r.makerCallback = @makeSequence;
+
+    %scan these variables (scans through param then param2)
+    r.data.param = 1:1:1000;
+%     r.data.param = [0.1,0.2,0.3,0.4,0.5,1,1.5,2,3,4,5,6,10,15];
+%     r.data.param2 = 6; %this is varargin{2}  
+%     r.data.param = 1e-3:1e-3:25e-3; %this is varargin{1}
+    r.data.counter = 1; %Number of varargins (1 or 2)
+
+
+    if r.data.counter == 1
+        r.c.setup('var',r.data.param);
+    elseif r.data.counter == 2
+        r.c.setup('var',r.data.param,r.data.param2); %note the order here determines what varargin{i} is
+    end
+
 elseif r.isSet()
-    %Build/upload/run sequence
-    r.make(0,216.5e-3,1.5,r.data.param(r.c(1)),r.data.param2(r.c(2)));
-    r.upload;
-    %Print information about current run
-    fprintf(1,'Run %d/%d, Param = %.3f, Param2 = %.3f\n',r.c.now,r.c.total,...
-        r.data.param(r.c(1)),r.data.param2(r.c(2)));
-    
+    %print parameters after each run
+    if r.data.counter == 1
+        r.make(r.data.param(r.c(1)));
+        r.upload;
+        fprintf(2,'Run %d/%d, Param = %.3f\n',r.c.now,r.c.total,...
+            r.data.param(r.c(1)));
+
+    elseif r.data.counter == 2
+        r.make(r.data.param(r.c(1)),r.data.param2(r.c(2)));
+        r.upload;
+        fprintf(2,'Run %d/%d, Param = %.3f, Param2 = %.3f\n',r.c.now,r.c.total,...
+            r.data.param(r.c(1)),r.data.param2(r.c(2)));
+    end
 elseif r.isAnalyze()
-    i1 = r.c(1);
-    i2 = r.c(2);
-    img = Abs_Analysis('last');
-    if ~img(1).raw.status.ok()
-        %
-        % Checks for an error in loading the files (caused by a missed
-        % image) and reruns the last sequence
-        %
-        r.c.decrement;
-        return;
+
+    if r.data.counter == 1
+        i1 = r.c(1);
+        img = Abs_Analysis('last');
+
+
+        r.data.files{i1} = img.raw.files;
+        r.data.N(i1) = img.get('N');
+        r.data.T(i1) = sqrt(prod(img.clouds.T));
+        r.data.OD(i1) = img.clouds.peakOD;
+        r.data.GaussWidth(i1,:) = img.get('gaussWidth');
+        r.data.pos(i1,:) = squeeze(img.get('pos'));
+
+    elseif r.data.counter == 2
+
+        img = Abs_Analysis('last');
+        i1 = r.c(1);
+        i2 = r.c(2);
+
+        r.data.files{i1,i2,:} = img.raw.files;
+        r.data.N(i1,i2,:) = img.get('N');
+        r.data.T(i1,i2,:) = sqrt(prod(img.clouds.T));
+        r.data.OD(i1,i2,:) = img.clouds.peakOD;
+        r.data.GaussWidth(i1,i2,:) = img.get('gaussWidth');
     end
-    r.data.files{i1,i2} = img.raw.files;
-    r.data.N(i1,i2) = img.get('N');
-    r.data.T(i1,i2) = sqrt(prod(img.clouds.T));
-    r.data.OD(i1,i2) = img.clouds.peakOD;
-    
-    figure(10);clf;
-    subplot(1,2,1);
-    errorbar(r.data.param(1:i1),r.data.N(1:i1,i2),0.025*r.data.N(1:i1,i2),'o');
-    plot_format('Param [V]','Number of atoms','',12);
-%     ylim([0,2.5]);
-    grid on;
-%     subplot(1,3,2);
-%     errorbar(r.data.param(1:i1),r.data.T(1:i1,i2),0.025*r.data.T(1:i1,i2),'o');
-%     plot_format('Param [V]','Temperature [K]','',12);
-%     grid on;
-    subplot(1,2,2);
-%     PSD = r.data.N(:,i2)./r.data.T(:,i2).^3;
-%     plot(r.data.param(1:i1),PSD,'o');
-%     grid on;
-%     plot_format('Param [V]','PSD','',12);
-    plot(r.data.param(1:i1),r.data.OD(1:i1,i2),'o');
-    grid on;
-    plot_format('Param [V]','OD','',12);
-    
-    
-    if r.c.done(1)
-        figure(11);clf;
-        subplot(1,2,1);
-        cla;
-        for nn = 1:i2
-            errorbar(r.data.param,r.data.N(:,nn),0.025*r.data.N(:,nn),'o');
-            plot_format('Param [V]','Number of atoms','',12);
-            hold on;
-            r.data.str{nn} = sprintf('TC = %.2f',r.data.param2(nn));
+
+    %make plot during run for Varargin = 1
+    if r.data.counter == 1
+        %position
+%         figure(2)
+%         plot(r.data.param(1:1:size(r.data.N,2)),r.data.pos,'o')
+%         xlabel(xAxis)
+%         ylabel('Pos')
+        %Number
+        figure(3)
+        subplot(2,1,1)
+        plot(r.data.param(1:1:size(r.data.N,2)),r.data.N)
+        xlabel(xAxis)
+        ylabel('Fitted Atom Number')
+        subplot(2,1,2)
+        plot(r.data.param(1:1:size(r.data.N,2)),r.data.OD)
+        xlabel(xAxis)
+        ylabel('Max OD')
+        sgtitle(title)
+        %Width
+%         figure(4)
+%         plot(r.data.param(1:1:size(r.data.N,2)),r.data.GaussWidth)
+%         xlabel(xAxis)
+%         ylabel('Fitted Cloud Size')
+%         sgtitle(title)
+
+    end
+
+
+
+
+    if r.data.counter == 2
+
+        %Get Temperature for each param2
+        if r.c(1) == size(r.data.param,2)
+            for nn = 1:2
+                w = squeeze(r.data.GaussWidth(:,r.c(2),nn));
+                lf = linfit(r.data.param,w.^2,2*w.*20e-6);
+                lf.setFitFunc('poly',[0,2]);
+                lf.fit;
+                figure(5);clf
+                lf.plot;
+                r.data.Tfit(i2,nn) = lf.c(2,1)*const.mRb/const.kb*1e6;
+                r.data.Terr(i2,nn) = lf.c(2,2)*const.mRb/const.kb*1e6;
+            end
         end
-        hold off;
-        legend(r.data.str);
-%         ylim([0,1e8]);
-        grid on;
-        
-        subplot(1,2,2);
-        cla;
-        for nn = 1:i2
-            plot(r.data.param(1:i1),r.data.OD(1:i1,nn),'o');
+
+        %Plot temperature vs param2
+        if r.c(2) >= 2
+            figure(6);clf
+            plot(r.data.param2(1:1:size(r.data.Tfit(:,1))),r.data.Tfit(:,1))
             hold on
+            plot(r.data.param2(1:1:size(r.data.Tfit(:,1))),r.data.Tfit(:,2))
+            ylabel('Temperature (uK)')
+            xlabel(xAxis)
+            legend('X Temperature','Y Temperature')
+            sgtitle(title)
         end
-        hold off;
-        grid on;
+        
+        if r.c(1) == size(r.data.param,2)
+%             r.data.N(i1,i2,:) = img.get('N');
+%             plot(r.data.param2(1:1:size(r.data.N(4,:),2)),r.data.N(4,:))
+        end
+
     end
+
+
 end
