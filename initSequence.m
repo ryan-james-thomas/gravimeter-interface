@@ -76,5 +76,7 @@ function sq = initSequence
     calibData = load('aom-output-power-vs-amplitude');
     sq.dds(1).calibrationData = calibData.data_ch1;
     sq.dds(2).calibrationData = calibData.data_ch2;
+%     sq.dds(1).calibrationData = struct('optical_power',linspace(0,1,100),'amp',linspace(0,2^14-1,100));
+%     sq.dds(2).calibrationData = struct('optical_power',linspace(0,1,100),'amp',linspace(0,2^14-1,100));
 
 end

@@ -397,6 +397,15 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             end
             ch.sort;
         end
+
+        function v = get(self,t)
+            %GET Returns the channel value at a given time
+            %
+            %   V = GET(T) returns the channel value at a time T
+            self.sort;
+            idx = find(self.times < t,1,"last");
+            v = self.values(idx);
+        end
         
         function print(ch,idx)
             if nargin < 2

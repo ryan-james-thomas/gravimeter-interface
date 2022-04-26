@@ -77,6 +77,7 @@ classdef RemoteControl < handle
                 self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
                 self.connected = false;
                 self.conn.OutputBufferSize = 2^24;
+                self.conn.InputBufferSize = 2^24;
             end
             
             if strcmpi(self.conn.Status,'closed')
@@ -102,6 +103,14 @@ classdef RemoteControl < handle
             %READ Reads available data from TCP connection
             r = fgetl(self.conn);
         end %end read
+        
+        function r = waitForReady(self)
+            %WAITFOREADY Returns true when the readyWord appears
+            while self.conn.BytesAvailable <= length(self.readyWord)
+                pause(100e-3); 
+            end
+            r = strcmpi(self.read,self.readyWord);
+        end %end waitForReady
         
         function stop(self)
             %STOP Releases client from remote control and closes TCP conn
@@ -225,6 +234,7 @@ classdef RemoteControl < handle
             % Reduce instruction sizes and make sure both tables have
             % instructions at the same time
             tb(1).reduce;
+%             tb(2).reduce;
             if sum(tb(1).sync) == 1
                 tb(2).reduce;
                 tb(1).reduce(tb(2).sync);
@@ -289,7 +299,21 @@ classdef RemoteControl < handle
                 self.mog.cmd('table,arm,%d',tb(nn).channel);
                 self.mog.cmd('table,rearm,%d,on',tb(nn).channel);
             end
-            self.mog.cmd('table,sync,1');
+            num_tries = 10;
+            current_try = 1;
+            while 1
+                try
+                    self.mog.cmd('table,sync,1');
+                    break;
+                catch current_exception
+                    if current_try < num_tries
+                        current_try = current_try + 1;
+                    else
+                        rethrow(current_exception);
+                    end
+                end
+            end
+            
         end
         
         function run(self,cb)
@@ -302,7 +326,7 @@ classdef RemoteControl < handle
             %
             self.open;
             if nargin > 1
-                self.conn.BytesAvailableFcn = @(src,event) cb;
+                self.conn.BytesAvailableFcn = cb;
             end
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run

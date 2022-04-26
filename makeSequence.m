@@ -64,6 +64,24 @@ function varargout = makeSequence(varargin)
 %     sq.find('25W amp').after(t,P25(power));
 %     sq.delay(T);
 %     sq.delay(opt.params);
+
+%     pstart50 = opt.params.pstart50;
+%     pstart50 = [opt.final_dipole_power,pstart50(:)'];
+%     vstart50 = P50(cumsum(pstart50));
+%     
+%     pstart25 = opt.params.pstart25;
+%     pstart25 = [opt.final_dipole_power,pstart25(:)'];
+%     vstart25 = P25(cumsum(pstart25));
+%     
+%     tp = opt.params.t;
+%     
+%     for nn = 1:numel(tp)
+%         t = linspace(0,tp(nn),50);
+%         sq.find('50w amp').after(t,max(sq.minjerk(t,vstart50(nn),vstart50(nn + 1)),0));
+%         sq.find('25w amp').after(t,max(sq.minjerk(t,vstart25(nn),vstart25(nn + 1)),0));
+%     end
+%     
+%     sq.anchor(sq.latest);
     
     %% Drop atoms
 %     sq.delay(200e-3);
@@ -81,8 +99,8 @@ function varargout = makeSequence(varargin)
 
     %% Interferometry
     enableDDS = 1;      %Enable DDS and DDS trigger
-    enableBragg = 1;    %Enable Bragg diffraction
-    enableRaman = 0;    %Enable Raman transition
+    enableBragg = 0;    %Enable Bragg diffraction
+    enableRaman = 1;    %Enable Raman transition
     enableGrad = 0;     %Enable gradiometry
     enableMW = 1;       %Enable microwave state preparation
     enableSG = 0;       %Enable Stern-Gerlach separation
@@ -185,7 +203,11 @@ function varargout = makeSequence(varargin)
         else
             makeBraggSequence(sq.dds,'k',k,'dt',1e-6,'t0',t0,'T',T,...
                 'width',30e-6,'Tasym',Tasym,'phase',[0,0,opt.final_phase],'chirp',chirp,...
-                'power',opt.bragg_power*[1,0,0],'order',braggOrder);
+                'power',opt.bragg_power*[1,2,1],'order',braggOrder);
+            
+%             makeCompositePulse(sq.dds,'k',k,'dt',1e-6,'t0',t0,'pulse separation',100e-6,...
+%                 'width',30e-6,'phase',[0,180,0],'chirp',chirp,...
+%                 'power',opt.bragg_power*[90/180,0/180,0/180],'order',braggOrder);
             
 %             [amp,ph,freq,flags,t] = makeBraggSequence_pl('t0',t0,'T',T,'fwhm',40e-6,...
 %                 'power',opt.bragg_power*[1,0,0],'phase',2*[0,0,opt.final_phase]*pi/180,...
@@ -212,30 +234,17 @@ function varargout = makeSequence(varargin)
         % pulse occurs easier to calculate
         %
         sq.dds.anchor(timeAtDrop);
-        sq.find('Bias N/S').at(timeAtDrop - 5e-3,10);
-        %
-        % This makes a Gaussian pulse with the specified parameters: centered at
-        % 't0' with FWHM of 'width', a maximum power of 'power', and the channel
-        % 2 frequency 'df' higher than channel 1.
-        %
-        t0 = 0.1e-3;
-%         makeGaussianPulse(sq.dds,'t0',t0,'width',opt.raman_width,'dt',5e-6,...
-%             'power',opt.raman_power,'df',opt.raman_df,'power2',0);
-        %
-        % Turn on the amplifier for the Raman AOM. Keep in mind that the
-        % internal pointer for Raman Amp is still at timeAtDrop
-        %
-        sq.find('raman amp').before(0.5e-3,10);    %This is an analog value, so set to 5 V to turn on
+        sq.dds(1).after(1e-4,DDSChannel.DEFAULT_FREQ - opt.raman_df/4,0,0);
+        sq.dds(2).after(1e-4,DDSChannel.DEFAULT_FREQ + opt.raman_df/4,0,0);
+        sq.delay(50e-3);
         T = opt.raman_width;
-        t = linspace(0,T,10);
-        sq.dds(1).after(t,DDSChannel.DEFAULT_FREQ,opt.raman_power,0);
-        sq.dds(2).after(t,DDSChannel.DEFAULT_FREQ + opt.raman_df,opt.raman_power*0,0);
-        sq.find('Bias N/S').after(t,10*ones(size(t)));
+        dt = 1e-6;
+        t = 0:dt:T;
+        sq.dds(1).after(t,DDSChannel.DEFAULT_FREQ - opt.raman_df/4,opt.raman_power,0);
+        sq.dds(2).after(t,DDSChannel.DEFAULT_FREQ + opt.raman_df/4,opt.raman_power,0);
         sq.delay(T);
-        sq.dds(1).set(DDSChannel.DEFAULT_FREQ,0.0,0);
-        sq.dds(2).set(DDSChannel.DEFAULT_FREQ,0.0,0);
-        sq.find('Raman amp').set(0);
-        sq.find('Bias N/S').set(0);
+        sq.dds(1).after(t,DDSChannel.DEFAULT_FREQ,0,0);
+        sq.dds(2).after(t,DDSChannel.DEFAULT_FREQ,0,0);
     end
     
     if enableMW
@@ -258,7 +267,7 @@ function varargout = makeSequence(varargin)
         sq.find('Repump Amp TTL').set(1).after(1e-3,0);
         sq.find('Liquid Crystal Repump').set(-2.22).after(1e-3,7);
         sq.find('repump freq').set(4.3); 
-% 
+
         sq.find('R&S list step trig').set(0);
         sq.delay(20e-3);
         sq.find('state prep ttl').set(1);
@@ -281,7 +290,8 @@ function varargout = makeSequence(varargin)
         % moment.  A ramp is used to ensure that the magnetic states
         % adiabatically follow the magnetic field
         %     
-        sq.delay(15e-3);
+%         sq.delay(15e-3);
+        sq.waitFromLatest(5e-3);
         Tsg = 5e-3;
         sq.find('mot coil ttl').set(1);
         t = linspace(0,Tsg,20);
@@ -318,7 +328,7 @@ function varargout = makeSequence(varargin)
     % created
     %
     fpathfull = [mfilename('fullpath'),'.m'];
-    saveSequenceCopy(fpathfull,sq.directory,varargin);
+%     saveSequenceCopy(fpathfull,sq.directory,varargin);
     %% Automatic start
     %If no output argument is requested, then compile and run the above
     %sequence
