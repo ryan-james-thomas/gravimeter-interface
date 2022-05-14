@@ -31,7 +31,7 @@ function sq = initSequence
     sq.channels(27).setName('Scope','D2').setDefault(0);
     sq.channels(28).setName('Control','D3').setDefault(0);
     sq.channels(29).setName('Stark','D4').setDefault(0);
-    sq.channels(30).setDefault(0);
+%     sq.channels(30).setDefault(0);
     sq.channels(31).setDefault(1);
     sq.channels(32).setDefault(0);
     

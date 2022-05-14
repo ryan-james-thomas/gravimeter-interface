@@ -109,8 +109,8 @@ classdef RolloverCounter < handle
             %   completion rate of the counter
             c = 1;
             for nn = 1:self.N
-                im = self.imax;
-                c = c + (self.i(nn)-1)*prod(im((nn-1):-1:1));
+%                 im = self.imax;
+                c = c + (self.i(nn)-1)*prod(self.imax((nn-1):-1:1));
             end
         end
         
