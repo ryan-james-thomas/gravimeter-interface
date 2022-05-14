@@ -1,43 +1,49 @@
-function [NeededVoltage] = DipolePtoV(DipoleType,DesiredRelativePower)
+function NeededVoltage = DipolePtoV(DipoleType,DesiredPower)
 
-% Powers measured on 15/02/2022
-% RedPower has P_max = 13 W
-% Keopsys FA has P_max (for Keopsys MO Voltage of 3.9 V) = 10.8W
+% Powers measured on 26/04/2022
+% RedPower has P_max = 20 W
+% Keopsys FA has P_max (for Keopsys MO Voltage of 3.9 V) = 12.6 W at FA
+% voltage of 3.5 V
 % Keopsys MO has P_max (for Keopsys FA Voltage of 0 V) = 0.4 W 
     % (i.e if Amp is off, the seed has a power out of 400 mW)
 
 
-if strcmpi(DipoleType,'RedPower') == 1 || strcmpi(DipoleType,'KeopsysMO') == 1 || strcmpi(DipoleType,'KeopsysFA') == 1
-else
-	error('Must be RedPower, KeopsysMO, or KeopsysFA')
+if ~(strcmpi(DipoleType,'RedPower') || strcmpi(DipoleType,'Keopsys'))
+	error('Must be RedPower or Keopsys')
 end
 
-if DesiredRelativePower > 1
-    error('You cannot have power greater than 1')
-end
-
-if strcmpi(DipoleType,'RedPower') == 1
-    NeededVoltage = (DesiredRelativePower + 0.1255)/0.2249;
-    if NeededVoltage > 5
-        NeededVoltage = 5;
+if strcmpi(DipoleType,'RedPower')
+    if DesiredPower > 20 || DesiredPower < 0
+        error('Power cannot be out of range [0,20] W!');
+    end
+    NeededVoltage = (DesiredPower + 1.5543)/2.8943;
+elseif strcmpi(DipoleType,'Keopsys')
+    data = [ 0.00000,  0.40000;
+             0.25000,  0.40000;
+             0.50000,  1.18000;
+             0.75000,  2.24000;
+             1.00000,  3.23000;
+             1.50000,  5.00000;
+             2.00000,  5.84000;
+             2.50000,  6.39000;
+             2.90000,  8.73000;
+             2.25000,  5.97000;
+             1.25000,  4.16000;
+             1.75000,  5.62000;
+             2.75000,  7.25000;
+             3.00000,  9.72000;
+             3.20000,  11.00000;
+             3.50000,  12.60000];
+    
+    if DesiredPower < 0.4
+        NeededVoltage = 0;
+    elseif DesiredPower > max(data(:,2))
+        error('Power must be less than %.3f!',max(data(:,2)));
+    else
+        NeededVoltage = interp1(data(2:end,2),data(2:end,1),DesiredPower,'pchip');
     end
 end
 
-if strcmpi(DipoleType,'KeopsysMO') == 1
-    NeededVoltage = (DesiredRelativePower + 0.4974)/0.3835;
-    if NeededVoltage > 3.9
-        NeededVoltage = 3.9;
-    end
-end
-
-if strcmpi(DipoleType,'KeopsysFA') == 1
-    Voltage = (0:0.01:3);
-    Power = 0.0256281813328552*(Voltage.^5) - 0.0839296270976739*(Voltage.^4) - 0.107959995604612*(Voltage.^3) + 0.51437944281788*(Voltage.^2) - 0.0556330111734857*Voltage + 0.0352680508741484;      
-    NeededVoltage = interp1(Power,Voltage,DesiredRelativePower);
-    if NeededVoltage > 3
-        NeededVoltage = 3;
-    end
-end
 
 end
 

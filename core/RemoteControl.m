@@ -52,7 +52,7 @@ classdef RemoteControl < handle
             self.connected = false;
             self.mode = self.INIT;
             self.status = self.STOPPED;
-            self.makerCallback = @makeSequenceRhys;
+            self.makerCallback = @makeSequenceGinger;
             self.c = RolloverCounter();
             self.reset;
         end %end constructor
@@ -100,9 +100,14 @@ classdef RemoteControl < handle
             %   SELF = SELF.LOOP(CB) Creates a perpetual loop that calls
             %   the function handle CB on every run.
             self.open;
+            if nargin < 2
+                cb = [];
+            end
             function internal_callback(~,~)
                 self.read;
-                cb();
+                if ~isempty(cb)
+                    cb();
+                end
                 self.run;
             end
             self.conn.BytesAvailableFcn = @(src,event) internal_callback;
@@ -260,6 +265,12 @@ classdef RemoteControl < handle
             end
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
+
+        function urun(self,cb)
+            %URUN Uploads current sequence and starts a run
+            self.upload;
+            self.run(cb);
+        end
         
         function start(self)
             %START Starts a full run through the sequence of numRuns

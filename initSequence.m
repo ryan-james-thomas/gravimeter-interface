@@ -31,7 +31,7 @@ function sq = initSequence
     sq.channels(27).setName('Scope','D2').setDefault(0);
     sq.channels(28).setName('Control','D3').setDefault(0);
     sq.channels(29).setName('Stark','D4').setDefault(0);
-    
+    sq.channels(30).setDefault(0);
     sq.channels(31).setDefault(1);
     sq.channels(32).setDefault(0);
     
@@ -42,9 +42,9 @@ function sq = initSequence
     sq.analog(4).setName('Keopsys MO','AO/3','3.9V MAXIMUM').setDefault(0).setBounds([0,3.9]);
     sq.analog(5).setName('87 imag freq','AO/4').setDefault(7.61);
     sq.analog(6).setName('85 Repump freq','AO/5').setDefault(4.64);
-    sq.analog(7).setName('Keopsys FA','AO/6','3.2V MAXIMUM').setDefault(0).setBounds([0,3.2]);
+    sq.analog(7).setName('Keopsys FA','AO/6','3.5V MAXIMUM').setDefault(0).setBounds([0,3.5]);
     sq.analog(8).setName('85 imag freq','AO/7').setDefault(8.354);
-    sq.analog(9).setName('RedPower CW','B0/0').setDefault(0).setBounds([0,5]);
+    sq.analog(9).setName('RedPower CW','B0/0').setDefault(0).setBounds([0,7.5]);
     sq.analog(10).setName('3DMOT amp','BO/1').setDefault(8);
     sq.analog(11).setName('87 repump amp','BO/2').setDefault(8);
     sq.analog(12).setName('MOT Bias Coil','BO/3').setDefault(2.9);

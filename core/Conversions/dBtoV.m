@@ -21,7 +21,7 @@ if strcmpi(CDType,'normal') == 1
     if CurrentNeeded > 16
         error('Maximum magnetic gradient achieved with fine control is 137.6 G/cm')
     else
-        VoltageNeeded = round(CurrentNeeded/1.6,3);
+        VoltageNeeded = CurrentNeeded/1.6;
     end         
 
 elseif strcmpi(CDType,'fine') == 1
@@ -34,7 +34,7 @@ elseif strcmpi(CDType,'fine') == 1
     if CurrentNeeded > 1.6
         error('Maximum magnetic gradient achieved with fine control is 13.76 G/cm')
     else
-        VoltageNeeded = round(CurrentNeeded/0.16,3);
+        VoltageNeeded = CurrentNeeded/0.16;
     end
     
 end

@@ -14,6 +14,7 @@ repumpAmplitude = 8;
 imgFreq = 8.5;
 imgAmplitude = 10;
 manifold = 1;
+take_dark_image = true;
 %
 % Parse input arguments as name/value pairs
 %
@@ -48,6 +49,8 @@ else
                 fibreSwitchDelay = v;
             case 'manifold'
                 manifold = v;
+            case 'take dark image'
+                take_dark_image = v;
             otherwise
                 error('Unsupported option %s',p);
         end
@@ -92,7 +95,6 @@ sq.find('87 imag').after(tof,1).after(pulseTime,0);     %Turn on after TOF, then
 sq.find('87 cam trig').after(tof,1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
 sq.anchor(sq.latest);   %Re-anchor the sequence to the latest value
 sq.delay(cycleTime);    %Delay 
-
 %
 % Take image without atoms
 %
@@ -100,6 +102,14 @@ sq.find('87 imag').set(1).after(pulseTime,0);     %Turn on after TOF, then turn 
 sq.find('87 cam trig').set(1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
 sq.anchor(sq.latest);               %Re-anchor the sequence to the latest value
 sq.find('Repump Switch').set(1);    %Turn off fiber switch
+%
+% Take a dark image
+%
+if take_dark_image
+    sq.delay(cycleTime);
+    sq.find('87 cam trig').after(tof,1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
+    sq.anchor(sq.latest);   %Re-anchor the sequence to the latest value
+end
 %
 % Need a last instruction so that the run ends properly!
 %

@@ -16,7 +16,7 @@ elseif strcmpi(LightType,'repump') == 1
     out = interp1(RepumpFrequency,Voltage,-Frequency);
 elseif strcmpi(LightType,'image') == 1
 %     out = interp1(ImagingFrequency,Voltage,-Frequency);
-    out = Frequency*0.4139/6 + 8.4033;
+    out = Frequency*0.5473/6 + 8.498;
 end
 
 %Check if frequency is possible 
