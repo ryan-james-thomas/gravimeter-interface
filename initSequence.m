@@ -40,7 +40,7 @@ function sq = initSequence
     sq.analog(2).setName('3DMOT Freq','AO/1').setDefault(7.1);
     sq.analog(3).setName('87 repump freq','AO/2').setDefault(4.565);
     sq.analog(4).setName('Keopsys MO','AO/3','3.9V MAXIMUM').setDefault(0).setBounds([0,3.9]);
-    sq.analog(5).setName('87 imag freq','AO/4').setDefault(7.61);
+    sq.analog(5).setName('87 imag freq','AO/4').setDefault(8.498);
     sq.analog(6).setName('85 Repump freq','AO/5').setDefault(4.64);
     sq.analog(7).setName('Keopsys FA','AO/6','3.5V MAXIMUM').setDefault(0).setBounds([0,3.5]);
     sq.analog(8).setName('85 imag freq','AO/7').setDefault(8.354);

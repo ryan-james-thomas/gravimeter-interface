@@ -4,7 +4,8 @@ Voltage = (0:0.05:10);
 
 % Voltage to Frequency Functions
 TrappingFrequnecy = 2*(53.051+8.6164*(Voltage)-1.5183*((Voltage).^2)+.24203*((Voltage).^3)-.010976*Voltage.^4)-211.79;
-RepumpFrequency = 2*(51.919+8.5694*(Voltage)-1.5263*(Voltage.^2)+.24217*(Voltage.^3)-.010947*Voltage.^4) -211.79;
+% RepumpFrequency = 2*(51.919+8.5694*(Voltage)-1.5263*(Voltage.^2)+.24217*(Voltage.^3)-.010947*Voltage.^4) -211.79;
+RepumpFrequency = 55.1531 + 5.514*Voltage - 0.3122*Voltage.^2 + 0.048*Voltage.^3 - 156.947/2;
 ImagingFrequency = 0.5168+16.0185*(Voltage-8.386)-0.112*(Voltage-8.386).^2;
 
 %use input string, the input desired frequency and the above functions to get the required voltage
