@@ -1,3 +1,14 @@
+# Table of Contents
+  1. [Introduction](#introduction)
+  2. [Initializing a sequence](#initializing-a-sequence)
+  3. [Defining channel updates](#defining-channel-updates)
+  4. [Building a multi-channel sequence](#building-a-multi-channel-sequence)
+  5. [Compiling data](#compiling-data)
+  6. [Uploading and running a single sequence](#uploading-and-running-a-single-sequence)
+  7. [Visualizing sequences](#visualizing-sequences)
+  8. [Executing multiple runs and parameter scans](#executing-multiple-runs-and-parameter-scans)
+  9. [Additional features and tips and tricks](#additional-features-and-tips-and-tricks)
+
 # Introduction
 
 This set of MATLAB classes and functions is for creating and running sequences on the gravimeter and experiments with related control apparatuses.  It is meant to replace the run builder LabVIEW program, but it still needs the LabVIEW control program to handle writing data to the National Instruments hardware.  The idea behind this project is to replace defining sequences (or runs) using a graphical interface that needs lots of pointing and clicking with a set of MATLAB commands in text form.  This allows for easier inspection, modification, and automation of sequences.
@@ -127,7 +138,7 @@ Updates for each channel are added independently of the others, which makes it q
 ```
 sq.find('imaging aom ttl').at(6,1).after(30e-6,0);
 sq.find('cam trig').at(6,1).after(30e-6,0);
-sq.find('repump aom tll').at(6,0).before(30e-6,1);
+sq.find('repump aom ttl').at(6,0).before(30e-6,1);
 sq.find('imaging shutter ttl').anchor(6).before(2.5e-3,1).at(sq.find('cam trig').lastTime,1);
 ```
 At the same time that these updates are occuring, one can set updates for other channels completely independently of the above set of commands.
@@ -179,7 +190,7 @@ Since the `lastTime` value for 'amp' when the ramp is set is 10 s, the third com
 
 ## Using functions to simplify sequences
 
-You can also create your own stand-alone functions that can simplify the creation of certain sequences that are fixed except for certain parameters.  A good example of this would be an imaging sequence, where you don't need to see all the details of the imaging sequence but you do want an easy way of changing the, for instance, imaging pulse duration.  You can create a function that modifies the whole `TimingSequence` object, or even just a couple of channels.  As a simple example, suppose we want to create avery simple absorption imaging sequence with two images.  We might define a function as
+You can also create your own stand-alone functions that can simplify the creation of certain sequences that are fixed except for certain parameters.  A good example of this would be an imaging sequence, where you don't need to see all the details of the imaging sequence but you do want an easy way of changing the, for instance, imaging pulse duration.  You can create a function that modifies the whole `TimingSequence` object, or even just a couple of channels.  As a simple example, suppose we want to create a very simple absorption imaging sequence with two images.  We might define a function as
 ```
 function makeImagingSequence(sq,expTime,camLoopTime)
 %Creates two absorption images starting at the current sequence time
@@ -252,7 +263,7 @@ The `RemoteControl` class has the property `sq` which is used for storing a sequ
 r = RemoteControl;  %Create RemoteControl object
 r.make(varargin);
 ```
-which internally calls the function stored in `RemoteControl.makerCallback` as `r.sq = r.makerCallback(varargin)`.  If there is no callback specified in `makerCallback` then it reverts to the default function `makeSequence`.  If you wanted to specifiy a different function, say `myfunc`, then set it using
+which internally calls the function stored in `RemoteControl.makerCallback` as `r.sq = r.makerCallback(varargin)`.  If there is no callback specified in `makerCallback` then it reverts to the default function `makeSequence`.  If you wanted to specify a different function, say `myfunc`, then set it using
 ```
 r.makerSequence = @myfunc;
 ```
@@ -260,9 +271,39 @@ The reason for specifying a separate `make()` method for the `RemoteControl` cla
 ```
 r.make(varargin).upload.run;
 ```
-where the `upload` method called without an input argument uses the compiled data from the internal `sq` property.  The `run` method tells the LabVIEW program to execute the currently stored program.  Alternatively, given compiled data `data` you can upload that using `r.upload(data)`.
+where the `upload` method called without an input argument uses the compiled data from the internal `sq` property.  The `run` method tells the LabVIEW program to execute the currently stored program.  Alternatively, given compiled data `data` you can upload that using `r.upload(data)`.  For those who are even lazier, there is a method called `urun` that calls the upload and run methods as above so the following two commands are the same
+```
+r.make(varargin).upload.run;
+r.make(varargin).urun;
+```
+Both `run` and `urun` can accept an input argument that is a callback function which will be executed when the run is finished.  This is useful, for instance, when analyzing data for each run.  Suppose the callback function is an absorption image analysis program called `Abs_Analysis`.  Then running the command
+```
+r.make(varargin).upload.run(@Abs_Analysis);
+```
+(or `urun`) will cause `Abs_Analysis` to be called when the run completes.
+
+If the program needs to be looped continuously while analyzing data, which might occur when aligning optics while monitoring atom number of temperature, then the user can use the `loop()` method:
+```
+r.make(varargin).upload.loop(@Abs_Analysis);
+```
+which will create, upload, and then run that sequence forever while calling the analysis function after every run.  Stop the infinite loop using `r.stop`.
 
 Data destined for the National Instruments box is sent the LabVIEW control interface VI over TCP/IP.  Data for the DDS is converted into a series of commands for the MOGLabs ARF box and sent asynchronously.  This is necessary because MOGLabs designed a very stupid controller in the box itself which cannot handle more than one command at a time.  As a result, a set of commands cannot be sent together as a single block of text, which would cut done enormously on I/O time; instead, each command has to be sent separately.  To upload 1000 instructions (total) for two channels takes about 7 s.  If this uploading is done synchronously, in that it blocks the command line and prevents the sequence from running, then the cycle time of the experiment takes an extra 7 s.  Instead, the data is sent asynchronously and a message is printed on the command line when the upload is finished.  The user needs to ensure that the upload is complete before the DDS is triggered.
+
+# Visualizing sequences
+
+The update times and values of each channel can be accessed through the `TimingControllerChannel.times` and `TimingControllerChannel.values` properties, and these can be plotted in whatever way the user wishes.  To simplify matters, the `TimingControllerChannel.plot()` method has been included.  `plot()` takes a variable argument list in name/value pairs with valid names being:
+  * 'offset': plot the channel values plus the given vertical offset.
+  * 'finaltime': plot the channel values up to the given final time.
+  * 'plotidx': plot the channel values corresponding to the given indices.
+
+If the user wants to plot all the channels, they can use the `TimingSequence.plot()` function.  This has a single input argument which is the incremental vertical offset at which to plot each channel's values.
+
+Finally, there is a GUI that can be used to display sequence data.  Given a `RemoteControl` object `r` in the base workspace that has a sequence in the field `sq`, so that `r.sq` is a TimingSequence object, the GUI can be started using
+```
+DisplayGUI(r);
+```
+Multiple channels can be plotted by selecting multiple channels on the right hand pane using either Shift-Click or Ctrl-Click.  The data in the GUI is automatically updated whenever a new sequence is made using the `r.make()` method.
 
 # Executing multiple runs and parameter scans
 
@@ -292,19 +333,19 @@ Keeping track of the total number of runs and the current run is handled by the 
 ```
 c = RolloverCounter([3,4,5]);   %Creates and initializes a RolloverCounter object with 3 indicies with maximum values 3, 4, and 5
 fprintf(1,'Total number of runs is %d\n',c.total());  %Displays the total number of runs. c.total() returns the total number
-while c.now() <= c.total()
+while ~c.done
 fprintf(1,'Index 1 %d/%d, Index 2 %d/%d, Index 3 %d/%d, Total counts %d/%d\n',c.i(1),c.final(1),c.i(2),c.final(2),c.i(3),c.final(3),c.now(),c.total());
 c.increment();
 end
 ```
-The while loop shows how the counters increment.  The function `c.now()` (or `c.current()`) returns the current total index; i.e. the total number of increments that have occurred (minus 1).  You can reset the counter using the method `RolloverCounter.reset()`, and you can reuse a `RolloverCounter` object with different index ranges using the `RolloverCounter.setup()` method:
+The while loop shows how the counters increment.  The function `c.now()` (or `c.current()`) returns the current total index; i.e. the total number of increments that have occurred (minus 1).  The `done(idx)` method is true if the counter has reached the end of the current counter, specified by `idx`, or all counters if no `idx` is given.  You can reset the counter using the method `RolloverCounter.reset()`, and you can reuse a `RolloverCounter` object with different index ranges using the `RolloverCounter.setup()` method:
 ```
 c.setup([10,2,5]);
 ```
 
-Back to running multiple instances.  When the `RemoteControl` object is first created using `r = RemoteControl`, the value of `r.c` is set to a `RolloverCounter` object where the total number of runs is infinite.  After the successful completion of each run, which is signaled by the LabVIEW programming sending a 'ready' word to MATLAB using TCP/IP, the value of `r.c.now()` is checked against `r.c.total()` and, if it is smaller, `r.c` is incremented using `r.c.increment()`.  If `r.c.now() == r.c.total()` then the set of runs is considered finished and the `r.stop()` method is called.  
+Back to running multiple instances.  When the `RemoteControl` object is first created using `r = RemoteControl`, the value of `r.c` is set to a `RolloverCounter` object where the total number of runs is infinite.  After the successful completion of each run, which is signaled by the LabVIEW program sending a 'ready' word to MATLAB using TCP/IP, the value of `r.c.now()` is checked against `r.c.total()` and, if it is smaller, `r.c` is incremented using `r.c.increment()`.  If `r.c.now() == r.c.total()` then the set of runs is considered finished and the `r.stop()` method is called.  
 
-A set of runs is started by using `r.start()`.  As long as `r.c.now() == 1` it will set the internal state of `r` to 'initialize' so when the callback function is executed it will execute the case corresponding to `r.isInit() == true`.  Use this case to define the parameters of interest and also the number of runs.  Note that `r.start()` **does not** reset `r.c`; this behaviour is so that if you can resume a sequence of runs in case of errors.  Use `r.reset` to reset the run counter and clear the `r.data` property.  From here, the state switches to 'set' and executes the callback case `r.isSet() == true`.  Use this case to create a sequence to upload based on the current parameter.  **Do not** use the `r.run()` method in the callback, as it is automatically called once the callback returns and is in the 'set' state.  When the LabVIEW control program indicates that it is done and ready for a new sequence, `r` moves to the 'analyze' state and executes the case `r.isAnalyze() == true`.  Use this analyze the data generated by the sequence that just finished.  Pretty much anything can be placed into this section to do nearly any kind of analysis.  The data resulting from this analysis can then be stored as fields in the `r.data` property.
+A set of runs is started by using `r.start()`.  As long as `r.c.now() == 1` it will set the internal state of `r` to 'initialize' so when the callback function is executed it will execute the case corresponding to `r.isInit() == true`.  Use this case to define the parameters of interest and also the number of runs.  Note that `r.start()` **does not** reset `r.c`; this behaviour is so that if you can resume a sequence of runs in case of errors.  Use `r.reset` to reset the run counter and clear the `r.data` property.  From here, the state switches to 'set' and executes the callback case `r.isSet() == true`.  Use this case to create a sequence to upload based on the current parameter.  **Do not** use the `r.run()` method in the callback, as it is automatically called once the callback returns and is in the 'set' state.  When the LabVIEW control program indicates that it is done and ready for a new sequence, `r` moves to the 'analyze' state and executes the case `r.isAnalyze() == true`.  Use this to analyze the data generated by the sequence that just finished.  Pretty much anything can be placed into this section to do nearly any kind of analysis.  The data resulting from this analysis can then be stored as fields in the `r.data` property.
 
 Let's consider an example of a very simple multiple run where we want to change the time-of-flight for the atoms to measure their temperature.  Let us suppose that we have set up our sequence creating function to be `makeSequence(tof)` where `tof` is the time of flight of the atoms.  We want to run through several times-of-flight and analyze the resulting absorption images.  Suppose that we have a function called `Abs_Analysis` that returns a structure with the *x* and *y* widths from the last absorption image.  A potential callback might look like
 ```
@@ -319,9 +360,9 @@ function MeasureTemperature(r)
     fprintf(1,'Run %d/%d, TOF: %.1f ms\n',r.c.now,r.c.total,r.data.tof(r.c.now)*1e3);
   elseif r.isAnalyze
     nn = r.c.now;                           %Make a shorter variable name
-    c = Abs_Analysis;                       %Analyze the absorption image, return structure c
-    r.data.xw(nn,1) = c.xwidth;             %Store the x width
-    r.data.yw(nn,1) = c.ywidth;             %Store the y width
+    img = Abs_Analysis;                     %Analyze the absorption image, return structure img
+    r.data.xw(nn,1) = img.clouds.gaussWidth(1);             %Store the x width
+    r.data.yw(nn,1) = img.clouds.gaussWidth(1);             %Store the y width
 
     %Plot the results
     figure(1);clf;
@@ -362,13 +403,22 @@ function TemperatureMeasurement(r)
     fprintf(1,'Run %d/%d, Freq: %.3f V, TOF: %.1f ms\n',r.c.now,r.total,...
         r.data.freq(r.c(1)),r.data.tof(r.c(2))*1e3);
   elseif r.isAnalyze()
-    c = Abs_Analysis;
-    r.data.N(r.c(1),r.c(2)) = c.N;
-    r.data.xw(r.c(1),r.c(2)) = c.xwidth;
-    r.data.yw(r.c(1),r.c(2)) = c.ywidth;
+    pause(0.1);
+    img = Abs_Analysis;
+    if ~img.raw.status.ok()
+        %
+        % Checks for an error in loading the files (caused by a missed
+        % image) and reruns the last sequence
+        %
+        r.c.decrement;
+        return;
+    end
+    r.data.N(r.c(1),r.c(2)) = img.clouds.N;
+    r.data.xw(r.c(1),r.c(2)) = img.clouds.gaussWidth(1);
+    r.data.yw(r.c(1),r.c(2)) = img.clouds.gaussWidth(2);
 
     Ntof = numel(r.data.tof);
-    if r.c(1) == r.c.imax(1)
+    if r.c.done(1)
       %After recording the desired times-of-flight, analyze data according to ballistic expansion model
       xfit = r.data.xw(:,r.c(2));
       yfit = r.data.yw(:,r.c(2));
@@ -392,6 +442,70 @@ r.reset;r.start;
 ```
 and go get yourself a coffee as it automatically runs through 156 different sequences.  
 
+This sequence also has an error checking section (the 'if' statement) which uses the imaging-analysis error RawImageData error checking to detect when an absorption image has not been taken properly.  If an error has occurred, the method uses the ''RolloverCounter.decrement()' function to go back one step, and then immediately returns from the callback function.  This re-runs the current iteration when an error occurs.  For long runs where lots of time might be wasted if an error occurs and is unchecked, it is suggested that you add error checking functionality.
+
+
+# Additional features and tips and tricks
+
+## Persistent data for multiple runs
+
+Sometimes you want to keep certain data around between scans of parameters, such as MATLAB objects representing instruments.  The `RemoteControl.devices` property is a persistent property of the `RemoteControl` object that is *not* reset when `r.reset()` is called.
+
+## Restarting multiple runs
+
+Sometimes a parameter scan will fail because of a programming error and you will want to restart it from that point.  Suppose the error occurs somewhere in the analysis phase.  You can re-run the analysis using `r.analyze()`, and then manually increment the counter and start the process using
+```
+r.c.increment;
+r.start;
+```
+If you need to go back and re-do a run, use the `r.c.decrement()` method instead.
+
+Additionally, if you want to add more parameter values to your run while it is scanning, you can simply update the parameters and the counter.  Suppose that you are scanning over the parameters in the field `r.data.params`, and you want to add more points.  Use a set of commands such as
+```
+r.data.params = [r.data.params;(5:5:20)'];
+r.c.final(1) = numel(r.data.params);
+```
+while the sequence is running to update the values.  If the sequence has already finished, use the above commands and then
+```
+r.c.increment;
+r.start;
+```
+
+## Sequence options
+
+It can be convenient to store sequence options that are commonly changed, such as the time of flight or imaging detuning, in a structure that is accepted as an input by the `makeSequence` function.  A class called `SequenceOptions` has been created for this purpose.  Currently, it has properties for `tof`, `detuning`, and more.  There is also a generic `params` field for parameters that you may wish to vary.  `SequenceOptions` is a handle class, so it gets passed by reference.  Use the `SequenceOptions` as follows
+```
+opt = SequenceOptions('tof',20e-3,'detuning',0,'load_time',10); %TOF = 20 ms, Detuning = 0 MHz, Loading time = 10 s
+r.make(opt).urun; %Creates and uploads the sequence using opt for options
+% You can also change options
+opt.tof = 10e-3;        %Change tof to 10 ms
+opt.set('detuning',8):  %Change detuning to 8 MHz
+r.make(opt).urun;
+% You can also change sequence parameters in the make() call
+r.make(opt,'tof',30e-3).urun; %TOF is updated to be 30 ms, all other parameters are kept the same
+```
+
+The header of a sequence builder file that uses `SequenceOptions` looks like:
+```
+function varargout = makeSequenceRyan(varargin)   
+%% Parse input arguments
+opt = SequenceOptions('load_time',7.5,'detuning',0,'tof',20e-3,'redpower',2,...
+    'keopsys',2);
+
+if nargin == 1
+    if ~isa(varargin{1},'SequenceOptions')
+        error('If using only one argument it must of type SequenceOptions');
+    end
+    opt.replace(varargin{1});
+elseif mod(nargin,2) == 0
+    opt.set(varargin{:});
+elseif mod(nargin - 1,2) == 0 && isa(varargin{1},'SequenceOptions')
+    opt.replace(varargin{1});
+    opt.set(varargin{2:end});
+else
+    error('Either supply a single SequenceOptions argument, or supply a set of name/value pairs, or supply a SequenceOptions argument followed by name/value pairs');
+end
+```
 
 
 
