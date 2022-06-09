@@ -266,10 +266,10 @@ classdef RemoteControl < handle
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
 
-        function urun(self,cb)
+        function urun(self,varargin)
             %URUN Uploads current sequence and starts a run
             self.upload;
-            self.run(cb);
+            self.run(varargin{:});
         end
         
         function start(self)

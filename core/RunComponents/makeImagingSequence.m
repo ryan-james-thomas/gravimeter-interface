@@ -15,6 +15,7 @@ imgFreq = 8.5;
 imgAmplitude = 10;
 manifold = 1;
 take_dark_image = true;
+imaging_field = 2.95;
 %
 % Parse input arguments as name/value pairs
 %
@@ -51,6 +52,8 @@ else
                 manifold = v;
             case 'take dark image'
                 take_dark_image = v;
+            case 'imaging_field'
+                imaging_field = v;
             otherwise
                 error('Unsupported option %s',p);
         end
@@ -66,7 +69,7 @@ end
 % sq.find('repump switch').set(0); %turn on fibre switch for repump (theres a delay (pat cant remember how long it is))
 % sq.find('87 repump amp').set(8); %turn on repump amplitude
 sq.find('CD0 Fast').set(0); %zero mag field
-sq.find('MOT bias coil').set(2.95); %turn on the imaging coil (to align the axis of atoms)
+sq.find('MOT bias coil').set(imaging_field); %turn on the imaging coil (to align the axis of atoms)
 sq.find('MOT bias').set(1); %ttl on imaging coil
 
 
@@ -116,6 +119,6 @@ end
 sq.delay(100e-3);
 sq.find('87 imag').set(0);
 sq.find('87 repump').set(0);
-
+sq.find('MOT bias').set(0); %ttl on imaging coil
 
 end
