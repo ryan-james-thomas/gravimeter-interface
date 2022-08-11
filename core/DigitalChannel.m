@@ -32,7 +32,6 @@ classdef DigitalChannel < TimingControllerChannel
             ch.checkTimes();
             for nn = 1:numel(ch.values)
                 ch.checkValue(ch.values(nn));
-
             end
         end
 

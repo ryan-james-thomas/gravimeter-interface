@@ -15,11 +15,12 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
     
     properties(SetAccess = protected)
         default     %Default value for this channel
-%         numSubValues%Number of sub values, expressed as columns in values property
         
         values      %Array of values in channel sequence.
         times       %Array of times in the channel sequence in seconds
         numValues   %Number of time/value pairs
+        
+        convert     %Conversion function from semantic value to volts
         
         lastTime    %Last time written - used for before/after functions
         
@@ -45,6 +46,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             ch.description = '';
             ch.times = [];
             ch.values = [];
+            ch.convert = @(x) x;
         end
         
         function ch = setName(ch,name,port,description)
@@ -87,6 +89,19 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                 end
             end
             ch.numValues = numel(ch.times);
+        end
+        
+        function ch = setConvert(ch,conversion_func)
+            %SETCONVERT Sets the conversion function
+            %
+            %   ch = SETCONVERT(ch,func) sets the conversion function to
+            %   FUNC
+            if ~isa(conversion_func,'function_handle')
+                error('Conversion function must be a function handle!');
+            else
+                ch.convert = conversion_func;
+            end
+            
         end
         
         function [t,v] = getEvents(ch)
@@ -176,21 +191,6 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                     value(:,nn+1) = tmp(:).*ones(N,1);
                 end
                 ch.at(time,value);
-%                 for nn = 1:numel(time)
-%                     ch.at(time(nn),value(nn,:));
-%                 end
-%             elseif ~isa(value,'function_handle') && (N == numel(value)) && (numel(time) > 1)
-                %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
-%                 ch.at(time,value);
-%                 for nn = 1:N
-%                     ch.at(time(nn),value(nn));
-%                 end
-%             elseif ~isa(value,'function_handle') && (N == size(value,1)) && (numel(time) > 1)
-                %If TIME is Nx1 and VALUE is NxM, recursively add events
-%                 ch.at(time,value);
-%                 for nn = 1:N
-%                     ch.at(time(nn),value(nn,:));
-%                 end
             elseif isa(value,'function_handle') && (N > 1)
                 %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
                 v = value(time);
@@ -214,31 +214,17 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                         %If this has not been used previously, add a new
                         %value at this time
                         N = ch.numValues + 1;
-                        ch.values(N,:) = value(nn,:);
+                        ch.values(N,:) = ch.convert(value(nn,:));
                         ch.times(N,1) = time(nn);
                         ch.numValues = N;
                         ch.lastTime = time(nn);
                     else
                         %If time has been used, replaced that value
-                        ch.values(idx,:) = value(nn,:);
+                        ch.values(idx,:) = ch.convert(value(nn,:));
                         ch.times(idx) = time(nn);
                         ch.lastTime = time(nn);
                     end
                 end
-%                 idx = find(ch.times==time,1,'first');   %Try and find first time
-%                 if isempty(idx)
-%                     %If this time has not been used previously, add a new value at this time
-%                     N = ch.numValues+1;
-%                     ch.values(N,:) = value;
-%                     ch.times(N,1) = time;
-%                     ch.numValues = N;
-%                     ch.lastTime = time;
-%                 else
-%                     %If time has been used, replace that value
-%                     ch.values(idx,:) = value;
-%                     ch.times(idx,1) = time;
-%                     ch.lastTime = time;
-%                 end
             end
         end
         
