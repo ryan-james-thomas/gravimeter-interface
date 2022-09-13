@@ -16,6 +16,7 @@ imgAmplitude = 10;
 manifold = 1;
 take_dark_image = true;
 imaging_field = 2.95;
+image_type = 'horizontal';
 %
 % Parse input arguments as name/value pairs
 %
@@ -54,6 +55,8 @@ else
                 take_dark_image = v;
             case 'imaging_field'
                 imaging_field = v;
+            case 'image type'
+                image_type = v;
             otherwise
                 error('Unsupported option %s',p);
         end
@@ -62,12 +65,6 @@ end
 
 
 % Set imaging parameters BEFORE you take the image
-% sq.find('87 imag freq').set(ImageFreq); %7.61 is 12Mhz, 8.354 is 0mhz
-% sq.find('87 imag amp').set(ImageAmp);
-% sq.find('87 repump freq').set(4.565); %perpate repump VCO at correct frequency
-% sq.find('85 repump freq').set(4.64);
-% sq.find('repump switch').set(0); %turn on fibre switch for repump (theres a delay (pat cant remember how long it is))
-% sq.find('87 repump amp').set(8); %turn on repump amplitude
 sq.find('CD0 Fast').set(0); %zero mag field
 sq.find('MOT bias coil').set(imaging_field); %turn on the imaging coil (to align the axis of atoms)
 sq.find('MOT bias').set(1); %ttl on imaging coil
@@ -91,26 +88,37 @@ if manifold == 1
     sq.find('Repump Switch').after(tof - fibreSwitchDelay,0);
 end
 
+if strcmpi(image_type,'horizontal')
+    cam_trig = '87 cam trig';
+elseif strcmpi(image_type , 'vertical')
+    cam_trig = 'vertical cam trig';
+elseif strcmpi(image_type,'85')
+    cam_trig = 'ND cam trig';
+elseif strcmpi(image_type,'MOT')
+    cam_trig = '87 cam trig';
+else
+    warning('incompatible cam trig input')
+end
+
 %
 % Imaging beam and camera trigger for image with atoms
 %
-sq.find('87 imag').after(tof,1).after(pulseTime,0);     %Turn on after TOF, then turn off after pulse time
-sq.find('87 cam trig').after(tof,1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
-sq.anchor(sq.latest);   %Re-anchor the sequence to the latest value
-sq.delay(cycleTime);    %Delay 
+sq.find('87 imag').after(tof,1).after(pulseTime,0); %Turn on after TOF, then turn off after pulse time
+sq.find(cam_trig).after(tof,1).after(camTime,0);    %Turn on after TOF, then turn off after camera time
+sq.waitFromLatest(cycleTime);                       %Delay
 %
 % Take image without atoms
 %
-sq.find('87 imag').set(1).after(pulseTime,0);     %Turn on after TOF, then turn off after pulse time
-sq.find('87 cam trig').set(1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
-sq.anchor(sq.latest);               %Re-anchor the sequence to the latest value
-sq.find('Repump Switch').set(1);    %Turn off fiber switch
+sq.find('87 imag').set(1).after(pulseTime,0);       %Turn on after TOF, then turn off after pulse time
+sq.find(cam_trig).set(1).after(camTime,0);          %Turn on after TOF, then turn off after pulse time
+sq.waitFromLatest(cycleTime);                       %Delay
+sq.find('Repump Switch').before(50e-6,1);    %Turn off fiber switch
+
 %
 % Take a dark image
 %
 if take_dark_image
-    sq.delay(cycleTime);
-    sq.find('87 cam trig').after(tof,1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
+    sq.find(cam_trig).set(1).after(camTime,0);   %Turn on after TOF, then turn off after camera time
     sq.anchor(sq.latest);   %Re-anchor the sequence to the latest value
 end
 %

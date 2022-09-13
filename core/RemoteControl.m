@@ -261,7 +261,7 @@ classdef RemoteControl < handle
             %RUN Starts a single client run by sending the start word
             self.open;
             if nargin > 1
-                self.conn.BytesAvailableFcn = cb;
+                self.conn.BytesAvailableFcn = @(~,~) cb();
             end
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
