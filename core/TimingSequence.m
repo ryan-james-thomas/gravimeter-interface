@@ -49,7 +49,6 @@ classdef TimingSequence < handle
             end
             
             self.ddsTrigDelay = 0;
-%             tmp2(2) = DDSChannel;
             self.dds = DDSChannel;
             self.dds(2) = DDSChannel;
             for nn = 1:numel(self.dds)
@@ -161,6 +160,7 @@ classdef TimingSequence < handle
             %   sq = wait(sq,WAITTIME) sets the lastTime property for each channel
             %   to the current value sq.time + WAITTIME
             self.time = self.time + waitTime;
+            self.time = round(self.time*self.SAMPLE_CLK)/self.SAMPLE_CLK;
             for nn = 1:self.numChannels
                 self.channels(nn).anchor(self.time);
             end

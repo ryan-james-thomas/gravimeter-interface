@@ -13,7 +13,7 @@ if ~(strcmpi(DipoleType,'RedPower') || strcmpi(DipoleType,'Keopsys'))
 end
 
 if strcmpi(DipoleType,'RedPower')
-    if DesiredPower > 20 || DesiredPower < 0
+    if any(DesiredPower > 20 | DesiredPower < 0)
         error('Power cannot be out of range [0,20] W!');
     end
     NeededVoltage = (DesiredPower + 1.5543)/2.8943;

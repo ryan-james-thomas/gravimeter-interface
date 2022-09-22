@@ -35,6 +35,8 @@ classdef SequenceOptions < SequenceOptionsAbstract
         end
         
         function self = set(self,varargin)
+            set@SequenceOptionsAbstract(self,varargin{:});
+
             if mod(numel(varargin),2) ~= 0
                 error('Arguments must be in name/value pairs');
             else
@@ -43,8 +45,6 @@ classdef SequenceOptions < SequenceOptionsAbstract
                         case 'dipoles'
                             self.keopsys = varargin{nn+1};
                             self.redpower = varargin{nn+1};
-                        otherwise
-                            self.(varargin{nn}) = varargin{nn+1};
                     end
                 end
             end

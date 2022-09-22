@@ -4,6 +4,7 @@ function makeImagingSequence(sq,varargin)
 % Define default parameters
 %
 pulseTime = 30e-6;
+pulse_delay = 10e-6;
 repumpTime = 100e-6;
 repumpDelay = 00e-6;
 fibreSwitchDelay = 20e-3;
@@ -31,6 +32,8 @@ else
                 tof = v;
             case 'pulse time'
                 pulseTime = v;
+            case 'pulse delay'
+                pulse_delay = v;
             case 'repump time'
                 repumpTime = v;
             case 'repump delay'
@@ -104,13 +107,13 @@ end
 % Imaging beam and camera trigger for image with atoms
 %
 sq.find('87 imag').after(tof,1).after(pulseTime,0); %Turn on after TOF, then turn off after pulse time
-sq.find(cam_trig).after(tof,1).after(camTime,0);    %Turn on after TOF, then turn off after camera time
+sq.find(cam_trig).after(tof - pulse_delay,1).after(camTime,0);    %Turn on after TOF, then turn off after camera time
 sq.waitFromLatest(cycleTime);                       %Delay
 %
 % Take image without atoms
 %
 sq.find('87 imag').set(1).after(pulseTime,0);       %Turn on after TOF, then turn off after pulse time
-sq.find(cam_trig).set(1).after(camTime,0);          %Turn on after TOF, then turn off after pulse time
+sq.find(cam_trig).before(pulse_delay,1).after(camTime,0);          %Turn on after TOF, then turn off after pulse time
 sq.waitFromLatest(cycleTime);                       %Delay
 sq.find('Repump Switch').before(50e-6,1);    %Turn off fiber switch
 

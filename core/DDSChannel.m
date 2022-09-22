@@ -18,8 +18,8 @@ classdef DDSChannel < TimingControllerChannel
         function ch = DDSChannel
             ch = ch@TimingControllerChannel;
             ch.default = [110,0,0];
-            ch.bounds = [80,    0,  0;
-                         150,   1,  1200];
+            ch.bounds = [20,    0,  0;
+                         400,   1,  1200];
             ch.IS_DDS = true;
         end
         
@@ -83,7 +83,7 @@ classdef DDSChannel < TimingControllerChannel
             elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale)
                 data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),ch.calibrationData));
             else
-                error('Need to supply only one of calibration data or RF scale to convert optical power to RF power!');
+                data.pow = floor(v(:,2).*(2^14 - 1));
             end
             data.phase = v(:,3);
         end
@@ -95,7 +95,7 @@ classdef DDSChannel < TimingControllerChannel
             if numel(varargin) == 1 && isstruct(varargin{1})
                 data = varargin{1};
                 P = P*data.Pmax;
-                rf = interp1(data.Popt,data.Prf,P,'pchip');
+                rf = interp1(data.Popt - min(data.Popt),data.Prf,P,'pchip');
             elseif numel(varargin) == 2
                 Pmax = varargin{1};
                 rfmax = varargin{2};

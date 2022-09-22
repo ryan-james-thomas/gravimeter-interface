@@ -225,6 +225,8 @@ classdef RemoteControl < handle
             % Create mogtable objects
             tb = mogtable(self.mog,1);
             tb(2) = mogtable(self.mog,2);
+            tb(1).pow_units = 'hex';
+            tb(2).pow_units = 'hex';
             
             % Put data into mogtable objects
             for nn = 1:numel(tb)
@@ -236,12 +238,14 @@ classdef RemoteControl < handle
             
             % Reduce instruction sizes and make sure both tables have
             % instructions at the same time
-            tb(1).reduce;
-            if sum(tb(1).sync) == 1
-                tb(2).reduce;
-                tb(1).reduce(tb(2).sync);
-            else
-                tb(2).reduce(tb(1).sync);
+            if ~strcmpi(tb(1).pow_units,'hex') && strcmpi(tb(2).pow_units,'hex') 
+                tb(1).reduce;
+                if sum(tb(1).sync) == 1
+                    tb(2).reduce;
+                    tb(1).reduce(tb(2).sync);
+                else
+                    tb(2).reduce(tb(1).sync);
+                end
             end
             
             % Send commands to device

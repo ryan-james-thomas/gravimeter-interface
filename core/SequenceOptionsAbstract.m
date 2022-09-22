@@ -13,7 +13,11 @@ classdef SequenceOptionsAbstract < matlab.mixin.Copyable
                 error('Arguments must be in name/value pairs');
             else
                 for nn = 1:2:numel(varargin)
-                    self.(varargin{nn}) = varargin{nn+1};
+                    if isa(self.(varargin{nn}),'SequenceOptionsAbstract')
+                        self.(varargin{nn}).set(varargin{nn+1}{:});
+                    else
+                        self.(varargin{nn}) = varargin{nn+1};
+                    end
                 end
             end
         end

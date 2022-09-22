@@ -27,7 +27,7 @@ function sq = initSequence
     sq.channels(23).setName('C6 - N/C','C6').setDefault(0);
     sq.channels(24).setName('RF Switch','C7').setDefault(0);
     sq.channels(25).setName('2D MOT Coils','D0').setDefault(1);
-    sq.channels(26).setName('DDS TTL','D1').setDefault(1);
+    sq.channels(26).setName('DDS TTL','D1').setDefault(0);
     sq.channels(27).setName('Scope','D2').setDefault(0);
     sq.channels(28).setName('Control','D3').setDefault(0);
     sq.channels(29).setName('Stark','D4').setDefault(0);
@@ -65,9 +65,9 @@ function sq = initSequence
     %% DDS channels
 %     sq.dds(1).rfscale = 3;
 %     sq.dds(2).rfscale = 3;
-    calib_data = load('raman-aom-data.mat');
-    sq.dds(1).calibrationData = calib_data.data(1);
-    sq.dds(2).calibrationData = calib_data.data(2);
+%     calib_data = load('raman-aom-data.mat');
+%     sq.dds(1).calibrationData = calib_data.data(1);
+%     sq.dds(2).calibrationData = calib_data.data(2);
     sq.dds(1).setName('DDS 1').setDefault([110,0,0]);
     sq.dds(2).setName('DDS 2').setDefault([110,0,0]);
         

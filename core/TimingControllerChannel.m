@@ -176,21 +176,6 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
                     value(:,nn+1) = tmp(:).*ones(N,1);
                 end
                 ch.at(time,value);
-%                 for nn = 1:numel(time)
-%                     ch.at(time(nn),value(nn,:));
-%                 end
-%             elseif ~isa(value,'function_handle') && (N == numel(value)) && (numel(time) > 1)
-                %If TIME and VALUE are Nx1 arrays of the same length, recursively add events
-%                 ch.at(time,value);
-%                 for nn = 1:N
-%                     ch.at(time(nn),value(nn));
-%                 end
-%             elseif ~isa(value,'function_handle') && (N == size(value,1)) && (numel(time) > 1)
-                %If TIME is Nx1 and VALUE is NxM, recursively add events
-%                 ch.at(time,value);
-%                 for nn = 1:N
-%                     ch.at(time(nn),value(nn,:));
-%                 end
             elseif isa(value,'function_handle') && (N > 1)
                 %If TIME is an array and VALUE is a function handle, loop through each time and calculate a value
                 v = value(time);

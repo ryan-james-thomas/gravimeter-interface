@@ -17,9 +17,7 @@ else
     error('Either supply a single SequenceOptions argument, or supply a set of name/value pairs, or supply a SequenceOptions argument followed by name/value pairs');
 end
 
-% ImageFreq = FtoV('image',opt.detuning);
-% ImageFreq = opt.detuning*0.3768/6 + 8.3827;
-ImageFreq = opt.detuning*0.5222/6 + 8.2751;
+ImageFreq = opt.detuning*0.6238/6 + 8.3;
 % ImageFreq = opt.params(1);
 dipole_field = 3 - 0.025;
 % dipole_field = opt.params(1);
@@ -119,14 +117,16 @@ sq.find('3DMOT').set(0);
 % low value and then ramp up to the target value
 %
 Tmagload = 150e-3;
-t = linspace(0,Tmagload,50);
+% t = linspace(0,Tmagload,51);
+t = 0:5e-3:Tmagload;
 dBLoad = 110;
 sq.find('CD0 Fast').after(t,sq.linramp(t,dBtoV('normal',dBLoad/2),dBtoV('normal',dBLoad)));
 sq.find('CD Fine/Fast').set(dBtoV('fine',0));
 %  sq.delay(Tmagload);
 
 Toptload = 400e-3;
-t = linspace(0,Toptload,50);
+% t = linspace(0,Toptload,51);
+t = 0:10e-3:Toptload;
 sq.find('Keopsys MO').set(3.9);
 sq.find('Keopsys FA').after(t,sq.minjerk(t,0,DipolePtoV('Keopsys',5)));
 sq.find('Redpower TTL').set(1);
@@ -169,9 +169,12 @@ sq.delay(Tevap);
 % sq.delay(T);
 
 %% Take dummy images
-% makeNDImagingSequence(sq,'pulse time',opt.nd.pulse_time,'cam time',5e-6,'cycle time',100e-3,...
-%     'imaging freq',8.5,'imaging amplitude',opt.nd.pulse_amp,'species',85,'num_images',opt.nd.ref_images,...
-%     'pulse delay',00e-6);
+time_at_evap_end = sq.time;
+sq.anchor(sq.time - 3);
+makeNDImagingSequence(sq,'pulse time',opt.nd.pulse_time,'cam time',5e-6,'cycle time',100e-3,...
+    'imaging freq',8.5,'imaging amplitude',opt.nd.pulse_amp,'species',85,'num_images',opt.nd.ref_images,...
+    'pulse delay',opt.nd.pulse_delay);
+sq.anchor(time_at_evap_end);
 
 %% Weaken magnetic trap, continue evaporation
 % Trampcoils = 0.5;
@@ -199,47 +202,37 @@ sq.find('RedPower CW').after(t,sq.expramp(t,sq.find('RedPower CW').values(end),D
 sq.find('Keopsys FA').after(t,sq.expramp(t,sq.find('Keopsys FA').values(end),DipolePtoV('keopsys',final_dipole.FA),0.42));
 sq.delay(Tevap);
 
-
-%% MW transfer
-%
-% Simple transfer from |1,-1> to |2,-2>
-%
-% Tmw = 20e-3;
-% t = linspace(0,Tmw,50);
-% sq.find('MW switch').set(1);
-% sq.find('MOT bias coil').after(t,dipole_field + sq.linramp(t,0,0.025*2));
-% sq.delay(Tmw);
-% sq.find('MW switch').set(0);
-
-%
-% Single pulse to transfer atoms
-%
-% Tmw = 1.15e-3;
-% sq.find('MW switch').set(1);
-% sq.delay(Tmw);
-% sq.find('MW switch').set(0);
-% sq.find('87 imag').set(1);
-% sq.delay(100e-6);
-% sq.find('87 imag').set(0);
-
-
-% Tarp = 10e-3;
-% t = linspace(0,Tarp,20);
-% sq.find('RF frequency').set(RFtoV(opt.params(1)));
-% sq.delay(10e-3);
-% sq.find('RF atten').set(1);
-% sq.find('RF Frequency').after(t,sq.linramp(t,RFtoV(opt.params(1)),RFtoV(opt.params(1) + 0.1)));
-% sq.delay(Tarp);
-% sq.delay(opt.params(2));
-% sq.find('RF Frequency').set(RFtoV(20));
-% sq.find('RF atten').set(0);
-
-% sq.delay(1e-3);
+% T = 100e-3;
+% t = linspace(0,T,50);
+% sq.find('Keopsys FA').after(t,sq.linramp(t,sq.find('Keopsys FA').values(end),DipolePtoV('keopsys',final_dipole.FA + 0.2)));
+% % sq.find('RedPower CW').after(t,sq.linramp(t,sq.find('RedPower CW').values(end),DipolePtoV('redpower',final_dipole.RP + 0.2)));
+% sq.delay(T);
 
 %% Non-destructive imaging
-% makeNDImagingSequence(sq,'pulse time',opt.nd.pulse_time,'cam time',5e-6,'cycle time',4e-3,...
-%     'imaging freq',8.5,'imaging amplitude',opt.nd.pulse_amp,'species',85,'num_images',opt.nd.num_images,...
-%     'pulse delay',00e-6);
+% sq.find('Keopsys FA').after(20*opt.nd.cycle_time,DipolePtoV('keopsys',final_dipole.FA + 0.2));
+
+num_mod_cycles = 20;
+fmod = 28.5;
+% fmod = 2*52.6;
+Tmod = 1/fmod;
+dt = 0.1*Tmod;
+t = 0:dt:(num_mod_cycles*Tmod);
+sq.find('RedPower CW').after(t,DipolePtoV('redpower',final_dipole.RP + 0.2*sin(2*pi*fmod*t)));
+% sq.find('Keopsys FA').after(t,DipolePtoV('keopsys',final_dipole.FA + 0.0 + 0.2*sin(2*pi*fmod*t)));
+sq.delay(num_mod_cycles*Tmod - opt.nd.num_images*opt.nd.cycle_time/2*0);
+
+% sq.delay(10e-3);
+% sq.find('Keopsys FA').set(DipolePtoV('keopsys',final_dipole.FA + 0.0));
+% sq.find('RedPower CW').after(50e-3,DipolePtoV('redpower',final_dipole.RP + 0.0));
+
+% sq.find('Keopsys FA').set(0).after(1e-3,DipolePtoV('keopsys',final_dipole.FA));
+% sq.find('RedPower CW').set(0).after(1e-3,DipolePtoV('redpower',final_dipole.RP));
+% sq.delay(1.5e-3);
+
+makeNDImagingSequence(sq,'pulse time',opt.nd.pulse_time,'cam time',opt.nd.pulse_delay,'cycle time',opt.nd.cycle_time,...
+    'imaging freq',8.5,'imaging amplitude',opt.nd.pulse_amp,'species',85,'num_images',opt.nd.num_images,...
+    'pulse delay',opt.nd.pulse_delay);
+% sq.delay(100e-3);
 
 %% Drop atoms
 % sq.delay(1);
@@ -280,10 +273,10 @@ sq.find('RF Frequency').set(RFtoV(20));
 % sq.find('CD0 Fast').after(t,sq.minjerk(t,sq.find('CD0 Fast').values(end),0));
 
 sq.anchor(timeAtDrop);
-makeImagingSequence(sq,'tof',opt.tof,'pulse time',100e-6,'repump delay',100e-6,...
+makeImagingSequence(sq,'tof',opt.tof,'pulse time',30e-6,'repump delay',100e-6,...
     'repump time',100e-6,'cam time',5e-6,'cycle time',40e-3,...
     'manifold',1,'imaging freq',ImageFreq,'imaging amplitude',ImageAmp,...
-    'fibre switch delay',1e-3,'imaging_field',imaging_field,'image type','85');
+    'fibre switch delay',1e-3,'imaging_field',imaging_field,'image type','horizontal');
 
 % turn off the dipoles
 sq.find('Redpower CW').set(0);
