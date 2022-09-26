@@ -7,11 +7,14 @@ classdef DDSChannel < TimingControllerChannel
         channel
         calibrationData
         rfscale
+        powunits
     end
     
     properties(Constant)
         CLK = 1e6;
         DEFAULT_FREQ = 110;
+        POW_UNITS_DBM = 'dbm';
+        POW_UNITS_HEX = 'hex';
     end
     
     methods
@@ -21,6 +24,7 @@ classdef DDSChannel < TimingControllerChannel
             ch.bounds = [20,    0,  0;
                          400,   1,  1200];
             ch.IS_DDS = true;
+            ch.powunits = 'dbm';
         end
         
         function ch = setDefault(ch,v)
@@ -80,8 +84,10 @@ classdef DDSChannel < TimingControllerChannel
             data.freq = v(:,1);
             if isempty(ch.calibrationData) && ~isempty(ch.rfscale)
                 data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),1,ch.rfscale));
-            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale)
-                data.pow = 30 + 10*log10(ch.opticalToRF(v(:,2),ch.calibrationData));
+            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale) && strcmpi(ch.powunits,DDSChannel.POW_UNITS_DBM)
+                data.pow = 30 + 10*log10(ch.opticalToHex(v(:,2),ch.calibrationData));
+            elseif ~isempty(ch.calibrationData) && isempty(ch.rfscale) && strcmpi(ch.powunits,DDSChannel.POW_UNITS_HEX)
+                data.pow = ch.opticalToHex(v(:,2),ch.calibrationData);
             else
                 data.pow = floor(v(:,2).*(2^14 - 1));
             end
@@ -101,6 +107,16 @@ classdef DDSChannel < TimingControllerChannel
                 rfmax = varargin{2};
                 rf = (asin((P/Pmax).^0.25)*2/pi).^2*rfmax;
             end
+        end
+
+        function hex_out = opticalToHex(P,data)
+            [hex,k] = sort(data.hex);
+            Popt = data.Popt(k);
+            Popt = Popt - min(Popt);
+            idx = find(diff(Popt) <= 0,1,'first');
+            Popt = Popt(1:idx);hex = hex(1:idx);
+            Popt = Popt./max(Popt);
+            hex_out = floor(interp1(Popt,hex,P,'pchip'));
         end
     end
     
