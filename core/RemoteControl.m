@@ -32,6 +32,7 @@ classdef RemoteControl < handle
         endWord = 'end';              %Word telling host to stop TCP loop
         uploadDWord = 'uploadD';      %Word telling host to upload digital (uint32) data
         uploadAWord = 'uploadA';      %Word telling host to upload analog (float) data
+        uploadCamDelay = 'cam-delay'; %Word telling host to set the camera acquisition delay
 
         SET = 'set/check';
         ANALYZE = 'analyze';
@@ -184,8 +185,12 @@ classdef RemoteControl < handle
                 self.devices.rs.writeList;
             end
             
-            %% Open connection with LabVIEW VI
+            %% Open connection with LabVIEW VI and set camera acquisition delay
             self.open;
+            fprintf(self.conn,'%s\n',self.uploadCamDelay);
+            s = sprintf('%.1f',data.camDelay);
+            pause(0.1);
+            fprintf(self.conn,s);
             
             %% Upload analog data
             fprintf(self.conn,'%s\n',self.uploadAWord);
@@ -326,10 +331,16 @@ classdef RemoteControl < handle
             %
             self.open;
             if nargin > 1
-                self.conn.BytesAvailableFcn = cb;
+                self.conn.BytesAvailableFcn = @(~,~) cb();
             end
             fprintf(self.conn,'%s\n',self.startWord);
         end %end run
+        
+        function urun(self,varargin)
+            %URUN Uploads current sequence and starts a run
+            self.upload;
+            self.run(varargin{:});
+        end
         
         function loop(self,cb)
             %LOOP Starts a perpetual loop using a supplied callback

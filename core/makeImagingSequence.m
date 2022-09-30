@@ -7,7 +7,7 @@ repumpDelay = 00e-6;
 fibreSwitchDelay = 20e-3;
 camTime = 100e-6;
 pulseDelay = 0;
-cycleTime = 40e-3;
+cycleTime = 100e-3;
 repumpFreq = 4.3;
 imgFreq = 8.5;
 manifold = 1;
@@ -56,13 +56,13 @@ switch lower(imgType)
         camChannel = 'cam trig';
         imgType = 0;
         if isempty(pulseTime)
-            pulseTime = 30e-6;
+            pulseTime = 5e-6;
         end
     case {'drop 2'}
         camChannel = 'drop 1 camera trig';
         imgType = 1;
         if isempty(pulseTime)
-            pulseTime = 30e-6;
+            pulseTime = 50e-6;
         end
     otherwise
         error('Unsupported imaging type %s',imgType);

@@ -23,7 +23,7 @@ function sq = initSequence
     sq.channels(18).setName('Stern-Gerlach Trigger','C1').setDefault(0);
     sq.channels(19).setName('3D Trap Shutter','C2').setDefault(0);
     sq.channels(20).setName('C3 - N/C','C3').setDefault(0);
-    sq.channels(21).setName('C4 - N/C','C4').setDefault(0);
+    sq.channels(21).setName('Gradiometry Coil','C4').setDefault(0);
     sq.channels(22).setName('C5 - N/C','C5').setDefault(0);
     sq.channels(23).setName('C6 - N/C','C6').setDefault(0);
     sq.channels(24).setName('C7 - N/C','C7').setDefault(0);
