@@ -6,6 +6,7 @@ classdef TimingSequence < handle
         channels        %Array of TimingControllerChannel objects
         dds             %Array of DDS objects
         ddsTrigDelay    %Offset time between start of sequence and start of DDS
+        camDelay        %Time at which to trigger the camera acquisition VI
         
         directory       %Directory where to save sequence builder files
     end
@@ -54,6 +55,8 @@ classdef TimingSequence < handle
             for nn = 1:numel(self.dds)
                 self.dds(nn).channel = nn;
             end
+
+            self.camDelay = 0;
             
             self.time = 0;
             
@@ -291,6 +294,8 @@ classdef TimingSequence < handle
             for nn = 1:numel(self.dds)
                 self.data.dds(nn) = self.dds(nn).compile(self.ddsTrigDelay);
             end
+
+            self.data.camDelay = self.camDelay;
             
             r = self.data;
         end

@@ -65,7 +65,7 @@ function sq = initSequence
     %% DDS channels
 %     sq.dds(1).rfscale = 3;
 %     sq.dds(2).rfscale = 3;
-    calib_data = load('raman-aom-data.mat');
+    calib_data = load('C:\Users\admin\Desktop\matlab-control\raman-aom-data.mat');
     sq.dds(1).calibrationData = calib_data.data(1);
     sq.dds(2).calibrationData = calib_data.data(2);
     sq.dds(1).powunits = DDSChannel.POW_UNITS_HEX;

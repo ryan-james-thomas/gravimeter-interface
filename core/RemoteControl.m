@@ -33,6 +33,7 @@ classdef RemoteControl < handle
         endWord = 'end';              %Word telling host to stop TCP loop
         uploadDWord = 'uploadD';      %Word telling host to upload digital (uint32) data
         uploadAWord = 'uploadA';      %Word telling host to upload analog (float) data
+        uploadDelayWord = 'camDelay'; %Word telling host to store camera acquisition delay
 
         SET = 'set/check';
         ANALYZE = 'analyze';
@@ -196,8 +197,12 @@ classdef RemoteControl < handle
             %% Upload DDS data
             self.uploadDDSData(data.dds);
             
-            %% Open connection with LabVIEW VI
+            %% Open connection with LabVIEW VI and set acquisition delay
             self.open;
+            fprintf(self.conn,'%s\n',self.uploadDelayWord);
+            s = sprintf('%.1f',data.camDelay);
+            pause(0.1);
+            fprintf(self.conn,s);
             
             %% Upload analog data
             fprintf(self.conn,'%s\n',self.uploadAWord);

@@ -2,6 +2,8 @@ function varargout = makeSequenceGinger(varargin)
 %% Parse input arguments
 opt = SequenceOptions('load_time',5,'detuning',0,'tof',20e-3,'redpower',2,...
     'keopsys',2);
+%keyopsis bec 0.8 0.75
+%redpower bec 1.34
 
 if nargin == 1
     if ~isa(varargin{1},'SequenceOptions')
@@ -133,8 +135,6 @@ sq.find('MOT bias').set(1);
 sq.find('MOT bias coil').after(t,sq.linramp(t,0,dipole_field));
 sq.delay(max(Toptload,Tmagload));
 
-sq.find('variable wave plate').set(-3.4);
-
 %% RF evaporation
 %
 % Remove hot atoms from the sample using RF transitions between the trapped
@@ -174,6 +174,12 @@ sq.find('CD0 Fast').after(t,sq.linramp(t,sq.find('CD0 Fast').values(end),dBtoV('
 % sq.find('RF frequency').after(t,sq.linramp(t,sq.find('Rf frequency').values(end),RFtoV(rf_final)));
 sq.delay(Trampcoils);
 
+%% blow away F=2
+%blow away atoms in F=2
+sq.find('87 imag').set(1);
+sq.delay(1e-3);
+sq.find('87 imag').set(0);
+
 %% Switch to Helmholtz configuration for state preparation
 sq.find('CD bit 0').set(0);
 sq.find('CD bit 1').set(0);
@@ -197,7 +203,6 @@ sq.find('RedPower CW').after(t,sq.expramp(t,sq.find('RedPower CW').values(end),D
 sq.find('Keopsys FA').after(t,sq.expramp(t,sq.find('Keopsys FA').values(end),DipolePtoV('keopsys',final_dipole.FA),0.42));
 sq.delay(Tevap);
 
-
 %% Trigger the DDS
 sq.ddsTrigDelay = sq.time;
 sq.find('DDS TTL').before(10e-3,1).after(10e-3,0);%.after(1e-3,1);
@@ -217,7 +222,7 @@ amp = 1.3e-3*sech((t - Tarp/2)/w).^2;
 sq.dds(1).after(t,df,amp,0);
 sq.dds(2).after(t,110,0,0);
 sq.delay(Tarp);
-sq.dds(1).set(38.5,0,0);
+sq.dds(1).set(110,0,0);
 sq.dds(2).set(110,0,0);
 sq.find('RF Switch').set(0);
 
@@ -249,7 +254,7 @@ timeAtDrop = sq.time;
 sq.find('2D MOT Coils').set(0);
 sq.find('3DMOT').set(0);
 sq.find('87 repump amp').set(0);
-sq.find('CD0 Fast').set(0);
+sq.find('CD0 Fast').set(dBtoV('normal',2));
 sq.find('CD2').set(0);
 sq.find('CD Fine/Fast').set(0);
 sq.find('CD bit 0').set(0);
@@ -260,57 +265,70 @@ sq.find('Keopsys FA').set(0);
 sq.find('Keopsys MO').after(100e-6,0);
 sq.find('RF atten').set(0);
 sq.find('RF Frequency').set(RFtoV(20));
+% sq.delay(100e-6);
+% sq.find('H-bridge helm').set(0);
+% sq.delay(50e-6);
+% sq.find('H-bridge quad').set(1);
+
+%% VMG!
+
+sq.anchor(timeAtDrop);
+%sq.find('variable wave plate').set(-3.4);
+
+raman_delay_drop = 3e-3;
+% raman_delay_drop = opt.params;
+F2_tof = raman_delay_drop+3e-3;
+%Traman = opt.params;
+Traman = 10e-6;
+sq.anchor(timeAtDrop + raman_delay_drop);
+%Power_raman = opt.params;
+Power_raman = 1;
+
+%frequency offset from the aoms
+% Delta_raman  = opt.params;
+Delta_raman  = 9.8;
+
+sq.dds(1).set(110+Delta_raman/4,Power_raman,0); %sideband
+sq.dds(2).set(110-Delta_raman/4,Power_raman,0);%carrier only
+sq.delay(Traman);
+sq.dds(1).set(110,0,0);
+sq.dds(2).set(110,0,0);
+sq.delay(10e-6);
+% sq.find('variable wave plate').set(1.9);
+sq.find('CD0 Fast').set(0);
 sq.delay(100e-6);
 sq.find('H-bridge helm').set(0);
 sq.delay(50e-6);
 sq.find('H-bridge quad').set(1);
 
-%% VMG!
-
-% sq.anchor(timeAtDrop);
-% sq.find('variable wave plate').set(-3.4);
-% 
-% % Traman = opt.params;
-% Traman = 5e-6;
-% sq.anchor(timeAtDrop + 5e-3);
-% 
-% sq.dds(1).set(opt.params,0.22,0);
-% sq.dds(2).set(110,0.22,0);
-% sq.delay(Traman);
-% sq.dds(1).set(110,0,0);
-% sq.dds(2).set(110,0,0);
-% 
-% %param scan
-% sq.delay(15e-3); %raman delay
-% sq.dds(1).set(110,Praman,0);
-% sq.dds(2).set(opt.params,Praman,0);
-% sq.delay(Traman);
-% sq.dds(1).set(110,0,0);
-% sq.dds(2).set(110,0,0);
-% %end param scan
-% 
 % blow away atoms in F=2
+% sq.delay(0.5e-3);
 % sq.find('87 imag').set(1);
 % sq.delay(1e-3);
 % sq.find('87 imag').set(0);
 
 %% S -G Field (SG pulse)
 
-sq.anchor(timeAtDrop);
-sq.delay(2.5e-3);
-t = linspace(0,7e-3,50);
-sq.find('CD0 Fast').after(t,sq.minjerk(t,0,dBtoV('normal',25)));
-sq.delay(7e-3);
-sq.find('CD0 Fast').after(t,sq.minjerk(t,sq.find('CD0 Fast').values(end),0));
+% sq.anchor(timeAtDrop);
+% sq.delay(2.5e-3);
+% t = linspace(0,7e-3,50);
+% sq.find('CD0 Fast').after(t,sq.minjerk(t,0,dBtoV('normal',25)));
+% sq.delay(7e-3);
+% sq.find('CD0 Fast').after(t,sq.minjerk(t,sq.find('CD0 Fast').values(end),0));
 
 %% Take Absorption Image
-
 sq.anchor(timeAtDrop);
-sq.find('variable wave plate').at(timeAtDrop + opt.tof - 5e-3,1.9);
-makeImagingSequence(sq,'tof',opt.tof,'pulse time',100e-6,'repump delay',100e-6,...
-    'repump time',100e-6,'cam time',20e-6,'cycle time',100e-3,...
+sq.camDelay = timeAtDrop - 2;
+
+% sq.find('variable wave plate').at(timeAtDrop + opt.tof - 5e-3,1.9);
+makeImagingSequence(sq,'tof',opt.tof,'pulse time',200e-6,'repump delay',100e-6,...
+    'repump time',200e-6,'cam time',20e-6,'cycle time',100e-3,...
     'manifold',1,'imaging freq',ImageFreq,'imaging amplitude',ImageAmp,...
-    'fibre switch delay',1e-3,'imaging_field',imaging_field,'image type','horizontal');
+    'fibre switch delay',1e-3,'imaging_field',imaging_field,'image type','vertical');
+
+% makeImagingSequence_4_Images(sq,'tof',F2_tof,'tof2',25e-3,'pulse time',100e-6,'repump delay',100e-6,...
+%     'repump time',100e-6,'cam time',20e-6,'cycle time',100e-3,'imaging freq',ImageFreq,'imaging amplitude',ImageAmp,...
+%     'fibre switch delay',1e-3,'imaging_field',imaging_field,'image type','horizontal');
 
 % turn off the dipoles
 sq.find('Redpower CW').set(0);
@@ -321,6 +339,11 @@ sq.find('RF atten').set(0);
 sq.find('RF Frequency').set(RFtoV(20));
 sq.find('3DMOT').set(0);
 sq.find('87 repump amp').set(0);
+%sq.find('CD0 Fast').set(0);
+% sq.delay(100e-6);
+% sq.find('H-bridge helm').set(0);
+% sq.delay(50e-6);
+% sq.find('H-bridge quad').set(1);
 
 sq.waitFromLatest(0.25);
 setSafeValues(sq);
