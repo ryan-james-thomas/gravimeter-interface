@@ -92,6 +92,7 @@ end
 imageF2_time = tof;
 imageF1_time = tof+tof2;
 repump_time = tof+tof2-repumpTime-repumpDelay;
+%repump_time = tof-repumpTime-repumpDelay;
 
 %
 % Imaging beam and camera trigger for image with atoms in F = 2 state
@@ -99,6 +100,8 @@ repump_time = tof+tof2-repumpTime-repumpDelay;
 sq.anchor(timeAtDrop);
 sq.find('87 imag').after(imageF2_time,1).after(pulseTime,0); %Turn on after TOF, then turn off after pulse time
 sq.find(cam_trig).after(imageF2_time - pulse_delay,1).after(camTime,0);    %Turn on after TOF, then turn off after camera time
+
+sq.find('87 imag').after(1e-3,1).after(2e-3,0); %get rif of f=2 atoms
 % sq.waitFromLatest(cycleTime);                       %Delay
 %
 % Set repump values to pump F = 1 atoms into F = 2

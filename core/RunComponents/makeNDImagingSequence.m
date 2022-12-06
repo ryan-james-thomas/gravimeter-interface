@@ -7,7 +7,7 @@ pulseTime = 30e-6;
 camTime = 5e-6;
 cycleTime = 5e-3;
 imgFreq = 8.5;
-imgAmplitude = 10;
+imgAmplitude = 1;
 num_images = 1;
 species = 85;
 pulse_delay = 0;
@@ -53,11 +53,11 @@ end
 %
 if species == 87
     sq.find('87 imag freq').set(imgFreq);
-    sq.find('87 imag amp').set(imgAmplitude);
+    sq.find('87 imag amp').set(TrapPtoV('nd',imgAmplitude));
     ch = sq.find('87 imag');
 elseif species == 85
     sq.find('85 imag freq').set(imgFreq);
-    sq.find('85 imag amp').set(imgAmplitude);
+    sq.find('85 imag amp').set(TrapPtoV('nd',imgAmplitude));
     ch = sq.find('85 imag');
 end
 

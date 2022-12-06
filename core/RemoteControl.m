@@ -258,7 +258,20 @@ classdef RemoteControl < handle
                 self.mog.cmd('mode,%d,%s',tb(nn).channel,tb(nn).MODE);
                 self.mog.cmd('table,stop,%d',tb(nn).channel);
             end
-            self.mog.cmd('table,sync,1');
+            num_tries = 10;
+            current_try = 1;
+            while 1
+                try
+                    self.mog.cmd('table,sync,1');
+                    break;
+                catch err
+                    if current_try < num_tries
+                        current_try = current_try + 1;
+                    else
+                        rethrow(err);
+                    end
+                end
+            end
             numInstr = tb.upload;
             estUploadTime = numInstr*11/3280;
             if estUploadTime > (7/8*self.sq.ddsTrigDelay)
@@ -273,6 +286,11 @@ classdef RemoteControl < handle
                 self.conn.BytesAvailableFcn = @(~,~) cb();
             end
             fprintf(self.conn,'%s\n',self.startWord);
+            %====================================SAM HACK HERE===================================
+%             addpath('C:\Program Files\Meadowlark Optics\Blink OverDrive Plus\SDK');
+%             pause(18)
+%             Blink_SDK_Sam_v1;
+            %==================================== end ==========================================
         end %end run
 
         function urun(self,varargin)

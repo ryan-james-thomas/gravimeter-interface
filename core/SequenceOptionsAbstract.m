@@ -1,6 +1,6 @@
 classdef SequenceOptionsAbstract < matlab.mixin.Copyable
-    %SEQUENCEOPTIONS Defines a class for passing options to the
-    %gravimeter make sequence function
+    %SEQUENCEOPTIONSABSTRACT Defines an abstract class for passing options
+    %to the gravimeter make sequence function
     
     
     methods(Abstract)
@@ -29,7 +29,11 @@ classdef SequenceOptionsAbstract < matlab.mixin.Copyable
             p = properties(opt);
             for nn = 1:numel(p)
                 if ~isempty(opt.(p{nn}))
-                    self.(p{nn}) = opt.(p{nn});
+                    if isa(self.(p{nn}),'SequenceOptionsAbstract')
+                        self.(p{nn}).replace(opt.(p{nn}));
+                    else
+                        self.(p{nn}) = opt.(p{nn});
+                    end
                 end
             end
         end

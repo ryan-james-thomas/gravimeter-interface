@@ -69,7 +69,8 @@ end
 
 % Set imaging parameters BEFORE you take the image
 sq.find('CD0 Fast').set(0); %zero mag field
-sq.find('MOT bias coil').set(imaging_field); %turn on the imaging coil (to align the axis of atoms)
+% sq.find('MOT bias coil').set(imaging_field); %turn on the imaging coil (to align the axis of atoms)
+sq.find('MOT bias coil').after(tof - 1e-3,imaging_field); %turn on the imaging coil (to align the axis of atoms)
 sq.find('MOT bias').set(1); %ttl on imaging coil
 
 

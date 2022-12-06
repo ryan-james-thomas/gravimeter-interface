@@ -15,10 +15,21 @@ if strcmpi(light_type,'trap')
 elseif strcmpi(light_type,'repump')
     V = asin(relative_power.^0.25).^2*2.424 + 1.4774;
 elseif strcmpi(light_type,'nd')
-    vv = 1:8;
-    pp = [0,7.4e-6,185e-6,655e-6,1.28e-3,1.94e-3,2.4e-3,2.6e-3];
-    pp = pp/max(pp);
-    V = interp1(pp,vv,relative_power,'pchip');
+    data = [8.0000    1.5000;
+            7.0000    1.4570;
+            6.0000    1.1930;
+            5.0000    0.8100;
+            4.0000    0.4200;
+            3.0000    0.1190;
+            2.0000    0.0046;
+            3.5000    0.2450;
+            4.5000    0.6090;
+            5.5000    1.0000];
+    [~,k] = sort(data(:,1));
+    data = data(k,:);
+    data(:,2) = data(:,2)/max(data(:,2));
+    V = interp1(data(:,2),data(:,1),relative_power,'pchip');
+    V(relative_power == 0) = 0;
 end
 
 end
