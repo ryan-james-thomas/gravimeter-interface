@@ -1,7 +1,7 @@
 classdef RunConversions < handle
     methods(Static)
         function V = dipole25(power)
-            V = (power + 39.3e-3)/2.6165;
+            V = (power + 0.1795)/2.7065;
         end
         
         function V = dipole50(power)
@@ -14,12 +14,30 @@ classdef RunConversions < handle
             V = (current - 0.45)/6;
         end
         
-        function V = imaging(f)
-            V = -f*0.472/6.065 + 8.533;
+        function V = imaging(detuning)
+%             V = -detuning*0.472/6.065 + 8.533;
+            func = @(x) (82.6202 - 8.7259*x + 2.0478*x.^2 - 0.0827*x.^3);
+            f = (detuning + 211.79)/2;
+            xx = linspace(0,10,101);
+            V = interp1(func(xx),xx,f,'pchip');
         end
         
-        function V = microwave(f)
-            V = 7.9141 - 0.0152*f - 2.555e-5*f.^2 + 3.6751e-7*f.^3;
+        function V = microwave(detuning)
+            V = 7.9141 - 0.0152*detuning - 2.555e-5*detuning.^2 + 3.6751e-7*detuning.^3;
+        end
+        
+        function V = mot_freq(detuning)
+            func = @(x) (53.051 + 8.6164*x - 1.5183*x.^2 + 0.24203*x.^3 - 0.010976*x.^4);
+            f = (detuning + 211.79)/2;
+            xx = linspace(0,10,101);
+            V = interp1(func(xx),xx,f,'pchip');
+        end
+        
+        function V = repump_freq(detuning)
+            func = @(x) 51.933 + 9.3739*x - 1.8124*x.^2 + 0.28129*x.^3 - 0.01269*x.^4;
+            f = detuning + 78.47;
+            xx = linspace(0,10,101);
+            V = interp1(func(xx),xx,f,'pchip');
         end
     end
 end

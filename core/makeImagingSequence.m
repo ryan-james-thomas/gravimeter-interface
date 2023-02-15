@@ -70,6 +70,7 @@ end
 
 %Preamble
 sq.find('imaging freq').set(imgFreq);
+sq.find('Top repump shutter').before(10e-3,0);
 
 %Repump settings - repump occurs just before imaging
 %If manifold is set to image F = 1 state, enable repump. Otherwise,

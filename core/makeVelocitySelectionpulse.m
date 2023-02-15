@@ -9,16 +9,18 @@ k = 2*pi*f/const.c;
 width = 300e-6;
 power = 0.03;
 chirp = 2*k*9.795/(2*pi);
-order=-1;
 start_order = 0;
+delta_order = 1;
+mirrorSwitch = 1;
+
 if mod(numel(varargin),2) ~= 0
     error('Arguments must appear as name/value pairs!');
 else
     for nn = 1:2:numel(varargin)
         v = varargin{nn+1};
         switch lower(varargin{nn})
-            case 't0'
-                t0 = v;
+            case 'tvs'
+                tvs = v;
             case 'dt'
                 dt = v;
             case 'width'
@@ -46,17 +48,20 @@ else
                 k = 2*pi*f/const.c;
             case 'k'
                 k = v;
-            case 'order'
-                order = v;
-                if order==0
-                    error('Bragg order needs to be different from 0!');
-                elseif floor(order)==ceil(order)
-                    order=v ;
+            case {'order','delta_order'}
+                if v == 0
+                    error('Bragg order should be non-zero!');
+                elseif round(v) ~= v
+                    error('Bragg order must be an integer!');
                 else
-                    error('Bragg order needs to be an integer');
+                    order = v;
                 end
-            case 'tvs'
-                tvs = v;
+            case 'start_order'
+                 if round(v) ~= v
+                     error('Bragg start order must be an integer!');
+                else
+                    start_order = v;
+                end
             otherwise
                 error('Option %s not supported',varargin{nn});
         end
@@ -88,8 +93,8 @@ t = (min_t:dt:max_t)';
 P = power*exp(-(t - tc).^2/fwhm.^2);
 P(:,2) = P(:,1);
 
-freq(:,1) = dds(1).DEFAULT_FREQ + 0.25*chirp*t/(1e6) + 0.25*4*(recoil+detuning)/1e6;
-freq(:,2) = dds(2).DEFAULT_FREQ - 0.25*chirp*t/(1e6) - 0.25*4*(recoil+detuning)/1e6;
+freq(:,1) = dds(1).DEFAULT_FREQ + mirrorSwitch*0.25/1e6*(chirp*tc + (2*start_order+delta_order)*4*recoil);
+freq(:,2) = dds(2).DEFAULT_FREQ - mirrorSwitch*0.25/1e6*(chirp*tc + (2*start_order+delta_order)*4*recoil);
 ph = zeros(numel(t),2);
 
 %% Populate DDS values

@@ -353,7 +353,7 @@ classdef TimingControllerChannel < handle & matlab.mixin.Heterogeneous
             %   CH = CHECKVALUE(CH,V) checks value v to make sure it is within 
             %   a valid range
             if any(v < ch.bounds(1)) || any(v > ch.bounds(2))
-                error('Value outside of bounds [%.3f,%.3f]',ch.bounds);
+                error('Value outside of bounds [%.3f,%.3f]',ch.bounds(1),ch.bounds(2));
             end
         end
 

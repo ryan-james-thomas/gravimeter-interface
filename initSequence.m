@@ -9,7 +9,7 @@ function sq = initSequence
     sq.channels(4).setName('25W TTL','A3').setDefault(0);
     sq.channels(5).setName('25W Active','A4').setDefault(1);
     sq.channels(6).setName('A5 - N/C','A5').setDefault(0);
-    sq.channels(7).setName('Bragg/Raman switch','A6','Set to 1 for Bragg, 0 for Raman').setDefault(0);
+    sq.channels(7).setName('Top Repump Shutter','A6','Inverted!').setDefault(0);
     sq.channels(8).setName('A7 - N/C','A7').setDefault(0);
     sq.channels(9).setName('2D MOT Amp TTL','B0').setDefault(1);
     sq.channels(10).setName('3D MOT Amp TTL','B1').setDefault(1);

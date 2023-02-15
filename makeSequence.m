@@ -21,81 +21,41 @@ end
 
 %% Create conversion object
 convert = RunConversions;
-imageVoltage = convert.imaging(opt.detuning);
+imageVoltage = convert.imaging(opt.detuning - 1.8);
 %% Create a BEC
 sq = makeBEC(opt);
 
-%% Trap manipulation to get smaller momentum width 
-% T = 200e-3;
-% t = linspace(0,T,100);
-% %     sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.08)));
-% %     sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(2.98-0.05)));
-% sq.find('50W amp').after(t,sq.minjerk(t,P50(opt.final_dipole_power),P50(0.05)));
-% sq.find('25W amp').after(t,sq.minjerk(t,P25(opt.final_dipole_power),P25(2.50+0.005)));
-% sq.delay(T);  
-% 
-% T = 50e-3;
-% t = linspace(0,T,50);
-% sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50W amp').values(end),P50(1.45)));
-% sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25W amp').values(end),P25(1.45)));
-% sq.delay(T);
-% sq.find('50W amp').set(P50(1.35));
-% sq.find('25W amp').set(P25(1.35));
-% sq.delay(opt.params);
-% 
-% T = 50e-3;
-% t = linspace(0,T,50);
-% sq.find('50W amp').after(t,sq.minjerk(t,sq.find('50W amp').values(end),P50(1.35)));
-% sq.find('25W amp').after(t,sq.minjerk(t,sq.find('25W amp').values(end),P25(1.35)));
-% sq.delay(T);
-% f = 53/2;
-% T = 10/f;
-% t = linspace(0,T,200);
-% power = 1.35 + 0.05*sin(2*pi*f*t);
-% sq.find('50W amp').after(t,P50(power));
-% sq.find('25W amp').after(t,P25(power));
-% sq.delay(T);
-% sq.delay(opt.params);
-% 
-% pstart50 = opt.params.pstart50;
-% pstart50 = [opt.final_dipole_power,pstart50(:)'];
-% vstart50 = P50(cumsum(pstart50));
-% 
-% pstart25 = opt.params.pstart25;
-% pstart25 = [opt.final_dipole_power,pstart25(:)'];
-% vstart25 = P25(cumsum(pstart25));
-% 
-% tp = opt.params.t;
-% 
-% for nn = 1:numel(tp)
-%     t = linspace(0,tp(nn),50);
-%     sq.find('50w amp').after(t,max(sq.minjerk(t,vstart50(nn),vstart50(nn + 1)),0));
-%     sq.find('25w amp').after(t,max(sq.minjerk(t,vstart25(nn),vstart25(nn + 1)),0));
-% end
-% 
-% sq.anchor(sq.latest);
+%% Measure trap freq.
+% sq.find('50W Amp').set(0).after(0.25e-3,sq.find('50W Amp').values(end-1));
+% % sq.find('25W Amp').set(convert.dipole25(opt.dipoles + 0.0));
+% sq.delay(0.5e-3 + opt.params(1));
 
-%% In trap microwave state preparation
-% Tarp = 10e-3;
-% t = linspace(0,Tarp,101);
-% sq.find('state prep ttl').set(1);
-% sq.find('Bias E/W').after(t,sq.linramp(t,opt.params(1) - opt.params(2)/2,opt.params(1) + opt.params(2)/2));
-% sq.delay(Tarp);
-% sq.find('state prep ttl').set(0);
+%% Drive width oscillations
+% f = 71;
+% Nosc = 5;
+% T = Nosc/f;
+% t = linspace(0,T,20*Nosc);
+% sq.find('50W amp').after(t,convert.dipole50(opt.dipoles + 0.15*sin(2*pi*f*t)));
+% sq.delay(max(t) + opt.params(1));
 
 %% Drop atoms
-%     sq.delay(200e-3);
+% sq.find('mot coil ttl').set(0);
+% sq.find('3D Coils').set(convert.mot_coil(0));
+% sq.delay(35e-3 - opt.tof);
+
 timeAtDrop = sq.time; %Store the time when the atoms are dropped for later
 sq.anchor(timeAtDrop);
 sq.find('3D mot amp ttl').set(0);
-%     sq.find('bias e/w').before(200e-3,0);
-sq.find('bias n/s').before(200e-3,0);
-sq.find('bias u/d').before(200e-3,0);
+% sq.find('bias e/w').before(200e-3,0);
+% sq.find('bias n/s').before(200e-3,0);
+% sq.find('bias u/d').before(200e-3,0);
 sq.find('mw amp ttl').set(0);
 sq.find('mot coil ttl').set(0);
 sq.find('3D Coils').set(convert.mot_coil(0));
 sq.find('25w ttl').set(0);
 sq.find('50w ttl').set(0);
+sq.find('50w amp').set(convert.dipole50(0));
+sq.find('25w amp').set(convert.dipole25(0)); 
 
 %% Interferometry
 enableDDS = 1;      %Enable DDS and DDS trigger
@@ -316,7 +276,7 @@ if strcmpi(opt.imaging_type,'drop 1') || strcmpi(opt.imaging_type,'drop 2')
     makeImagingSequence(sq,'type',opt.imaging_type,'tof',opt.tof,...
         'repump Time',100e-6,'pulse Delay',10e-6,'pulse time',[],...
         'imaging freq',imageVoltage,'repump delay',10e-6,'repump freq',4.3,...
-        'manifold',1,'includeDarkImage',true,'cycle time',100e-3);
+        'manifold',1,'includeDarkImage',true,'cycle time',150e-3);
 elseif strcmpi(opt.imaging_type,'drop 3') || strcmpi(opt.imaging_type,'drop 4')
     makeFMISequence(sq,'tof',opt.tof,'offset',30e-3,'duration',100e-3,...
         'imaging freq',imageVoltage,'manifold',1);
