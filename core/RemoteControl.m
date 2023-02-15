@@ -70,20 +70,13 @@ classdef RemoteControl < handle
         function open(self)
             %OPEN Opens a tcpip port           
             %open Creates and opens a TCP conn.  Waits for ready word
-            self.conn = instrfindall('type','tcpip','RemotePort',self.remotePort,'RemoteHost',self.remoteAddress,...
-                'Terminator','CR/LF');
-            if isempty(self.conn) || ~isvalid(self.conn)
-                self.conn = tcpip(self.remoteAddress,self.remotePort,'networkrole','client');
-                self.conn.Terminator = 'CR/LF';
-                self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
-                self.connected = false;
+            if isempty(self.conn)
+                fprintf(1,'Attempting connection...\n');
+                self.conn = tcpclient(self.remoteAddress,self.remotePort);
+                self.conn.configureTerminator('CR/LF');
+                self.conn.configureCallback('terminator',@(src,event) self.resp(src,event))
                 self.conn.OutputBufferSize = 2^24;
                 self.conn.InputBufferSize = 2^24;
-            end
-            
-            if strcmpi(self.conn.Status,'closed')
-                fprintf(1,'Attempting connection...\n');
-                fopen(self.conn);
                 fprintf(1,'Connection successful!\n');
                 self.connected = true;
             end
@@ -92,34 +85,17 @@ classdef RemoteControl < handle
         function setFunc(self)
             %SETFUNC Sets the BytesAvailableFcn to self.resp()
             self.open;
-            self.conn.BytesAvailableFcn = @(src,event) self.resp(src,event);
-        end
-        
-        function instr = findTCPPort(self)
-            %FINDTCPPORT Finds all existing TCP ports
-            instr = instrfindall('type','tcpip','RemotePort',self.remotePort,'RemoteHost',self.remoteAddress);      
+            self.conn.configureCallback('terminator',@(src,event) self.resp(src,event))
         end
         
         function r = read(self)
             %READ Reads available data from TCP connection
-            r = fgetl(self.conn);
+            r = self.conn.readline();
         end %end read
-        
-        function r = waitForReady(self)
-            %WAITFOREADY Returns true when the readyWord appears
-            while self.conn.BytesAvailable <= length(self.readyWord)
-                pause(100e-3); 
-            end
-            r = strcmpi(self.read,self.readyWord);
-        end %end waitForReady
         
         function stop(self)
             %STOP Releases client from remote control and closes TCP conn
-            if ~isempty(self.conn) && isvalid(self.conn) && strcmpi(self.conn.Status,'open')
-%                 fprintf(self.conn,'%s',self.endWord);
-                fclose(self.conn);
-            end
-            delete(self.conn);
+            self.conn = [];
             fprintf(1,'Remote control session terminated\n');
             self.connected = false;
             self.status = self.STOPPED;
@@ -187,23 +163,24 @@ classdef RemoteControl < handle
             
             %% Open connection with LabVIEW VI and set camera acquisition delay
             self.open;
-            fprintf(self.conn,'%s\n',self.uploadCamDelay);
+            self.conn.writeline(self.uploadCamDelay);
             s = sprintf('%.1f',data.camDelay);
             pause(0.1);
-            fprintf(self.conn,s);
+            self.conn.writeline(s);
             
             %% Upload analog data
             fprintf(self.conn,'%s\n',self.uploadAWord);
+            self.conn.writeline(self.uploadAWord);
             s = sprintf(['%.6f',repmat(',%.6f',1,24),'%%'],a');
             pause(0.1);
-            fprintf(self.conn,s);
+            self.conn.writeline(s);
             
             %% Upload digital data
-            fprintf(self.conn,'%s\n',self.uploadDWord);
+            self.writeline(self.uploadDWord);
             s = sprintf('%d,%%',d);
             s = s(1:end-2);
             pause(0.1);
-            fprintf(self.conn,s);
+            self.conn.writeline(s);
 
         end
         
@@ -331,9 +308,9 @@ classdef RemoteControl < handle
             %
             self.open;
             if nargin > 1
-                self.conn.BytesAvailableFcn = @(~,~) cb();
+                self.conn.configureCallback('terminator',@(~,~) cb());
             end
-            fprintf(self.conn,'%s\n',self.startWord);
+            self.conn.writeline(self.startWord);
         end %end run
         
         function urun(self,varargin)
@@ -352,7 +329,7 @@ classdef RemoteControl < handle
                 cb();
                 self.run;
             end
-            self.conn.BytesAvailableFcn = @(src,event) internal_callback;
+            self.conn.configureCallback('terminator',@(src,event) internal_callback);
             self.run;
         end
         
