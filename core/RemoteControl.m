@@ -169,14 +169,13 @@ classdef RemoteControl < handle
             self.conn.writeline(s);
             
             %% Upload analog data
-            fprintf(self.conn,'%s\n',self.uploadAWord);
             self.conn.writeline(self.uploadAWord);
             s = sprintf(['%.6f',repmat(',%.6f',1,24),'%%'],a');
             pause(0.1);
             self.conn.writeline(s);
             
             %% Upload digital data
-            self.writeline(self.uploadDWord);
+            self.conn.writeline(self.uploadDWord);
             s = sprintf('%d,%%',d);
             s = s(1:end-2);
             pause(0.1);
